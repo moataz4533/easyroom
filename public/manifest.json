@@ -1,0 +1,15 @@
+{
+  "name": "Easyroom",
+  "short_name": "Easyroom",
+  "description": "إدارة الغرف والحجوزات",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF3F2",
+  "theme_color": "#0B3A46",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
