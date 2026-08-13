@@ -17,6 +17,7 @@ const TABS = [
   ["rates", "الأسعار"],
   ["rooms", "الغرف"],
   ["staff", "الموظفين"],
+  ["security", "الباسورد"],
   ["property", "بيانات النادي"],
 ];
 
@@ -77,6 +78,7 @@ function Settings() {
       {tab === "rates" && <Rates {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
       {tab === "staff" && <Staff {...shared} />}
+      {tab === "security" && <Security {...shared} />}
       {tab === "property" && <PropertyInfo {...shared} />}
     </>
   );
@@ -87,6 +89,7 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
   const [active, setActive] = useState(types[0]?.id);
   const [draft, setDraft] = useState(rates);
   const [saving, setSaving] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => setDraft(rates), [rates]);
   useEffect(() => { if (!active && types[0]) setActive(types[0].id); }, [types, active]);
@@ -95,37 +98,31 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
   const key = (ty, pl, o) => `${ty}|${pl}|${o}`;
   const dirty = JSON.stringify(draft) !== JSON.stringify(rates);
 
-  async function save() {
+  // Writes go through save_rates: direct writes to the rates table are
+  // closed, because a policy can't take a password as an argument.
+  async function save(pin) {
     setSaving(true);
-    const rows = [];
-    const removals = [];
 
-    Object.entries(draft).forEach(([k, v]) => {
-      const [room_type_id, rate_plan_id, occupancy] = k.split("|");
-      if (v === "" || v === null || v === undefined) removals.push(k);
-      else rows.push({
-        property_id: property.id, room_type_id, rate_plan_id,
-        occupancy: Number(occupancy), amount: Number(v),
+    const rows = Object.entries(draft)
+      .filter(([k, v]) => v !== rates[k])
+      .map(([k, v]) => {
+        const [room_type_id, rate_plan_id, occupancy] = k.split("|");
+        return {
+          room_type_id, rate_plan_id,
+          occupancy: Number(occupancy),
+          amount: v === "" || v === null || v === undefined ? null : Number(v),
+        };
       });
+
+    const { error } = await supabase.rpc("save_rates", {
+      p_property: property.id, p_rows: rows, p_pin: pin,
     });
 
-    if (rows.length) {
-      const { error } = await supabase.from("rates").upsert(rows, {
-        onConflict: "property_id,room_type_id,rate_plan_id,occupancy,valid_from",
-      });
-      if (error) { setSaving(false); return showToast(error.message, true); }
-    }
-
-    for (const k of removals) {
-      if (rates[k] === undefined) continue;
-      const [ty, pl, o] = k.split("|");
-      await supabase.from("rates").delete()
-        .eq("property_id", property.id).eq("room_type_id", ty)
-        .eq("rate_plan_id", pl).eq("occupancy", Number(o)).is("valid_from", null);
-    }
-
     setSaving(false);
-    showToast("الأسعار اتحفظت");
+    if (error) return showToast(error.message, true);
+
+    setAsking(false);
+    showToast(`${rows.length} سعر اتحفظ`);
     reload();
   }
 
@@ -179,10 +176,24 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
         </div>
       )}
 
-      {dirty && (
-        <button className="btn primary wide" style={{ marginTop: 14 }} disabled={saving} onClick={save}>
-          {saving ? "بيحفظ…" : "حفظ الأسعار"}
+      {dirty && !asking && (
+        <button className="btn primary wide" style={{ marginTop: 14 }}
+          onClick={() => setAsking(true)}>
+          حفظ الأسعار
         </button>
+      )}
+
+      {asking && (
+        <div style={{ marginTop: 14 }}>
+          <PinPrompt
+            title="تأكيد تغيير الأسعار"
+            note="تغيير السعر بيأثر على كل حجز جديد، عشان كده محتاج باسورد المدير."
+            confirmLabel="احفظ الأسعار"
+            busy={saving}
+            onCancel={() => setAsking(false)}
+            onConfirm={save}
+          />
+        </div>
       )}
     </>
   );
@@ -439,6 +450,85 @@ function Staff({ property, staff, reload, showToast }) {
           <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
         </div>
       )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+function Security({ property, showToast }) {
+  const [pin, setPin] = useState("");
+  const [again, setAgain] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [isSet, setIsSet] = useState(null);
+
+  useEffect(() => {
+    supabase.rpc("has_action_pin", { p_property: property.id })
+      .then(({ data }) => setIsSet(!!data));
+  }, [property.id]);
+
+  async function save() {
+    if (pin.length < 4) return showToast("لازم 4 أرقام على الأقل", true);
+    if (pin !== again) return showToast("الباسورد مش متطابق", true);
+
+    setBusy(true);
+    const { error } = await supabase.rpc("set_action_pin", {
+      p_property: property.id, p_pin: pin,
+    });
+    setBusy(false);
+    if (error) return showToast(error.message, true);
+
+    setPin(""); setAgain(""); setIsSet(true);
+    showToast("الباسورد اتحفظ");
+  }
+
+  async function clear() {
+    if (!confirm("تشيل الباسورد؟ الإلغاء هيرجع من غير تأكيد.")) return;
+    const { error } = await supabase.rpc("clear_action_pin", { p_property: property.id });
+    if (error) return showToast(error.message, true);
+    setIsSet(false);
+    showToast("الباسورد اتشال");
+  }
+
+  return (
+    <>
+      <p className="section-note">
+        باسورد بيتطلب قبل الإلغاء وعدم الحضور والخروج البدري وتغيير الأسعار.
+      </p>
+
+      <div className={`banner ${isSet ? "ok" : "warn"}`}>
+        {isSet === null ? "بيحمّل…"
+          : isSet
+          ? "الباسورد مفعّل. الإجراءات دي محتاجة تأكيد."
+          : "مفيش باسورد. أي حد ليه صلاحية يقدر يلغي من غير تأكيد."}
+      </div>
+
+      <div className="card stack">
+        <div className="field">
+          <label>{isSet ? "باسورد جديد" : "الباسورد"}</label>
+          <input type="password" inputMode="numeric" className="mono" dir="ltr"
+            style={{ textAlign: "center", fontSize: 20, letterSpacing: ".3em" }}
+            value={pin} onChange={(e) => setPin(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>اكتبه تاني</label>
+          <input type="password" inputMode="numeric" className="mono" dir="ltr"
+            style={{ textAlign: "center", fontSize: 20, letterSpacing: ".3em" }}
+            value={again} onChange={(e) => setAgain(e.target.value)} />
+        </div>
+
+        <button className="btn primary wide" disabled={busy} onClick={save}>
+          {busy ? "بيحفظ…" : isSet ? "غيّر الباسورد" : "فعّل الباسورد"}
+        </button>
+
+        {isSet && (
+          <button className="btn wide danger" onClick={clear}>شيل الباسورد</button>
+        )}
+      </div>
+
+      <div className="banner warn" style={{ marginTop: 14 }}>
+        الباسورد متخزّن مشفّر — مش أنا ولا أي حد يقدر يقراه، فلو نسيته
+        هتعمل واحد جديد من هنا. وبعد 5 محاولات غلط بيتقفل ربع ساعة.
+      </div>
     </>
   );
 }

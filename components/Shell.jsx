@@ -10,16 +10,18 @@ export const useProperty = () => useContext(Ctx);
 
 const NAV = [
   { href: "/", label: "اليوم", ico: "🔑" },
-  { href: "/new-booking", label: "حجز جديد", ico: "＋" },
+  { href: "/new-booking", label: "حجز", ico: "＋" },
+  { href: "/bookings", label: "الحجوزات", ico: "📋" },
   { href: "/housekeeping", label: "النضافة", ico: "🧹" },
+  { href: "/reports", label: "التقارير", ico: "📊" },
   { href: "/settings", label: "الإعدادات", ico: "⚙" },
 ];
 
 // Roles decide what's even reachable. Housekeepers don't see money.
 const ALLOWED = {
-  owner:        ["/", "/new-booking", "/housekeeping", "/settings"],
-  manager:      ["/", "/new-booking", "/housekeeping", "/settings"],
-  reception:    ["/", "/new-booking", "/housekeeping"],
+  owner:        ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings"],
+  manager:      ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings"],
+  reception:    ["/", "/new-booking", "/bookings", "/housekeeping"],
   housekeeping: ["/housekeeping"],
 };
 

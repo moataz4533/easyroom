@@ -34,7 +34,7 @@ three, and different again on a corporate contract.
 ## Layout
 
 ```
-app/                  screens (today board, new booking, housekeeping, settings)
+app/                  screens (today board, new booking, bookings, housekeeping, reports, settings)
 components/Shell.jsx  auth guard, role-based nav, clock, offline strip
 lib/supabase.js       client + helpers
 lib/offline.js        cache, write queue, sync
@@ -60,6 +60,20 @@ Reads and housekeeping updates work with no connection. Check-in and
 check-out queue and replay. **Creating a booking does not work offline by
 design**: two disconnected devices cannot agree on who got room 103, so
 confirming a booking that might later fail would be worse than waiting.
+
+## Reports
+
+Revenue is recognised per night, not per booking: a stay crossing a month
+boundary belongs partly to each month. Counting the whole total in the
+month it was booked makes every period report wrong at the edges.
+
+## Manager PIN
+
+Cancellations, no-shows, early departures and rate changes need a PIN
+beyond the login — cancellation is the money-losing action in a hotel.
+It is enforced in Postgres, so bypassing the UI achieves nothing, and the
+hash lives in a table with RLS on and no policies, unreadable even to an
+owner. Five wrong attempts lock it for fifteen minutes.
 
 ## Roles
 

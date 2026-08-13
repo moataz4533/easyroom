@@ -5,8 +5,8 @@
 // is worse than an honest "last updated at 14:02" label, which the app
 // handles in its own cache layer.
 
-const VERSION = "easyroom-v1";
-const SHELL = ["/", "/new-booking", "/housekeeping", "/settings", "/login", "/manifest.json", "/icon.svg"];
+const VERSION = "easyroom-v3";
+const SHELL = ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings", "/login", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

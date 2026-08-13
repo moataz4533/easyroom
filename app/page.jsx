@@ -196,6 +196,7 @@ function stateLabel(s) {
 }
 
 function RoomSheet({ row, role, onClose, onDone, onError }) {
+  const { online } = useOffline();
   const [busy, setBusy] = useState(false);
   const [extendTo, setExtendTo] = useState(row.ends_on ? addDays(row.ends_on, 1) : "");
   const [check, setCheck] = useState(null);
@@ -303,7 +304,8 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
                         الغرفة {blocked.room_number} محجوزة من{" "}
                         {dayLabel(blocked.blocked_from)} ({blocked.blocked_by}).
                         <div style={{ marginTop: 6, fontSize: 12 }}>
-                          محتاج تنقل النزيل لغرفة تانية عشان تمدد.
+                          محتاج تنقل النزيل لغرفة تانية عشان تمدد — زرار «نقل
+                          لغرفة تانية» تحت.
                         </div>
                       </div>
                     ) : (
@@ -327,6 +329,9 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
                 </div>
 
                 <div className="stack">
+                  {online && row.allocation_id && (
+                    <MoveGuest row={row} onDone={onDone} onError={onError} />
+                  )}
                   <button
                     className="btn primary wide" disabled={busy}
                     onClick={() => run(
@@ -363,6 +368,107 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// A move acts on one allocation, not the whole booking: a group in three
+// rooms might only need one of them changed.
+function MoveGuest({ row, onDone, onError }) {
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState(null);
+  const [from, setFrom] = useState(today());
+  const [busy, setBusy] = useState(false);
+  const [reason, setReason] = useState("");
+
+  async function look() {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("suggest_alternative_rooms", {
+      p_allocation: row.allocation_id,
+      p_from: from,
+      p_to: row.ends_on,
+    });
+    setBusy(false);
+    if (error) return onError(error.message);
+    setOptions(data || []);
+  }
+
+  async function move(roomId) {
+    setBusy(true);
+    const { error } = await supabase.rpc("move_room", {
+      p_allocation: row.allocation_id,
+      p_new_room: roomId,
+      p_from: from,
+      p_reason: reason || null,
+    });
+    setBusy(false);
+    if (error) return onError(error.message);
+    onDone("النزيل اتنقل، والحساب اتظبط");
+  }
+
+  if (!open) {
+    return (
+      <button className="btn wide" onClick={() => { setOpen(true); look(); }}>
+        نقل لغرفة تانية
+      </button>
+    );
+  }
+
+  return (
+    <div className="card stack" style={{ background: "var(--paper)" }}>
+      <h2 style={{ fontSize: 14 }}>نقل النزيل</h2>
+
+      <div className="field">
+        <label>النقل يبدأ من</label>
+        <input
+          type="date" className="mono" value={from}
+          min={row.starts_on} max={addDays(row.ends_on, -1)}
+          onChange={(e) => { setFrom(e.target.value); setOptions(null); }}
+        />
+      </div>
+      <p className="section-note" style={{ margin: 0 }}>
+        لو اخترت تاريخ بعد بداية الإقامة، الليالي اللي فاتت هتفضل على الغرفة
+        الحالية والباقي على الجديدة.
+      </p>
+
+      {!options ? (
+        <button className="btn" onClick={look} disabled={busy}>
+          {busy ? "بيدور…" : "شوف الغرف المتاحة"}
+        </button>
+      ) : options.length === 0 ? (
+        <div className="banner bad" style={{ margin: 0 }}>
+          مفيش غرفة فاضية تستحمل {row.occupancy} أفراد في التواريخ دي.
+        </div>
+      ) : (
+        <>
+          <div className="field">
+            <label>السبب (اختياري)</label>
+            <input value={reason} placeholder="تكييف بايظ"
+              onChange={(e) => setReason(e.target.value)} />
+          </div>
+          <div className="stack">
+            {options.map((o) => (
+              <div key={o.room_id} className="card spread">
+                <div className="grow">
+                  <span className="mono" style={{ fontSize: 19, fontWeight: 600 }}>
+                    {o.room_number}
+                  </span>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {o.type_name}
+                    {!o.same_type && " — نوع مختلف، السعر ممكن يتغير"}
+                  </div>
+                </div>
+                <button className="btn primary sm" disabled={busy}
+                  onClick={() => move(o.room_id)}>
+                  انقل هنا
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
     </div>
   );
 }
