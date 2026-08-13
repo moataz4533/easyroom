@@ -5,8 +5,12 @@
 // is worse than an honest "last updated at 14:02" label, which the app
 // handles in its own cache layer.
 
-const VERSION = "easyroom-v3";
-const SHELL = ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings", "/login", "/manifest.json", "/icon.svg"];
+const VERSION = "easyroom-v6-auth";
+const ROUTES = ["", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings", "/login"];
+const SHELL = [
+  ...["ar", "en"].flatMap((locale) => ROUTES.map((route) => `/${locale}${route}`)),
+  "/manifest-ar.json", "/manifest-en.json", "/easyroom-logo.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -36,6 +40,13 @@ self.addEventListener("fetch", (event) => {
   // when those calls fail.
   if (url.origin !== self.location.origin) return;
 
+  // Next.js dev assets keep stable URLs. Caching them on localhost serves
+  // stale code after edits, so local development must always use the network.
+  if (self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1") {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Pages: network first, cache as backup. Keeps the app fresh when
   // online and still openable when it isn't.
   if (request.mode === "navigate") {
@@ -47,7 +58,7 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(request).then((hit) => hit || caches.match("/"))
+          caches.match(request).then((hit) => hit || caches.match("/ar"))
         )
     );
     return;
@@ -58,7 +69,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((hit) => {
       if (hit) return hit;
       return fetch(request).then((res) => {
-        if (res.ok && (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/icon"))) {
+        if (res.ok && (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/easyroom-logo"))) {
           const copy = res.clone();
           caches.open(VERSION).then((c) => c.put(request, copy));
         }

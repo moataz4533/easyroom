@@ -1,0 +1,14 @@
+{
+  "name": "Easyroom — Hotel Operations",
+  "short_name": "Easyroom",
+  "description": "Room, booking and housekeeping management",
+  "start_url": "/en",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F4F7F6",
+  "theme_color": "#0B3A46",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [{ "src": "/easyroom-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

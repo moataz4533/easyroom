@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
-import { supabase, today } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { loadCached, queueAdd } from "../../lib/offline";
+import { useLocale } from "next-intl";
 
 export default function Page() {
   return (
@@ -22,29 +23,20 @@ const HK = {
 // Built for a phone held in one hand: big targets, one tap per room,
 // no money and no guest details.
 function Housekeeping() {
-  const { property, role } = useProperty();
+  const { property } = useProperty();
+  const locale = useLocale();
   const [rooms, setRooms] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, showToast] = useToast();
 
   const load = useCallback(async () => {
     if (!property) return;
     setLoading(true);
-    const [{ data: r }, { data: t }] = await Promise.all([
-      loadCached(`hk-rooms:${property.id}`, () =>
-        supabase.from("rooms")
-          .select("id, number, floor, housekeeping_status, room_types(name)")
-          .eq("property_id", property.id).eq("is_active", true)),
-      loadCached(`hk-tasks:${property.id}`, () =>
-        supabase.from("housekeeping_tasks")
-          .select("*").eq("property_id", property.id)
-          .lte("scheduled_for", today()).neq("status", "done")),
-    ]);
+    const { data: r } = await loadCached(`hk-rooms:${property.id}`, () =>
+      supabase.rpc("list_housekeeping_rooms", { p_property: property.id }));
     setRooms((r || []).sort((a, b) =>
       String(a.number).localeCompare(String(b.number), "en", { numeric: true })
     ));
-    setTasks(t || []);
     setLoading(false);
   }, [property]);
 
@@ -60,19 +52,10 @@ function Housekeeping() {
       return;
     }
 
-    const { error } = await supabase.from("rooms")
-      .update({ housekeeping_status: status }).eq("id", room.id);
+    const { error } = await supabase.rpc("set_housekeeping_status", {
+      p_room: room.id, p_status: status,
+    });
     if (error) return showToast(error.message, true);
-
-    // Closing the room's open task keeps the two views in step.
-    if (status === "clean" || status === "inspected") {
-      const open = tasks.find((t) => t.room_id === room.id);
-      if (open) {
-        await supabase.from("housekeeping_tasks")
-          .update({ status: "done", completed_at: new Date().toISOString() })
-          .eq("id", open.id);
-      }
-    }
     showToast(`غرفة ${room.number}: ${HK[status].label}`);
     load();
   }
@@ -95,7 +78,7 @@ function Housekeeping() {
           <h2 style={{ fontSize: 14 }}>محتاجة نضافة</h2>
           <div className="stack">
             {pending.map((r) => (
-              <RoomLine key={r.id} room={r} onSet={setStatus} highlight />
+              <RoomLine key={r.id} room={r} onSet={setStatus} locale={locale} highlight />
             ))}
           </div>
         </section>
@@ -104,14 +87,14 @@ function Housekeeping() {
       <section className="section">
         <h2 style={{ fontSize: 14 }}>باقي الغرف</h2>
         <div className="stack">
-          {rest.map((r) => <RoomLine key={r.id} room={r} onSet={setStatus} />)}
+          {rest.map((r) => <RoomLine key={r.id} room={r} onSet={setStatus} locale={locale} />)}
         </div>
       </section>
     </>
   );
 }
 
-function RoomLine({ room, onSet, highlight }) {
+function RoomLine({ room, onSet, highlight, locale }) {
   const s = HK[room.housekeeping_status] || HK.clean;
   return (
     <div className="card spread"
@@ -122,7 +105,7 @@ function RoomLine({ room, onSet, highlight }) {
           <span className={`pill ${s.pill}`}>{s.label}</span>
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-          {room.room_types?.name}
+          {locale === "en" ? (room.type_name_en || room.type_name) : room.type_name}
         </div>
       </div>
 

@@ -1,0 +1,14 @@
+{
+  "name": "Easyroom — إدارة الفندق",
+  "short_name": "Easyroom",
+  "description": "إدارة الغرف والحجوزات والنظافة",
+  "start_url": "/ar",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F4F7F6",
+  "theme_color": "#0B3A46",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [{ "src": "/easyroom-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

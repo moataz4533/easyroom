@@ -4,6 +4,7 @@ import Link from "next/link";
 import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
+import { useLocale } from "next-intl";
 
 export default function Page() {
   return (
@@ -15,6 +16,7 @@ export default function Page() {
 
 function Board() {
   const { property, role } = useProperty();
+  const locale = useLocale();
   const [rows, setRows] = useState([]);
   const [attention, setAttention] = useState([]);
   const [arrivals, setArrivals] = useState([]);
@@ -79,7 +81,7 @@ function Board() {
 
       {stale && (
         <div className="stale">
-          آخر تحديث: {new Date(stale).toLocaleString("ar-EG", {
+          آخر تحديث: {new Date(stale).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
             hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
           {" — "}البيانات دي محفوظة، مش لحظية.
         </div>
@@ -101,7 +103,7 @@ function Board() {
                   <div style={{ fontWeight: 600 }}>{b.guests?.full_name}</div>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     <span className="code">{b.reference}</span>{" "}
-                    {dayLabel(b.check_in)} ← {dayLabel(b.check_out)} · {b.adults} أفراد
+                    {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)} · {b.adults} أفراد
                   </div>
                 </div>
                 <button
@@ -149,8 +151,8 @@ function Board() {
                   <div className="band" />
                   <div className="who">{r.guest_name || stateLabel(stateOf(r))}</div>
                   <div className="sub" style={{ color: "var(--muted)" }}>
-                    {r.departing_today ? "خروج النهاردة"
-                      : r.ends_on ? `لحد ${dayLabel(r.ends_on)}` : ""}
+                    {r.departing_today ? (locale === "en" ? "Departure today" : "خروج النهاردة")
+                      : r.ends_on ? `${locale === "en" ? "Until" : "لحد"} ${dayLabel(r.ends_on, locale)}` : ""}
                   </div>
                 </button>
               ))}
@@ -162,6 +164,7 @@ function Board() {
       {sheet && (
         <RoomSheet
           row={sheet}
+          locale={locale}
           role={role}
           onClose={() => setSheet(null)}
           onDone={(m) => { showToast(m); setSheet(null); load(); }}
@@ -195,7 +198,7 @@ function stateLabel(s) {
   return { free: "فاضية", occupied: "مشغولة", dirty: "محتاجة نضافة", ooo: "معطلة" }[s];
 }
 
-function RoomSheet({ row, role, onClose, onDone, onError }) {
+function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
   const { online } = useOffline();
   const [busy, setBusy] = useState(false);
   const [extendTo, setExtendTo] = useState(row.ends_on ? addDays(row.ends_on, 1) : "");
@@ -252,7 +255,7 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
           <span className={`pill ${row.booking_id ? "dark" : "ok"}`}>
             {stateLabel(stateOf(row))}
           </span>
-          <span className="pill">{row.room_type}</span>
+          <span className="pill">{locale === "en" ? (row.room_type_en || row.room_type) : row.room_type}</span>
         </div>
 
         {row.booking_id ? (
@@ -261,7 +264,7 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
               <div style={{ fontWeight: 600 }}>{row.guest_name}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
                 <span className="code">{row.reference}</span>{" "}
-                {dayLabel(row.starts_on)} ← {dayLabel(row.ends_on)}
+                {dayLabel(row.starts_on, locale)} ← {dayLabel(row.ends_on, locale)}
               </div>
               {row.guest_phone && (
                 <div className="row" style={{ marginTop: 10 }}>
@@ -302,7 +305,7 @@ function RoomSheet({ row, role, onClose, onDone, onError }) {
                     blocked ? (
                       <div className="banner bad" style={{ marginTop: 10 }}>
                         الغرفة {blocked.room_number} محجوزة من{" "}
-                        {dayLabel(blocked.blocked_from)} ({blocked.blocked_by}).
+                        {dayLabel(blocked.blocked_from, locale)} ({blocked.blocked_by}).
                         <div style={{ marginTop: 6, fontSize: 12 }}>
                           محتاج تنقل النزيل لغرفة تانية عشان تمدد — زرار «نقل
                           لغرفة تانية» تحت.

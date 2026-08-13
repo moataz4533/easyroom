@@ -27,7 +27,8 @@ three, and different again on a corporate contract.
 
 ## Stack
 
-- Next.js 14 (App Router), no server of its own — the browser talks to Supabase
+- Next.js 16.2.11 + React 19 (App Router), pinned for reproducible builds
+- `next-intl` with Arabic `/ar` and English `/en` routes, RTL/LTR and per-user preference
 - Supabase: Postgres, Auth, RLS, Edge Functions
 - Deployed on Vercel
 
@@ -38,8 +39,9 @@ app/                  screens (today board, new booking, bookings, housekeeping,
 components/Shell.jsx  auth guard, role-based nav, clock, offline strip
 lib/supabase.js       client + helpers
 lib/offline.js        cache, write queue, sync
+messages/             Arabic and English interface dictionaries
 public/sw.js          service worker (app shell only, never API data)
-supabase/migrations/  schema, RLS, operations, pricing, edge cases
+supabase/migrations/  exact production history + additive bilingual/security hardening
 supabase/functions/   staff-admin (needs the service key, so it runs server-side)
 ```
 
@@ -49,6 +51,9 @@ supabase/functions/   staff-admin (needs the service key, so it runs server-side
 npm install
 npm run dev
 ```
+
+Use Node.js 22 LTS. Validation commands are `npm test`, `npm run lint`,
+`npm run test:e2e`, and `npm run build`.
 
 The Supabase URL and publishable key are in `lib/supabase.js`. The
 publishable key is meant to be public — all protection is in RLS. The

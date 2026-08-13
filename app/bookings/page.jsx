@@ -4,6 +4,7 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, dayLabel, nights } from "../../lib/supabase";
 import { useOffline } from "../../lib/offline";
 import PinPrompt from "../../components/PinPrompt";
+import { useLocale } from "next-intl";
 
 export default function Page() {
   return (
@@ -95,9 +96,9 @@ function Bookings() {
         style={{ marginBottom: 12 }}
       />
 
-      <div className="tabs">
+      <div className="tabs" role="tablist">
         {FILTERS.map(([k, label]) => (
-          <button key={k} className="tab" aria-selected={filter === k}
+          <button key={k} className="tab" role="tab" aria-selected={filter === k}
             onClick={() => setFilter(k)}>
             {label}
           </button>
@@ -143,6 +144,7 @@ const METHOD_LABEL = Object.fromEntries(METHODS);
 // Money is the part staff get asked about most, so it sits in the
 // booking itself rather than a separate screen.
 function PaymentsSection({ b, owed, online, onDone, onError }) {
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("cash");
@@ -168,7 +170,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
     setBusy(false);
     if (error) return onError(error.message);
 
-    onDone(refund ? `اتسجل استرداد ${egp(n)} ج` : `اتسجل ${egp(n)} ج`);
+    onDone(refund ? `اتسجل استرداد ${egp(n, locale)} ج` : `اتسجل ${egp(n, locale)} ج`);
   }
 
   return (
@@ -176,9 +178,9 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
       <div className="spread" style={{ marginBottom: 8 }}>
         <h2 style={{ fontSize: 14 }}>الدفعات</h2>
         {owed > 0 ? (
-          <span className="pill warn">متبقي {egp(owed)} ج</span>
+          <span className="pill warn">متبقي {egp(owed, locale)} ج</span>
         ) : owed < 0 ? (
-          <span className="pill bad">زيادة {egp(-owed)} ج</span>
+          <span className="pill bad">زيادة {egp(-owed, locale)} ج</span>
         ) : (
           <span className="pill ok">مدفوع بالكامل</span>
         )}
@@ -193,7 +195,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
                   {METHOD_LABEL[p.method] || p.method}
                 </span>
                 <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  {new Date(p.received_at).toLocaleString("ar-EG", {
+                  {new Date(p.received_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
                     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                   })}
                   {p.notes && ` · ${p.notes}`}
@@ -201,7 +203,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
               </div>
               <span className="mono" style={{ fontWeight: 600,
                 color: Number(p.amount) < 0 ? "var(--danger)" : "var(--ok)" }}>
-                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount))} ج
+                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount), locale)} ج
               </span>
             </div>
           ))}
@@ -274,6 +276,7 @@ function liveRooms(b) {
 }
 
 function BookingRow({ b, onOpen }) {
+  const locale = useLocale();
   const s = STATUS[b.status] || STATUS.confirmed;
   const live = liveRooms(b);
 
@@ -289,18 +292,19 @@ function BookingRow({ b, onOpen }) {
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
           <span className="code">{b.reference}</span>{" "}
-          {dayLabel(b.check_in)} ← {dayLabel(b.check_out)}
+          {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}
           {live.length > 0 && ` · غرفة ${live.map((a) => a.rooms?.number).join("، ")}`}
         </div>
       </div>
       <div className="mono" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
-        {egp(b.total_amount)} ج
+        {egp(b.total_amount, locale)} ج
       </div>
     </button>
   );
 }
 
 function BookingSheet({ b, role, online, onClose, onDone, onError }) {
+  const locale = useLocale();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
@@ -350,7 +354,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onError }) {
         <div className="card" style={{ background: "var(--paper)", marginBottom: 12 }}>
           <div className="spread">
             <span style={{ fontSize: 13 }}>
-              {dayLabel(b.check_in)} ← {dayLabel(b.check_out)}
+              {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}
             </span>
             <span style={{ fontSize: 13, color: "var(--muted)" }}>
               {nights(b.check_in, b.check_out)} ليلة · {b.adults} أفراد
@@ -358,10 +362,10 @@ function BookingSheet({ b, role, online, onClose, onDone, onError }) {
           </div>
           <div className="spread" style={{ marginTop: 8 }}>
             <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
-              {egp(b.total_amount)} ج
+              {egp(b.total_amount, locale)} ج
             </span>
             {owed > 0 ? (
-              <span className="pill warn">متبقي {egp(owed)} ج</span>
+              <span className="pill warn">متبقي {egp(owed, locale)} ج</span>
             ) : (
               <span className="pill ok">مدفوع</span>
             )}
@@ -395,7 +399,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onError }) {
                       {a.rooms?.number}
                     </span>
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                      {a.occupancy} أفراد · {dayLabel(a.starts_on)} ← {dayLabel(a.ends_on)}
+                      {a.occupancy} أفراد · {dayLabel(a.starts_on, locale)} ← {dayLabel(a.ends_on, locale)}
                     </div>
                   </div>
                   {canManage && isOpen && live.length > 1 && online && (

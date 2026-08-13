@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
+import { localePath, localizedName } from "../../lib/locale";
+import { useLocale } from "next-intl";
 
 export default function Page() {
   return (
@@ -16,6 +18,7 @@ export default function Page() {
 function NewBooking() {
   const { property } = useProperty();
   const router = useRouter();
+  const locale = useLocale();
   const [toast, showToast] = useToast();
 
   const [phone, setPhone] = useState("");
@@ -134,7 +137,7 @@ function NewBooking() {
     }
 
     showToast(`الحجز اتسجل — ${booking.reference}`);
-    setTimeout(() => router.push("/"), 900);
+    setTimeout(() => router.push(localePath("/", locale)), 900);
   }
 
   return (
@@ -225,7 +228,7 @@ function NewBooking() {
                   >
                     <div className="num">{r.room_number}</div>
                     <div className="band" style={{ background: on ? "var(--sea)" : undefined }} />
-                    <div className="who">{r.type_name}</div>
+                    <div className="who">{locale === "en" ? (r.type_name_en || r.type_name) : r.type_name}</div>
                     {on && (
                       <select
                         className="mono" style={{ marginTop: 6, padding: "4px 6px", fontSize: 13 }}
@@ -254,7 +257,7 @@ function NewBooking() {
           <div className="field">
             <label htmlFor="plan">جهة الحجز</label>
             <select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {plans.map((p) => <option key={p.id} value={p.id}>{localizedName(p, locale)}</option>)}
             </select>
           </div>
 
@@ -300,7 +303,7 @@ function NewBooking() {
               {Object.keys(picked).length} غرفة · {totalHeads} أفراد · {n} ليلة
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {quote !== null ? `${egp(quote)} ج` : "—"}
+              {quote !== null ? `${egp(quote, locale)} ج` : "—"}
             </div>
           </div>
         </div>

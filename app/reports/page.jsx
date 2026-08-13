@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, dayLabel } from "../../lib/supabase";
+import { useLocale } from "next-intl";
 
 export default function Page() {
   return (
@@ -37,6 +38,7 @@ function rangeDates(key) {
 
 function Reports() {
   const { property } = useProperty();
+  const locale = useLocale();
   const [range, setRange] = useState("30");
   const [[from, to], setDates] = useState(rangeDates("30"));
   const [summary, setSummary] = useState(null);
@@ -89,9 +91,9 @@ function Reports() {
         الإيراد محسوب بالليلة — الإقامة اللي على شهرين بتتقسم على الاتنين.
       </p>
 
-      <div className="tabs">
+      <div className="tabs" role="tablist">
         {RANGES.map(([k, label]) => (
-          <button key={k} className="tab" aria-selected={range === k}
+          <button key={k} className="tab" role="tab" aria-selected={range === k}
             onClick={() => setRange(k)}>
             {label}
           </button>
@@ -128,16 +130,18 @@ function Reports() {
           <section className="section">
             <div className="kpis">
               <Kpi label="نسبة الإشغال" value={`${summary.occupancy_pct}%`} big
-                sub={`${summary.nights_sold} من ${summary.nights_available} ليلة`} />
-              <Kpi label="إيراد الغرف" value={`${egp(summary.room_revenue)} ج`} big />
-              <Kpi label="متوسط سعر الليلة" value={`${egp(summary.adr)} ج`}
+                sub={locale === "en"
+                  ? `${summary.nights_sold} of ${summary.nights_available} nights`
+                  : `${summary.nights_sold} من ${summary.nights_available} ليلة`} />
+              <Kpi label="إيراد الغرف" value={`${egp(summary.room_revenue, locale)} ج`} big />
+              <Kpi label="متوسط سعر الليلة" value={`${egp(summary.adr, locale)} ج`}
                 sub="للليلة المباعة" />
-              <Kpi label="إيراد الغرفة المتاحة" value={`${egp(summary.revpar)} ج`}
+              <Kpi label="إيراد الغرفة المتاحة" value={`${egp(summary.revpar, locale)} ج`}
                 sub="مقياس الأداء الحقيقي" />
               <Kpi label="حجوزات" value={summary.bookings_made} />
               <Kpi label="ليالي ضيوف" value={summary.guests_hosted} />
-              <Kpi label="محصّل" value={`${egp(summary.collected)} ج`} tone="ok" />
-              <Kpi label="متبقي" value={`${egp(summary.outstanding)} ج`}
+              <Kpi label="محصّل" value={`${egp(summary.collected, locale)} ج`} tone="ok" />
+              <Kpi label="متبقي" value={`${egp(summary.outstanding, locale)} ج`}
                 tone={Number(summary.outstanding) > 0 ? "warn" : null} />
             </div>
           </section>
@@ -167,7 +171,7 @@ function Reports() {
                       </div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600 }}>
-                      {egp(m.total)} ج
+                      {egp(m.total, locale)} ج
                     </span>
                   </div>
                 ))}
@@ -190,7 +194,7 @@ function Reports() {
                       </div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600 }}>
-                      {egp(s.revenue)} ج
+                      {egp(s.revenue, locale)} ج
                     </span>
                   </div>
                 ))}
@@ -210,12 +214,12 @@ function Reports() {
                       <div style={{ fontWeight: 600 }}>{o.guest_name}</div>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
                         <span className="code">{o.reference}</span>{" "}
-                        {dayLabel(o.check_in)} ← {dayLabel(o.check_out)}
+                        {dayLabel(o.check_in, locale)} ← {dayLabel(o.check_out, locale)}
                       </div>
                     </div>
                     <div style={{ textAlign: "end" }}>
                       <div className="mono" style={{ fontWeight: 600, color: "var(--sand)" }}>
-                        {egp(o.owed)} ج
+                        {egp(o.owed, locale)} ج
                       </div>
                       {o.guest_phone && (
                         <a className="btn sm" style={{ marginTop: 4 }}
@@ -243,7 +247,7 @@ function Reports() {
                           {c.status === "no_show" ? "لم يحضر" : "ملغي"} · بواسطة {c.cancelled_by}
                         </div>
                       </div>
-                      <span className="mono" style={{ fontSize: 13 }}>{egp(c.amount)} ج</span>
+                      <span className="mono" style={{ fontSize: 13 }}>{egp(c.amount, locale)} ج</span>
                     </div>
                     {c.reason && (
                       <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>

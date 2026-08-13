@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast, roleLabel } from "../../components/Shell";
+import PinPrompt from "../../components/PinPrompt";
 import { supabase, egp } from "../../lib/supabase";
+import { Dialog } from "../../components/ui";
+import { localizedName } from "../../lib/locale";
+import { useLocale } from "next-intl";
+import { ImagePlus, Trash2, Upload } from "lucide-react";
+import { isStaffUsername, normalizeStaffUsername } from "../../lib/auth-login";
 
 export default function Page() {
   return (
@@ -23,6 +29,7 @@ const TABS = [
 
 function Settings() {
   const { property } = useProperty();
+  const locale = useLocale();
   const [tab, setTab] = useState("rates");
   const [toast, showToast] = useToast();
 
@@ -40,7 +47,7 @@ function Settings() {
       supabase.from("room_types").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rate_plans").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rates").select("*").eq("property_id", property.id).is("valid_from", null),
-      supabase.from("rooms").select("*, room_types(name)").eq("property_id", property.id),
+      supabase.from("rooms").select("*, room_types(name, name_en)").eq("property_id", property.id),
       supabase.from("property_members").select("*, profiles(full_name, phone)")
         .eq("property_id", property.id),
     ]);
@@ -60,16 +67,16 @@ function Settings() {
 
   if (loading) return <div className="empty">بيحمّل…</div>;
 
-  const shared = { property, types, plans, rates, rooms, staff, reload: load, showToast };
+  const shared = { property, types, plans, rates, rooms, staff, reload: load, showToast, locale };
 
   return (
     <>
       <Toast {...(toast || {})} />
       <h2 style={{ marginBottom: 10 }}>الإعدادات</h2>
 
-      <div className="tabs">
+      <div className="tabs" role="tablist">
         {TABS.map(([k, label]) => (
-          <button key={k} className="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
+          <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
             {label}
           </button>
         ))}
@@ -85,7 +92,7 @@ function Settings() {
 }
 
 /* ------------------------------------------------------------------ */
-function Rates({ property, types, plans, rates, reload, showToast }) {
+function Rates({ property, types, plans, rates, reload, showToast, locale }) {
   const [active, setActive] = useState(types[0]?.id);
   const [draft, setDraft] = useState(rates);
   const [saving, setSaving] = useState(false);
@@ -134,12 +141,12 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
         سعر الليلة للغرفة كاملة. الخانة الفاضية معناها إن التركيبة دي مش للبيع.
       </p>
 
-      <div className="tabs">
+      <div className="tabs" role="tablist">
         {types.map((x, i) => (
-          <button key={x.id} className="tab" aria-selected={active === x.id}
+          <button key={x.id} className="tab" role="tab" aria-selected={active === x.id}
             onClick={() => setActive(x.id)}>
             <span className="dot" style={{ background: BANDS[i % BANDS.length] }} />
-            {x.name}
+            {localizedName(x, locale)}
           </button>
         ))}
       </div>
@@ -150,7 +157,7 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
             <thead>
               <tr>
                 <th>عدد الأفراد</th>
-                {plans.map((p) => <th key={p.id}>{p.name}</th>)}
+                {plans.map((p) => <th key={p.id}>{localizedName(p, locale)}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -161,7 +168,7 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
                     <td key={p.id}>
                       <input
                         type="number" min="0" placeholder="—"
-                        aria-label={`${OCC[o]} · ${p.name}`}
+                        aria-label={`${OCC[o]} · ${localizedName(p, locale)}`}
                         value={draft[key(t.id, p.id, o)] ?? ""}
                         onChange={(e) => setDraft((d) => ({
                           ...d, [key(t.id, p.id, o)]: e.target.value === "" ? "" : Number(e.target.value),
@@ -200,10 +207,13 @@ function Rates({ property, types, plans, rates, reload, showToast }) {
 }
 
 /* ------------------------------------------------------------------ */
-function Rooms({ property, types, rooms, reload, showToast }) {
+function Rooms({ property, types, rooms, reload, showToast, locale }) {
   const [newRoom, setNewRoom] = useState("");
   const [newType, setNewType] = useState("");
   const [typeName, setTypeName] = useState("");
+  const [typeNameEn, setTypeNameEn] = useState("");
+  const [typeDescription, setTypeDescription] = useState("");
+  const [typeDescriptionEn, setTypeDescriptionEn] = useState("");
   const [typeCode, setTypeCode] = useState("");
   const [typeMax, setTypeMax] = useState(2);
 
@@ -213,12 +223,15 @@ function Rooms({ property, types, rooms, reload, showToast }) {
       property_id: property.id,
       code: typeCode.trim().toUpperCase(),
       name: typeName.trim(),
+      name_en: typeNameEn.trim() || null,
+      description: typeDescription.trim() || null,
+      description_en: typeDescriptionEn.trim() || null,
       max_occupancy: Number(typeMax),
       base_occupancy: Math.min(2, Number(typeMax)),
       sort_order: types.length + 1,
     });
     if (error) return showToast(error.message, true);
-    setTypeName(""); setTypeCode(""); setTypeMax(2);
+    setTypeName(""); setTypeNameEn(""); setTypeDescription(""); setTypeDescriptionEn(""); setTypeCode(""); setTypeMax(2);
     showToast("النوع اتضاف"); reload();
   }
 
@@ -233,7 +246,9 @@ function Rooms({ property, types, rooms, reload, showToast }) {
   }
 
   async function setRoomType(roomId, typeId) {
-    const { error } = await supabase.from("rooms").update({ room_type_id: typeId }).eq("id", roomId);
+    const { error } = await supabase.rpc("update_room_admin", {
+      p_room: roomId, p_room_type: typeId,
+    });
     if (error) return showToast(error.message, true);
     reload();
   }
@@ -250,7 +265,7 @@ function Rooms({ property, types, rooms, reload, showToast }) {
                 <div style={{ fontWeight: 600 }}>
                   <span className="dot" style={{ background: BANDS[i % BANDS.length],
                     display: "inline-block", marginInlineEnd: 6 }} />
-                  {t.name} <span className="code">{t.code}</span>
+                  {localizedName(t, locale)} <span className="code">{t.code}</span>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
                   {rooms.filter((r) => r.room_type_id === t.id).length} غرفة · لحد {t.max_occupancy} أفراد
@@ -265,6 +280,13 @@ function Rooms({ property, types, rooms, reload, showToast }) {
             <div className="field grow"><label>الاسم</label>
               <input value={typeName} placeholder="غرفة بحرية"
                 onChange={(e) => setTypeName(e.target.value)} /></div>
+            <div className="field grow"><label>الاسم بالإنجليزية</label>
+              <input value={typeNameEn} placeholder="Sea View Room" dir="ltr"
+                onChange={(e) => setTypeNameEn(e.target.value)} /></div>
+            <div className="field grow"><label>الوصف</label>
+              <input value={typeDescription} onChange={(e) => setTypeDescription(e.target.value)} /></div>
+            <div className="field grow"><label>الوصف بالإنجليزية</label>
+              <input value={typeDescriptionEn} dir="ltr" onChange={(e) => setTypeDescriptionEn(e.target.value)} /></div>
             <div className="field" style={{ width: 100 }}><label>الكود</label>
               <input className="mono" value={typeCode} placeholder="SEA"
                 onChange={(e) => setTypeCode(e.target.value)} /></div>
@@ -284,7 +306,7 @@ function Rooms({ property, types, rooms, reload, showToast }) {
               <span className="mono" style={{ fontSize: 20, fontWeight: 600 }}>{r.number}</span>
               <select style={{ maxWidth: 200 }} value={r.room_type_id}
                 onChange={(e) => setRoomType(r.id, e.target.value)}>
-                {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {types.map((t) => <option key={t.id} value={t.id}>{localizedName(t, locale)}</option>)}
               </select>
             </div>
           ))}
@@ -296,7 +318,7 @@ function Rooms({ property, types, rooms, reload, showToast }) {
               onChange={(e) => setNewRoom(e.target.value)} /></div>
           <div className="field grow"><label>النوع</label>
             <select value={newType || types[0]?.id || ""} onChange={(e) => setNewType(e.target.value)}>
-              {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {types.map((t) => <option key={t.id} value={t.id}>{localizedName(t, locale)}</option>)}
             </select></div>
           <button className="btn" style={{ alignSelf: "flex-end" }} onClick={addRoom}>إضافة</button>
         </div>
@@ -309,8 +331,11 @@ function Rooms({ property, types, rooms, reload, showToast }) {
 function Staff({ property, staff, reload, showToast }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [resetMember, setResetMember] = useState(null);
+  const [resetValue, setResetValue] = useState("");
+  const [resetAgain, setResetAgain] = useState("");
   const [form, setForm] = useState({
-    full_name: "", email: "", phone: "", password: "", role: "reception",
+    full_name: "", username: "", phone: "", password: "", password_again: "", role: "reception",
   });
 
   // Staff admin runs server-side: creating a login needs a secret key that
@@ -332,18 +357,26 @@ function Staff({ property, staff, reload, showToast }) {
   }
 
   async function create() {
-    if (!form.email.trim() || !form.full_name.trim()) {
-      return showToast("محتاج الاسم والإيميل", true);
+    if (!form.full_name.trim() || !isStaffUsername(form.username)) {
+      return showToast("محتاج الاسم واسم مستخدم إنجليزي بسيط من 3 حروف على الأقل", true);
     }
     if (form.password.length < 8) return showToast("الباسورد لازم 8 حروف على الأقل", true);
+    if (form.password !== form.password_again) return showToast("الباسوردين مش متطابقين", true);
 
     setBusy(true);
-    const out = await call({ action: "create", ...form, email: form.email.trim() });
+    const out = await call({
+      action: "create",
+      full_name: form.full_name,
+      username: normalizeStaffUsername(form.username),
+      phone: form.phone,
+      password: form.password,
+      role: form.role,
+    });
     setBusy(false);
 
     if (out.error) return showToast(out.error, true);
-    showToast(`${form.full_name} اتضاف. اديله الإيميل والباسورد.`);
-    setForm({ full_name: "", email: "", phone: "", password: "", role: "reception" });
+    showToast(`${form.full_name} اتضاف. اديله اسم المستخدم والباسورد.`);
+    setForm({ full_name: "", username: "", phone: "", password: "", password_again: "", role: "reception" });
     setOpen(false);
     reload();
   }
@@ -362,12 +395,15 @@ function Staff({ property, staff, reload, showToast }) {
     reload();
   }
 
-  async function resetPassword(m) {
-    const pw = prompt(`باسورد جديد لـ ${m.profiles?.full_name || "الموظف"} (8 حروف على الأقل):`);
-    if (!pw) return;
-    const out = await call({ action: "reset_password", member_id: m.id, password: pw });
+  async function resetPassword() {
+    if (resetValue.length < 8) return showToast("الباسورد لازم 8 حروف على الأقل", true);
+    if (resetValue !== resetAgain) return showToast("الباسوردين مش متطابقين", true);
+    setBusy(true);
+    const out = await call({ action: "reset_password", member_id: resetMember.id, password: resetValue });
+    setBusy(false);
     if (out.error) return showToast(out.error, true);
     showToast("الباسورد اتغير. اديله الجديد.");
+    setResetMember(null); setResetValue(""); setResetAgain("");
   }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -392,6 +428,7 @@ function Staff({ property, staff, reload, showToast }) {
                     {m.profiles.phone}
                   </div>
                 )}
+                {m.login_username && <div className="staff-username mono">@{m.login_username}</div>}
               </div>
               <select
                 style={{ width: "auto", minWidth: 120 }}
@@ -405,7 +442,7 @@ function Staff({ property, staff, reload, showToast }) {
               </select>
             </div>
             <div className="row" style={{ marginTop: 10 }}>
-              <button className="btn sm" onClick={() => resetPassword(m)}>غيّر الباسورد</button>
+              <button className="btn sm" onClick={() => { setResetMember(m); setResetValue(""); setResetAgain(""); }}>غيّر الباسورد</button>
               <button className="btn sm danger" onClick={() => toggle(m)}>
                 {m.is_active ? "إيقاف الحساب" : "تفعيل الحساب"}
               </button>
@@ -423,25 +460,28 @@ function Staff({ property, staff, reload, showToast }) {
           <h2 style={{ fontSize: 14 }}>موظف جديد</h2>
           <div className="field"><label>الاسم</label>
             <input value={form.full_name} onChange={set("full_name")} placeholder="أحمد محمود" /></div>
-          <div className="field"><label>الإيميل (ده اللي هيدخل بيه)</label>
-            <input type="email" dir="ltr" style={{ textAlign: "left" }}
-              value={form.email} onChange={set("email")} /></div>
+          <div className="field"><label>اسم المستخدم (ده اللي هيدخل بيه)</label>
+            <input dir="ltr" className="mono" style={{ textAlign: "left" }} autoComplete="off"
+              value={form.username} onChange={set("username")} placeholder="ahmed" /></div>
+          <p className="field-hint">3 حروف إنجليزية أو أرقام على الأقل، من غير مسافات. مثال: ahmed أو reception1</p>
           <div className="field"><label>رقم الموبايل</label>
             <input className="mono" dir="ltr" style={{ textAlign: "left" }}
               value={form.phone} onChange={set("phone")} /></div>
           <div className="field"><label>الباسورد المبدئي</label>
-            <input dir="ltr" style={{ textAlign: "left" }} value={form.password}
+            <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password}
               onChange={set("password")} placeholder="8 حروف على الأقل" /></div>
+          <div className="field"><label>تأكيد الباسورد</label>
+            <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password_again}
+              onChange={set("password_again")} placeholder="اكتب نفس الباسورد تاني" /></div>
           <div className="field"><label>الدور</label>
             <select value={form.role} onChange={set("role")}>
               <option value="reception">ريسبشن — يحجز ويسكّن ويقبض</option>
               <option value="housekeeping">هاوس كيبينج — النضافة بس</option>
               <option value="manager">مدير — كل حاجة والأسعار</option>
-              <option value="owner">مالك — كل حاجة</option>
             </select></div>
 
           <div className="banner warn" style={{ margin: 0 }}>
-            اكتب الباسورد وسلّمه للموظف بنفسك. هو يقدر يغيّره بعدين.
+            الموظف هيدخل باسم المستخدم والباسورد فقط، من غير إيميل. سلّمه الاتنين بنفسك.
           </div>
 
           <button className="btn primary wide" disabled={busy} onClick={create}>
@@ -450,6 +490,25 @@ function Staff({ property, staff, reload, showToast }) {
           <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
         </div>
       )}
+      <Dialog
+        open={!!resetMember}
+        title={`باسورد جديد لـ ${resetMember?.profiles?.full_name || "الموظف"}`}
+        description="اكتب 8 حروف على الأقل، ثم سلّم الباسورد للموظف بطريقة آمنة."
+        onClose={() => { setResetMember(null); setResetValue(""); setResetAgain(""); }}
+      >
+        <div className="stack">
+          <label className="field"><span>الباسورد الجديد</span>
+            <input type="password" autoComplete="new-password" dir="ltr" value={resetValue} onChange={(e) => setResetValue(e.target.value)} />
+          </label>
+          <label className="field"><span>تأكيد الباسورد الجديد</span>
+            <input type="password" autoComplete="new-password" dir="ltr" value={resetAgain} onChange={(e) => setResetAgain(e.target.value)} />
+          </label>
+          <div className="row">
+            <button className="btn primary grow" disabled={busy || resetValue.length < 8 || resetAgain.length < 8} onClick={resetPassword}>{busy ? "بيتنفذ…" : "غيّر الباسورد"}</button>
+            <button className="btn" onClick={() => { setResetMember(null); setResetAgain(""); }}>إلغاء</button>
+          </div>
+        </div>
+      </Dialog>
     </>
   );
 }
@@ -460,6 +519,7 @@ function Security({ property, showToast }) {
   const [again, setAgain] = useState("");
   const [busy, setBusy] = useState(false);
   const [isSet, setIsSet] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     supabase.rpc("has_action_pin", { p_property: property.id })
@@ -482,10 +542,10 @@ function Security({ property, showToast }) {
   }
 
   async function clear() {
-    if (!confirm("تشيل الباسورد؟ الإلغاء هيرجع من غير تأكيد.")) return;
     const { error } = await supabase.rpc("clear_action_pin", { p_property: property.id });
     if (error) return showToast(error.message, true);
     setIsSet(false);
+    setConfirmClear(false);
     showToast("الباسورد اتشال");
   }
 
@@ -521,7 +581,7 @@ function Security({ property, showToast }) {
         </button>
 
         {isSet && (
-          <button className="btn wide danger" onClick={clear}>شيل الباسورد</button>
+          <button className="btn wide danger" onClick={() => setConfirmClear(true)}>شيل الباسورد</button>
         )}
       </div>
 
@@ -529,14 +589,31 @@ function Security({ property, showToast }) {
         الباسورد متخزّن مشفّر — مش أنا ولا أي حد يقدر يقراه، فلو نسيته
         هتعمل واحد جديد من هنا. وبعد 5 محاولات غلط بيتقفل ربع ساعة.
       </div>
+      <Dialog open={confirmClear} danger title="إزالة باسورد التأكيد؟" description="بعد الإزالة، إجراءات الإلغاء والـ no-show لن تطلب تأكيدًا إضافيًا." onClose={() => setConfirmClear(false)}>
+        <div className="row">
+          <button className="btn danger grow" onClick={clear}>نعم، شيل الباسورد</button>
+          <button className="btn" onClick={() => setConfirmClear(false)}>رجوع</button>
+        </div>
+      </Dialog>
     </>
   );
 }
 
 /* ------------------------------------------------------------------ */
-function PropertyInfo({ property, reload, showToast }) {
+const LOGO_BUCKET = "property-branding";
+const LOGO_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+const MAX_LOGO_SIZE = 5 * 1024 * 1024;
+
+function storedLogoPath(url) {
+  const marker = `/storage/v1/object/public/${LOGO_BUCKET}/`;
+  if (!url?.includes(marker)) return null;
+  return decodeURIComponent(url.split(marker)[1].split("?")[0]);
+}
+
+function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
   const [form, setForm] = useState({
     name: property.name || "",
+    name_en: property.name_en || "",
     logo_url: property.logo_url || "",
     primary_color: property.primary_color || "#0B3A46",
     whatsapp: property.settings?.whatsapp_number || "",
@@ -544,12 +621,82 @@ function PropertyInfo({ property, reload, showToast }) {
     policy: property.settings?.cancellation_policy || "",
   });
   const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState(property.logo_url || "/easyroom-logo.png");
+
+  const labels = locale === "en" ? {
+    logo: "Hotel logo",
+    logoHint: "PNG, JPG or WebP — up to 5MB.",
+    choose: "Choose image",
+    remove: "Remove image",
+    alt: "Hotel logo preview",
+    invalidType: "Choose a PNG, JPG or WebP image.",
+    tooLarge: "The image must be 5MB or smaller.",
+    saving: "Uploading and saving…",
+  } : {
+    logo: "لوجو الفندق",
+    logoHint: "PNG أو JPG أو WebP — بحد أقصى 5 ميجا.",
+    choose: "اختيار صورة",
+    remove: "حذف الصورة",
+    alt: "معاينة لوجو الفندق",
+    invalidType: "اختار صورة PNG أو JPG أو WebP.",
+    tooLarge: "حجم الصورة لازم يكون 5 ميجا أو أقل.",
+    saving: "بيرفع ويحفظ…",
+  };
+
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview(removeLogo ? "/easyroom-logo.png" : form.logo_url || "/easyroom-logo.png");
+      return undefined;
+    }
+    const objectUrl = URL.createObjectURL(logoFile);
+    setLogoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [form.logo_url, logoFile, removeLogo]);
+
+  function chooseLogo(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!LOGO_TYPES[file.type]) {
+      event.target.value = "";
+      showToast(labels.invalidType, true);
+      return;
+    }
+    if (file.size > MAX_LOGO_SIZE) {
+      event.target.value = "";
+      showToast(labels.tooLarge, true);
+      return;
+    }
+    setLogoFile(file);
+    setRemoveLogo(false);
+  }
 
   async function save() {
     setSaving(true);
+    let uploadedPath = null;
+    let nextLogoUrl = removeLogo ? null : form.logo_url || null;
+
+    if (logoFile) {
+      const extension = LOGO_TYPES[logoFile.type];
+      uploadedPath = `${property.id}/logo-${Date.now()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from(LOGO_BUCKET).upload(uploadedPath, logoFile, {
+        cacheControl: "3600",
+        contentType: logoFile.type,
+        upsert: false,
+      });
+      if (uploadError) {
+        setSaving(false);
+        showToast(uploadError.message, true);
+        return;
+      }
+      nextLogoUrl = supabase.storage.from(LOGO_BUCKET).getPublicUrl(uploadedPath).data.publicUrl;
+    }
+
     const { error } = await supabase.from("properties").update({
       name: form.name,
-      logo_url: form.logo_url || null,
+      name_en: form.name_en || null,
+      logo_url: nextLogoUrl,
       primary_color: form.primary_color,
       settings: {
         ...property.settings,
@@ -559,7 +706,17 @@ function PropertyInfo({ property, reload, showToast }) {
       },
     }).eq("id", property.id);
     setSaving(false);
-    if (error) return showToast(error.message, true);
+    if (error) {
+      if (uploadedPath) await supabase.storage.from(LOGO_BUCKET).remove([uploadedPath]);
+      return showToast(error.message, true);
+    }
+    const previousPath = storedLogoPath(property.logo_url);
+    if (previousPath && previousPath !== uploadedPath && (uploadedPath || removeLogo)) {
+      await supabase.storage.from(LOGO_BUCKET).remove([previousPath]);
+    }
+    setForm((current) => ({ ...current, logo_url: nextLogoUrl || "" }));
+    setLogoFile(null);
+    setRemoveLogo(false);
     showToast("اتحفظ");
     reload();
   }
@@ -567,12 +724,30 @@ function PropertyInfo({ property, reload, showToast }) {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
+    <>
     <div className="card stack">
       <div className="field"><label>اسم النادي</label>
         <input value={form.name} onChange={set("name")} /></div>
-      <div className="field"><label>رابط اللوجو</label>
-        <input dir="ltr" style={{ textAlign: "left" }} value={form.logo_url}
-          placeholder="https://…" onChange={set("logo_url")} /></div>
+      <div className="field"><label>اسم الفندق بالإنجليزية</label>
+        <input value={form.name_en} dir="ltr" onChange={set("name_en")} /></div>
+      <div className="field">
+        <label>{labels.logo}</label>
+        <div className="logo-upload-card">
+          <div className="logo-preview"><img src={logoPreview} alt={labels.alt} />{/* eslint-disable-line @next/next/no-img-element */}</div>
+          <div className="logo-upload-copy">
+            <strong>{labels.logo}</strong>
+            <span>{logoFile?.name || labels.logoHint}</span>
+            <div className="row">
+              <label className="btn sm logo-file-button" htmlFor="property-logo-input"><Upload size={16} />{labels.choose}</label>
+              <input id="property-logo-input" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" onChange={chooseLogo} />
+              <button className="btn sm danger" type="button" onClick={() => { setLogoFile(null); setRemoveLogo(true); }} disabled={!property.logo_url && !logoFile}>
+                <Trash2 size={16} />{labels.remove}
+              </button>
+            </div>
+          </div>
+          <ImagePlus className="logo-upload-icon" size={20} aria-hidden="true" />
+        </div>
+      </div>
       <div className="field"><label>لون النادي</label>
         <input type="color" value={form.primary_color} onChange={set("primary_color")}
           style={{ height: 44, padding: 4 }} /></div>
@@ -584,8 +759,57 @@ function PropertyInfo({ property, reload, showToast }) {
       <div className="field"><label>سياسة الإلغاء</label>
         <input value={form.policy} onChange={set("policy")} /></div>
       <button className="btn primary wide" disabled={saving} onClick={save}>
-        {saving ? "بيحفظ…" : "حفظ"}
+        {saving ? labels.saving : "حفظ"}
       </button>
     </div>
+    <ManagedTranslations types={types} plans={plans} reload={reload} showToast={showToast} />
+    </>
+  );
+}
+
+function ManagedTranslations({ types, plans, reload, showToast }) {
+  const [draft, setDraft] = useState(() => ({
+    types: Object.fromEntries(types.map((item) => [item.id, { name_en: item.name_en || "", description_en: item.description_en || "" }])),
+    plans: Object.fromEntries(plans.map((item) => [item.id, { name_en: item.name_en || "", description_en: item.description_en || "" }])),
+  }));
+  const [saving, setSaving] = useState(false);
+
+  function change(group, id, field, value) {
+    setDraft((current) => ({ ...current, [group]: { ...current[group], [id]: { ...current[group][id], [field]: value } } }));
+  }
+
+  async function save() {
+    setSaving(true);
+    const updates = [
+      ...types.map((item) => supabase.from("room_types").update({ name_en: draft.types[item.id].name_en || null, description_en: draft.types[item.id].description_en || null }).eq("id", item.id)),
+      ...plans.map((item) => supabase.from("rate_plans").update({ name_en: draft.plans[item.id].name_en || null, description_en: draft.plans[item.id].description_en || null }).eq("id", item.id)),
+    ];
+    const results = await Promise.all(updates);
+    setSaving(false);
+    const failed = results.find((result) => result.error);
+    if (failed) return showToast(failed.error.message, true);
+    showToast("الترجمات الإنجليزية اتحفظت"); reload();
+  }
+
+  return (
+    <section className="section" style={{ marginTop: 18 }}>
+      <h2>المحتوى الإنجليزي</h2>
+      <p className="section-note">الخانة الفارغة تعرض الاسم أو الوصف العربي تلقائيًا.</p>
+      <div className="stack">
+        {[{ key: "types", label: "أنواع الغرف", rows: types }, { key: "plans", label: "جهات الحجز", rows: plans }].map((group) => (
+          <div className="card stack" key={group.key}>
+            <strong>{group.label}</strong>
+            {group.rows.map((item) => (
+              <div className="card stack" key={item.id} style={{ background: "var(--surface-2)" }}>
+                <span>{item.name}</span>
+                <label className="field"><span>الاسم بالإنجليزية</span><input dir="ltr" value={draft[group.key][item.id].name_en} onChange={(e) => change(group.key, item.id, "name_en", e.target.value)} /></label>
+                <label className="field"><span>الوصف بالإنجليزية</span><input dir="ltr" value={draft[group.key][item.id].description_en} onChange={(e) => change(group.key, item.id, "description_en", e.target.value)} /></label>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <button className="btn primary wide" style={{ marginTop: 12 }} disabled={saving} onClick={save}>{saving ? "بيحفظ…" : "حفظ المحتوى الإنجليزي"}</button>
+    </section>
   );
 }

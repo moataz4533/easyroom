@@ -1,0 +1,71 @@
+{
+  "Common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "back": "Back",
+    "save": "Save",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "language": "عربي",
+    "logout": "Log out",
+    "more": "More"
+  },
+  "Nav": {
+    "today": "Today",
+    "newBooking": "New booking",
+    "bookingShort": "Book",
+    "bookings": "Bookings",
+    "housekeeping": "Housekeeping",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "Auth": {
+    "title": "Sign in",
+    "subtitle": "Open your hotel workspace and manage the day.",
+    "heroTitle": "Hotel management, made simple.",
+    "heroBody": "Rooms, bookings and housekeeping in one place.",
+    "loginMethod": "Sign-in method",
+    "staffLogin": "Staff login",
+    "ownerLogin": "Owner login",
+    "username": "Username",
+    "usernameInvalid": "Use 3–32 English letters or numbers. Dots and dashes are also allowed.",
+    "sessionSaved": "You’ll stay signed in on this device until you log out.",
+    "email": "Email address",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "help": "Managers create staff accounts in Settings. Contact your manager if you do not have your login details.",
+    "invalidOwner": "The email address or password is incorrect. Try again.",
+    "invalidStaff": "The username or password is incorrect. Check the details provided by the owner.",
+    "unconfirmed": "This account still needs email confirmation."
+  },
+  "Shell": {
+    "loading": "One moment…",
+    "noHotel": "This account is not linked to a hotel",
+    "noHotelBody": "The account works, but it has not been granted access to a hotel yet. Ask a manager to add it from Settings.",
+    "forbidden": "This page is not available to your role ({role}).",
+    "goHome": "Go to the home page",
+    "offline": "No connection — showing the latest saved copy.",
+    "pending": "{count} actions are waiting to be sent.",
+    "syncing": "Sending…",
+    "syncNow": "Send now",
+    "connected": "Connected"
+  },
+  "Roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "reception": "Reception",
+    "housekeeping": "Housekeeping",
+    "unknown": "—"
+  },
+  "Dashboard": {
+    "title": "Today overview",
+    "occupied": "Occupied rooms",
+    "departures": "Departures today",
+    "dirty": "Needs cleaning",
+    "arrivals": "Arrivals today",
+    "rooms": "Room status",
+    "roomHint": "Select a room to view details and actions.",
+    "checkIn": "Check in"
+  }
+}
