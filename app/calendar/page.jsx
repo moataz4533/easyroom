@@ -8,7 +8,7 @@ import {
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, today, addDays, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName } from "../../lib/locale";
-import { formatNumber } from "../../lib/format";
+import { countNights, formatNumber } from "../../lib/format";
 import { loadCached } from "../../lib/offline";
 import {
   DEFAULT_WINDOW, WINDOW_LENGTHS, buildWindow, isWeekend,
@@ -56,9 +56,11 @@ function Calendar() {
         supabase.from("room_allocations")
           .select(`
             id, room_id, booking_id, kind, starts_on, ends_on, occupancy, notes,
+            rooms!inner(is_active),
             bookings(reference, status, source, guests(full_name, phone))
           `)
           .eq("property_id", property.id)
+          .eq("rooms.is_active", true)
           .is("released_at", null)
           .lt("starts_on", to)
           .gt("ends_on", from)),
@@ -241,7 +243,7 @@ function RoomRow({ room, row, days, segments, locale, onOpen, t }) {
 
 function StaySheet({ segment, locale, t, common, onClose }) {
   const guest = segment.bookings?.guests;
-  const nightCount = Math.max(1, segment.span);
+  const nightCount = countNights(segment.starts_on, segment.ends_on);
   return (
     <div className="dialog-backdrop" onClick={onClose} role="presentation">
       <div className="dialog-panel" onClick={(event) => event.stopPropagation()}>

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { countNights } from "../lib/format";
 import {
   buildWindow, clipAllocation, isWeekend, movementsByDay,
   occupancyByDay, segmentsByRoom, windowRange,
@@ -59,6 +60,15 @@ describe("placing a stay on the grid", () => {
     expect(segment.offset).toBe(0);
     expect(segment.span).toBe(7);
     expect(segment.continuesBefore && segment.continuesAfter).toBe(true);
+  });
+
+  it("gives a display width, which is not the night count", () => {
+    // The trap: span is clipped to what is visible, so using it as "how many
+    // nights" mislabels any stay that runs past the edge of the window.
+    const long = stay({ starts_on: "2026-08-05", ends_on: "2026-08-20" });
+    const segment = clipAllocation(long, days);
+    expect(segment.span).toBe(7);                              // what is drawn
+    expect(countNights(long.starts_on, long.ends_on)).toBe(15); // what was sold
   });
 
   it("drops stays that never touch the window", () => {

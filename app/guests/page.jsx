@@ -19,6 +19,8 @@ export default function Page() {
   );
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 function monthStart(iso) {
   return `${iso.slice(0, 7)}-01`;
 }
@@ -40,7 +42,10 @@ function Guests() {
   const [tab, setTab] = useState("record");
 
   const load = useCallback(async () => {
-    if (!property) return;
+    // A cleared date box reads as "", which is not a date. Without this the
+    // range maths throws inside an async call and the screen stays on its
+    // loading placeholder with no error anywhere.
+    if (!property || !ISO_DATE.test(from) || !ISO_DATE.test(to)) return;
     setLoading(true);
 
     // Anyone who slept here in the period, which is what the record is
