@@ -69,7 +69,8 @@ a { color: inherit; }
 .mobile-brand { display: none; margin-inline-end: auto; }
 .topbar-actions { display: flex; gap: 7px; }
 .icon-button { min-width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; }
-.icon-button:hover { border-color: var(--sea); color: var(--sea); }
+.icon-button { transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.icon-button:hover { color: var(--deep); background: var(--surface-2); border-color: var(--line-strong); }
 .language-button { padding-inline: 12px; font-size: 13px; font-weight: 600; }
 .clock { display: grid; text-align: end; line-height: 1.2; white-space: nowrap; }
 .clock-time { font-size: 14px; font-weight: 600; }
@@ -94,16 +95,31 @@ input, select, textarea { width: 100%; min-height: 44px; border: 1px solid var(-
 textarea { min-height: 94px; resize: vertical; }
 input::placeholder, textarea::placeholder { color: #91a2a5; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgba(30,101,120,.22); outline-offset: 2px; }
-.btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 9px 15px; background: var(--surface); color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .12s ease, border-color .12s ease, background .12s ease; }
-.btn:hover { border-color: var(--sea); transform: translateY(-1px); }
-.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.btn.primary { color: #fff; background: var(--deep); border-color: var(--deep); }
+/* Buttons: quiet by default, obvious when they matter. Colour and a pressed
+   state carry the feedback — nothing moves, because a row of controls that
+   jumps under a fast thumb is harder to hit, not friendlier. */
+.btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 11px; padding: 10px 16px; background: var(--surface); color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+.btn svg { flex: none; }
+.btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.btn:active { background: #eaf0f0; }
+.btn:disabled { color: #78898c; background: var(--surface-2); border-color: var(--line); cursor: not-allowed; }
+
+.btn.primary { color: #fff; background: var(--deep); border-color: var(--deep); box-shadow: 0 1px 2px rgba(8,47,57,.18); }
 .btn.primary:hover { background: var(--sea); border-color: var(--sea); }
-.btn.ghost { border-style: dashed; color: var(--muted); background: transparent; }
-.btn.sm { min-height: 38px; padding: 7px 11px; font-size: 13px; }
-.btn.wide { width: 100%; }
+.btn.primary:active { background: var(--deep-2); border-color: var(--deep-2); }
+.btn.primary:disabled { color: #fff; background: #7d979c; border-color: #7d979c; box-shadow: none; }
+
+.btn.ghost { color: var(--sea); background: transparent; border-color: var(--line); }
+.btn.ghost:hover { color: var(--deep); background: var(--sea-soft); border-color: #c5dcdf; }
+
 .btn.danger { color: var(--danger); }
-.btn.danger:hover { border-color: var(--danger); background: var(--danger-soft); }
+.btn.danger:hover { color: var(--danger); background: var(--danger-soft); border-color: #e8b5ae; }
+.btn.danger:active { background: #ffe2de; }
+
+.btn.sm { min-height: 36px; border-radius: 9px; padding: 8px 12px; font-size: 13px; }
+.btn.wide { width: 100%; }
+/* A pressed toggle reads as a chosen state, so it borrows the primary look. */
+.btn[data-active="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
 .pill { display: inline-flex; align-items: center; min-height: 26px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--muted); background: var(--surface-2); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .pill.dark { color: #fff; background: var(--deep); border-color: var(--deep); }
 .pill.warn { color: #754d08; background: var(--sand-soft); border-color: #edc774; }
@@ -198,7 +214,6 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .tape-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tape-range { color: var(--muted); font-size: 12px; }
 .tape-lengths { display: flex; gap: 6px; }
-.tape-lengths .btn[data-active="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
 .tape-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); overscroll-behavior-x: contain; }
 /* Equal day columns that fill a wide screen and scroll on a narrow one. The
    explicit width beats content-based sizing, so a long guest name stretches
@@ -270,7 +285,8 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
 .matrix td.occ small { display: block; color: var(--muted); font-size: 11px; }
 .matrix input { max-width: 120px; margin: auto; text-align: center; background: var(--paper); border-color: transparent; }
 .tabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
-.tab { min-height: 40px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 13px; }
+.tab { min-height: 40px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.tab:hover { color: var(--ink); background: var(--surface-2); border-color: var(--line-strong); }
 .tab[aria-selected="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }

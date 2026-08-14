@@ -771,17 +771,17 @@ function Staff({ property, staff, reload, showToast }) {
           <div className="field"><label>رقم الهاتف</label>
             <input className="mono" dir="ltr" style={{ textAlign: "left" }}
               value={form.phone} onChange={set("phone")} /></div>
-          <div className="field"><label>كلمة المرور المبدئي</label>
+          <div className="field"><label>كلمة المرور المبدئية</label>
             <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password}
-              onChange={set("password")} placeholder="8 حروف على الأقل" /></div>
+              onChange={set("password")} placeholder="8 أحرف على الأقل" /></div>
           <div className="field"><label>تأكيد كلمة المرور</label>
             <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password_again}
               onChange={set("password_again")} placeholder="أعد إدخال كلمة المرور" /></div>
           <div className="field"><label>الدور</label>
             <select value={form.role} onChange={set("role")}>
               <option value="reception">استقبال — يحجز ويسكّن ويقبض</option>
-              <option value="housekeeping">نظافة — النظافة بس</option>
-              <option value="manager">مدير — كل حاجة والأسعار</option>
+              <option value="housekeeping">نظافة — النظافة فقط</option>
+              <option value="manager">مدير — كل شيء والأسعار</option>
             </select></div>
 
           <div className="banner warn" style={{ margin: 0 }}>
@@ -801,10 +801,10 @@ function Staff({ property, staff, reload, showToast }) {
         onClose={() => { setResetMember(null); setResetValue(""); setResetAgain(""); }}
       >
         <div className="stack">
-          <label className="field"><span>كلمة المرور الجديد</span>
+          <label className="field"><span>كلمة المرور الجديدة</span>
             <input type="password" autoComplete="new-password" dir="ltr" value={resetValue} onChange={(e) => setResetValue(e.target.value)} />
           </label>
-          <label className="field"><span>تأكيد كلمة المرور الجديدة</span>
+          <label className="field"><span>تأكيد كلمة المرور الجديدةة</span>
             <input type="password" autoComplete="new-password" dir="ltr" value={resetAgain} onChange={(e) => setResetAgain(e.target.value)} />
           </label>
           <div className="row">
@@ -885,7 +885,7 @@ function Security({ property, showToast }) {
         </button>
 
         {isSet && (
-          <button className="btn wide danger" onClick={() => setConfirmClear(true)}>شيل كلمة المرور</button>
+          <button className="btn wide danger" onClick={() => setConfirmClear(true)}>إزالة كلمة المرور</button>
         )}
       </div>
 
@@ -895,7 +895,7 @@ function Security({ property, showToast }) {
       </div>
       <Dialog open={confirmClear} danger title="إزالة كلمة مرور التأكيد؟" description="بعد الإزالة، لن تطلب إجراءات الإلغاء وعدم الحضور تأكيداً إضافياً." onClose={() => setConfirmClear(false)}>
         <div className="row">
-          <button className="btn danger grow" onClick={clear}>نعم، شيل كلمة المرور</button>
+          <button className="btn danger grow" onClick={clear}>نعم، أزل كلمة المرور</button>
           <button className="btn" onClick={() => setConfirmClear(false)}>رجوع</button>
         </div>
       </Dialog>
@@ -1105,7 +1105,7 @@ function ManagedTranslations({ types, plans, reload, showToast }) {
   return (
     <section className="section" style={{ marginTop: 18 }}>
       <h2>المحتوى الإنجليزي</h2>
-      <p className="section-note">الخانة الفارغة تعرض الاسم أو الوصف العربي تلقائيًا.</p>
+      <p className="section-note">الخانة الفارغة تعرض الاسم أو الوصف العربي تلقائياً.</p>
       <div className="stack">
         {[{ key: "types", label: "أنواع الغرف", rows: types }, { key: "plans", label: "جهات الحجز", rows: plans }].map((group) => (
           <div className="card stack" key={group.key}>

@@ -262,7 +262,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
           <label className="row" style={{ gap: 8, fontSize: 13, cursor: "pointer" }}>
             <input type="checkbox" checked={refund} style={{ width: "auto" }}
               onChange={(e) => setRefund(e.target.checked)} />
-            ده استرداد للنزيل
+            هذا استرداد للنزيل
           </label>
 
           <button className={`btn wide ${refund ? "danger" : "primary"}`}
@@ -522,7 +522,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
               تعود الغرف للبيع فوراً، فما زال من الممكن بيع هذه الليلة.
             </p>
             <div className="field">
-              <label>مبلغ يتحمّل عليه (لو في)</label>
+              <label>مبلغ يُحتسب عليه (إن وُجد)</label>
               <input type="number" min="0" className="mono" value={charge}
                 onChange={(e) => setCharge(e.target.value)} />
             </div>
