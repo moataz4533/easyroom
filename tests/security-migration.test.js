@@ -7,6 +7,7 @@ const logoStorage = readFileSync(new URL("../supabase/migrations/20260813134636_
 const staffLogin = readFileSync(new URL("../supabase/migrations/20260813135907_staff_username_login.sql", import.meta.url), "utf8");
 const staffAdmin = readFileSync(new URL("../supabase/functions/staff-admin/index.ts", import.meta.url), "utf8");
 const checkoutTimeline = readFileSync(new URL("../supabase/migrations/20260813185755_fix_checkout_and_activity_timeline.sql", import.meta.url), "utf8");
+const checkoutBill = readFileSync(new URL("../supabase/migrations/20260814220000_recalc_bill_on_checkout.sql", import.meta.url), "utf8");
 
 describe("database hardening migration", () => {
   it("contains the exact recovered production history before the new migration", () => {
@@ -35,6 +36,16 @@ describe("database hardening migration", () => {
     expect(checkoutTimeline).toContain("list_activity_timeline");
     expect(checkoutTimeline).toContain("not public.is_admin(p_property)");
     expect(checkoutTimeline).toContain("revoke all on function public.list_activity_timeline");
+  });
+  it("bills a guest who leaves early for the nights they slept", () => {
+    // Both paths shorten the stay, so both have to reprice it — otherwise the
+    // reports and the guest's bill give different answers for one stay.
+    expect(checkoutBill.match(/perform public\.recalc_booking_total\(p_booking\)/g)).toHaveLength(2);
+    expect(checkoutBill).toMatch(/recalc_booking_total[\s\S]*select \* into v_booking from public\.bookings/);
+    // Cancelling is not the same thing, and is deliberately left alone —
+    // this migration redefines one function and no others.
+    expect(checkoutBill.match(/create or replace function/gi)).toHaveLength(1);
+    expect(checkoutBill).toContain("create or replace function public.check_out_booking");
   });
   it("limits hotel logo uploads to admin images no larger than 5MB", () => {
     expect(logoStorage).toContain("5242880");
