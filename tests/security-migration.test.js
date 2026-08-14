@@ -10,6 +10,8 @@ const checkoutTimeline = readFileSync(new URL("../supabase/migrations/2026081318
 const checkoutBill = readFileSync(new URL("../supabase/migrations/20260814220000_recalc_bill_on_checkout.sql", import.meta.url), "utf8");
 const earlyDeparture = readFileSync(new URL("../supabase/migrations/20260814231500_early_departure_choice.sql", import.meta.url), "utf8");
 const managerPassword = readFileSync(new URL("../supabase/migrations/20260815001500_stronger_manager_password.sql", import.meta.url), "utf8");
+const hotelClock = readFileSync(new URL("../supabase/migrations/20260815010000_board_on_the_hotel_clock.sql", import.meta.url), "utf8");
+const checkInRoom = readFileSync(new URL("../supabase/migrations/20260815011500_check_in_holds_the_room.sql", import.meta.url), "utf8");
 
 describe("database hardening migration", () => {
   it("contains the exact recovered production history before the new migration", () => {
@@ -74,6 +76,29 @@ describe("database hardening migration", () => {
     // hash, so a password already in use is not invalidated by the new rule.
     expect(managerPassword).toMatch(/verify_action_pin[\s\S]*crypt\(coalesce\(p_pin, ''\), v_hash\)/);
     expect(managerPassword).not.toMatch(/verify_action_pin[\s\S]*length\(v_pin\) < 6/);
+  });
+  it("runs the board on the hotel's clock, never the database's", () => {
+    // current_date is UTC. Cairo is two hours ahead, so between midnight and
+    // 2am the board would otherwise show the previous day.
+    for (const view of ["today_board", "attention_queue", "blocked_rooms"]) {
+      expect(hotelClock).toContain(`create view public.${view}`);
+    }
+    // The views themselves, past the prose and the comment that warns about it.
+    const views = hotelClock.slice(hotelClock.indexOf("drop view"))
+      .split("\n").filter((line) => !line.trim().startsWith("--")).join("\n");
+    expect(views).not.toMatch(/\bcurrent_date\b/i);
+    expect(hotelClock.match(/now\(\) at time zone p\.timezone/g)?.length).toBeGreaterThanOrEqual(6);
+    // The views stay invoker-side, so the isolation still applies to them.
+    expect(hotelClock.match(/security_invoker = on/g)).toHaveLength(3);
+  });
+  it("puts a guest who arrives early into the room tonight", () => {
+    expect(checkInRoom).toContain("property_today(v_booking.property_id)");
+    expect(checkInRoom).toMatch(/if v_today < v_booking\.check_in then[\s\S]*set starts_on = v_today/);
+    // The room is held, so the bill follows the nights, and a room already
+    // taken tonight refuses rather than being sold twice.
+    expect(checkInRoom).toContain("recalc_booking_total(p_booking)");
+    expect(checkInRoom).toContain("when exclusion_violation then");
+    expect(checkInRoom).toContain("v_today >= v_booking.check_out");
   });
   it("limits hotel logo uploads to admin images no larger than 5MB", () => {
     expect(logoStorage).toContain("5242880");
