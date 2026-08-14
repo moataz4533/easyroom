@@ -619,6 +619,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     whatsapp: property.settings?.whatsapp_number || "",
     address: property.settings?.address || "",
     policy: property.settings?.cancellation_policy || "",
+    policy_en: property.settings?.cancellation_policy_en || "",
   });
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
@@ -703,6 +704,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
         whatsapp_number: form.whatsapp,
         address: form.address,
         cancellation_policy: form.policy,
+        cancellation_policy_en: form.policy_en,
       },
     }).eq("id", property.id);
     setSaving(false);
@@ -758,6 +760,11 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
         <input value={form.address} onChange={set("address")} /></div>
       <div className="field"><label>سياسة الإلغاء</label>
         <input value={form.policy} onChange={set("policy")} /></div>
+      {/* Sent as-is to foreign guests in the confirmation message, so it is
+          written once here instead of being translated in a hurry. */}
+      <div className="field"><label>سياسة الإلغاء بالإنجليزي</label>
+        <input dir="ltr" style={{ textAlign: "left" }}
+          value={form.policy_en} onChange={set("policy_en")} /></div>
       <button className="btn primary wide" disabled={saving} onClick={save}>
         {saving ? labels.saving : "حفظ"}
       </button>

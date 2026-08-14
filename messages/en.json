@@ -103,5 +103,16 @@
     "whatsapp": "WhatsApp",
     "stale": "Saved data, not live.",
     "summary": "{occupied} of {total} rooms occupied on {date}"
+  },
+  "Confirmation": {
+    "title": "Booking confirmation message",
+    "open": "WhatsApp confirmation",
+    "language": "Message language",
+    "message": "Message",
+    "send": "Send on WhatsApp",
+    "copy": "Copy message",
+    "copied": "Message copied",
+    "copyFailed": "Copying failed — select the text and copy it manually",
+    "noPhone": "This guest has no phone number saved. Add one to the booking first."
   }
 }

@@ -235,6 +235,9 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .tape-foot[data-full="true"] { color: var(--danger); font-weight: 700; }
 .tape-legend { margin-top: 18px; padding-top: 14px; }
 
+.confirmation-text { width: 100%; min-height: 260px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font-size: 13px; line-height: 1.7; resize: vertical; }
+.confirmation-text:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
+
 .rack { position: relative; padding-top: 18px; }
 .rail { position: absolute; top: 9px; inset-inline: 7px; height: 2px; background: linear-gradient(90deg, transparent, var(--deep) 8%, var(--deep) 92%, transparent); opacity: .65; }
 .rack-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); }
@@ -416,6 +419,7 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .tape-bar { margin: 5px 2px; font-size: 11px; }
   .tape-toolbar { align-items: stretch; flex-direction: column; }
   .tape-lengths .btn { flex: 1; }
+  .confirmation-text { min-height: 190px; }
   .spread.mobile-stack { align-items: stretch; flex-direction: column; }
   .activity-tools { grid-template-columns: 1fr; }
   .timeline { padding-inline-start: 20px; }

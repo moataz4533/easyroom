@@ -4,7 +4,9 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, dayLabel, nights } from "../../lib/supabase";
 import { useOffline } from "../../lib/offline";
 import PinPrompt from "../../components/PinPrompt";
-import { useLocale } from "next-intl";
+import ConfirmationMessage from "../../components/ConfirmationMessage";
+import { useLocale, useTranslations } from "next-intl";
+import { MessageCircle } from "lucide-react";
 
 export default function Page() {
   return (
@@ -124,6 +126,7 @@ function Bookings() {
           online={online}
           onClose={() => setOpen(null)}
           onDone={(m) => { showToast(m); setOpen(null); load(); }}
+          onNotify={(m) => showToast(m)}
           onError={(m) => showToast(m, true)}
         />
       )}
@@ -303,8 +306,11 @@ function BookingRow({ b, onOpen }) {
   );
 }
 
-function BookingSheet({ b, role, online, onClose, onDone, onError }) {
+function BookingSheet({ b, role, online, onClose, onDone, onNotify, onError }) {
   const locale = useLocale();
+  const { property } = useProperty();
+  const t = useTranslations("Confirmation");
+  const [confirmation, setConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
@@ -378,6 +384,23 @@ function BookingSheet({ b, role, online, onClose, onDone, onError }) {
             </div>
           )}
         </div>
+
+        {isOpen && (
+          <button className="btn wide" style={{ marginBottom: 12 }}
+            onClick={() => setConfirmation(true)}>
+            <MessageCircle size={16} />{t("open")}
+          </button>
+        )}
+
+        {confirmation && (
+          <ConfirmationMessage
+            property={property} booking={b}
+            rooms={live.map((a) => ({ number: a.rooms?.number, occupancy: a.occupancy }))}
+            onClose={() => setConfirmation(false)}
+            onCopied={() => onNotify(t("copied"))}
+            onCopyFailed={() => onError(t("copyFailed"))}
+          />
+        )}
 
         {b.attention_reason && (
           <div className="banner bad">{b.attention_reason}</div>
