@@ -9,6 +9,7 @@ const staffAdmin = readFileSync(new URL("../supabase/functions/staff-admin/index
 const checkoutTimeline = readFileSync(new URL("../supabase/migrations/20260813185755_fix_checkout_and_activity_timeline.sql", import.meta.url), "utf8");
 const checkoutBill = readFileSync(new URL("../supabase/migrations/20260814220000_recalc_bill_on_checkout.sql", import.meta.url), "utf8");
 const earlyDeparture = readFileSync(new URL("../supabase/migrations/20260814231500_early_departure_choice.sql", import.meta.url), "utf8");
+const managerPassword = readFileSync(new URL("../supabase/migrations/20260815001500_stronger_manager_password.sql", import.meta.url), "utf8");
 
 describe("database hardening migration", () => {
   it("contains the exact recovered production history before the new migration", () => {
@@ -60,6 +61,19 @@ describe("database hardening migration", () => {
     expect(earlyDeparture).toMatch(/if v_booking\.status = 'checked_out' then[\s\S]*?return v_booking;/);
     expect(earlyDeparture.split("return v_booking;")[0]).not.toContain("add_booking_charge");
     expect(earlyDeparture).toContain("grant execute on function public.check_out_booking(uuid, boolean) to authenticated");
+  });
+  it("refuses a manager password anybody would guess first", () => {
+    expect(managerPassword).toContain("length(v_pin) < 6");
+    expect(managerPassword).toContain("^(.)\\1+$");          // one character repeated
+    expect(managerPassword).toContain("01234567890123456789"); // a run upwards
+    expect(managerPassword).toContain("98765432109876543210"); // and downwards
+    // The lockout underneath is untouched: five tries, fifteen minutes.
+    expect(managerPassword).toContain("failed_attempts + 1 >= 5");
+    expect(managerPassword).toContain("interval '15 minutes'");
+    // Only setting is affected. Verifying still compares against the stored
+    // hash, so a password already in use is not invalidated by the new rule.
+    expect(managerPassword).toMatch(/verify_action_pin[\s\S]*crypt\(coalesce\(p_pin, ''\), v_hash\)/);
+    expect(managerPassword).not.toMatch(/verify_action_pin[\s\S]*length\(v_pin\) < 6/);
   });
   it("limits hotel logo uploads to admin images no larger than 5MB", () => {
     expect(logoStorage).toContain("5242880");

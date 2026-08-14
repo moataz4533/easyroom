@@ -33,6 +33,9 @@ export async function generateMetadata() {
     manifest: locale === "ar" ? "/manifest-ar.json" : "/manifest-en.json",
     appleWebApp: { capable: true, title: "Easyroom", statusBarStyle: "black-translucent" },
     icons: { icon: "/easyroom-logo.png", apple: "/easyroom-logo.png" },
+    // Says the same thing as robots.txt, to the crawlers that read one and
+    // not the other. A hotel's back office does not belong in search results.
+    robots: { index: false, follow: false, nocache: true },
   };
 }
 
