@@ -44,7 +44,10 @@
     "hotelCode": "Hotel code",
     "hotelCodeHint": "Your manager gives you this. It is saved on this device, so you will not need to type it again.",
     "hotelInvalid": "A hotel code is lowercase letters, numbers and hyphens only.",
-    "otherHotel": "I work at a different hotel"
+    "otherHotel": "I work at a different hotel",
+    "forgot": "Forgotten your password?",
+    "resetNeedsEmail": "Enter your email address first, then choose “Forgotten your password”.",
+    "resetSent": "If that address has an account, a link to set a new password has been sent to it. The link lasts an hour, and may land in the spam folder."
   },
   "Shell": {
     "loading": "One moment…",
@@ -319,5 +322,22 @@
     "billNights": "Bill only the nights slept",
     "billWholeStay": "Bill the whole booking (early-departure fee)",
     "earlyNote": "Either way the room-nights are recorded as the guest actually slept them, so occupancy and average rate stay honest. Billing the whole booking adds the difference as an early-departure line, which a manager can take off later with their password."
+  },
+  "Reset": {
+    "title": "A new password",
+    "subtitle": "Choose a new password for your account, then sign in with it.",
+    "heroTitle": "Getting back in.",
+    "heroBody": "One step and you are back in the hotel's screens.",
+    "newPassword": "New password",
+    "again": "Confirm password",
+    "rule": "At least {count} characters.",
+    "tooShort": "That password is too short.",
+    "mismatch": "The two passwords do not match.",
+    "save": "Save password",
+    "saving": "Saving…",
+    "done": "Your password has been changed. Taking you back to sign in so you can use it.",
+    "linkExpired": "This link has expired or has already been used. Ask for a new one from the sign-in screen.",
+    "backToLogin": "Back to sign in",
+    "staffNote": "This page is for the owner's account. Staff passwords are reset from Settings → Staff."
   }
 }

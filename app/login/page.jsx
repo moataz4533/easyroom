@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Hotel, Languages, Loc
 import { localePath, useAppLocale } from "../../lib/locale";
 import { supabase, DEFAULT_PROPERTY_SLUG } from "../../lib/supabase";
 import { isHotelSlug, isStaffUsername, normalizeHotelSlug, staffLoginEmail } from "../../lib/auth-login";
+import { isReachableEmail, resetRedirectTo } from "../../lib/password-reset";
 
 // A staff username is unique inside a hotel, not across them, so a sign-in
 // has to say which hotel before anybody is signed in and the database can be
@@ -29,6 +30,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     const savedMode = window.localStorage.getItem("easyroom-login-mode");
@@ -44,6 +46,27 @@ export default function Login() {
       if (session) router.replace(localePath("/", locale));
     });
   }, [locale, router]);
+
+  /**
+   * Staff are not offered this: their password is reset by the owner from
+   * Settings, and the address their username becomes has no mailbox behind
+   * it. So it belongs to owner sign-in only.
+   */
+  async function sendReset() {
+    setError(null);
+    if (!isReachableEmail(email)) {
+      setError(t("resetNeedsEmail"));
+      return;
+    }
+    setBusy(true);
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: resetRedirectTo(window.location.origin, locale),
+    });
+    setBusy(false);
+    // The same answer whether or not an account exists, so this screen cannot
+    // be used to find out which addresses are registered.
+    setResetSent(true);
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -102,9 +125,14 @@ export default function Login() {
                 )}
               </>
             ) : (
-              <label className="field"><span>{t("email")}</span><div className="input-with-icon"><Mail size={18} /><input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" /></div></label>
+              <label className="field"><span>{t("email")}</span><div className="input-with-icon"><Mail size={18} /><input type="email" required autoComplete="username" value={email} onChange={(e) => { setEmail(e.target.value); setResetSent(false); }} dir="ltr" /></div></label>
             )}
             <label className="field"><span>{t("password")}</span><div className="input-with-icon"><LockKeyhole size={18} /><input type={showPassword ? "text" : "password"} required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" /><button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
+            {mode === "owner" && (resetSent ? (
+              <div className="banner ok" role="status">{t("resetSent")}</div>
+            ) : (
+              <button type="button" className="link-button" onClick={sendReset} disabled={busy}>{t("forgot")}</button>
+            ))}
             <button className="btn primary wide login-submit" disabled={busy} type="submit">{busy ? t("submitting") : t("submit")}<Arrow size={18} /></button>
             <div className="session-note"><CheckCircle2 size={16} /><span>{t("sessionSaved")}</span></div>
           </div>
