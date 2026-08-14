@@ -277,21 +277,8 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
   const blocked = (check || []).find((c) => !c.can_extend);
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, background: "rgba(11,58,70,.5)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50,
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="card"
-        style={{
-          width: "100%", maxWidth: 480, borderRadius: "14px 14px 0 0",
-          maxHeight: "88vh", overflowY: "auto", paddingBottom: 24,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="card sheet" onClick={(e) => e.stopPropagation()}>
         <div className="spread" style={{ marginBottom: 12 }}>
           <h2 className="mono" style={{ fontSize: 26 }}>{row.room_number}</h2>
           <button className="btn sm" onClick={onClose}>إغلاق</button>

@@ -342,16 +342,8 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const [roomToRelease, setRoomToRelease] = useState(null);
 
   return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(11,58,70,.5)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }}
-      onClick={onClose}
-    >
-      <div className="card"
-        style={{ width: "100%", maxWidth: 480, borderRadius: "14px 14px 0 0",
-          maxHeight: "90vh", overflowY: "auto", paddingBottom: 24 }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="card sheet" onClick={(e) => e.stopPropagation()}>
         <div className="spread" style={{ marginBottom: 12 }}>
           <div>
             <h2 style={{ fontSize: 18 }}>{b.guests?.full_name}</h2>
