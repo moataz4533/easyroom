@@ -5,6 +5,7 @@ import { supabase, egp, today, dayLabel, nights } from "../../lib/supabase";
 import { useOffline } from "../../lib/offline";
 import PinPrompt from "../../components/PinPrompt";
 import ConfirmationMessage from "../../components/ConfirmationMessage";
+import BookingCharges from "../../components/BookingCharges";
 import { useLocale, useTranslations } from "next-intl";
 import { MessageCircle } from "lucide-react";
 
@@ -49,11 +50,12 @@ function Bookings() {
     let q = supabase
       .from("bookings")
       .select(`
-        id, reference, status, source, check_in, check_out, adults, children,
+        id, property_id, reference, status, source, check_in, check_out, adults, children,
         total_amount, paid_amount, notes, attention_reason, cancel_reason,
         guests(id, full_name, phone),
         room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, rooms(number)),
-        payments(id, amount, method, notes, received_at)
+        payments(id, amount, method, notes, received_at),
+        booking_charges(id, charge_item_id, description, quantity, unit_amount, amount, notes, voided_at)
       `)
       .eq("property_id", property.id);
 
@@ -72,6 +74,9 @@ function Bookings() {
     if (error) showToast(error.message, true);
 
     setRows(data || []);
+    // Keep an open sheet pointing at the fresh copy of its booking, so
+    // adding three extras in a row doesn't close it three times.
+    setOpen((current) => (current ? (data || []).find((row) => row.id === current.id) || null : null));
     setLoading(false);
   }, [property, filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -127,6 +132,7 @@ function Bookings() {
           onClose={() => setOpen(null)}
           onDone={(m) => { showToast(m); setOpen(null); load(); }}
           onNotify={(m) => showToast(m)}
+          onRefresh={(m) => { showToast(m); load(); }}
           onError={(m) => showToast(m, true)}
         />
       )}
@@ -306,7 +312,7 @@ function BookingRow({ b, onOpen }) {
   );
 }
 
-function BookingSheet({ b, role, online, onClose, onDone, onNotify, onError }) {
+function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, onError }) {
   const locale = useLocale();
   const { property } = useProperty();
   const t = useTranslations("Confirmation");
@@ -436,6 +442,14 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onError }) {
             </div>
           )}
         </section>
+
+        {canManage && (
+          <BookingCharges
+            booking={b} online={online}
+            onDone={onRefresh}
+            onError={onError}
+          />
+        )}
 
         {canManage && (
           <PaymentsSection

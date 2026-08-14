@@ -47,6 +47,7 @@ function Reports() {
   const [owing, setOwing] = useState([]);
   const [cancels, setCancels] = useState([]);
   const [methods, setMethods] = useState([]);
+  const [extras, setExtras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, showToast] = useToast();
 
@@ -59,13 +60,14 @@ function Reports() {
     setLoading(true);
 
     const args = { p_property: property.id, p_from: from, p_to: to };
-    const [s, d, src, out, can, pay] = await Promise.all([
+    const [s, d, src, out, can, pay, ext] = await Promise.all([
       supabase.rpc("report_summary", args),
       supabase.rpc("report_daily", args),
       supabase.rpc("report_by_source", args),
       supabase.rpc("report_outstanding", { p_property: property.id }),
       supabase.rpc("report_cancellations", args),
       supabase.rpc("report_payments", args),
+      supabase.rpc("report_extras", args),
     ]);
 
     if (s.error) showToast(s.error.message, true);
@@ -76,6 +78,7 @@ function Reports() {
     setOwing(out.data || []);
     setCancels(can.data || []);
     setMethods(pay.data || []);
+    setExtras(ext.data || []);
     setLoading(false);
   }, [property, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -134,6 +137,10 @@ function Reports() {
                   ? `${summary.nights_sold} of ${summary.nights_available} nights`
                   : `${summary.nights_sold} من ${summary.nights_available} ليلة`} />
               <Kpi label="إيراد الغرف" value={`${egp(summary.room_revenue, locale)} ج`} big />
+              {/* Beside room revenue, never inside ADR or RevPAR: those are
+                  per room-night, and a transfer to the airport is not. */}
+              <Kpi label="إيراد الإضافات" value={`${egp(summary.extras_revenue, locale)} ج`}
+                sub={`الإجمالي ${egp(summary.total_revenue, locale)} ج`} />
               <Kpi label="متوسط سعر الليلة" value={`${egp(summary.adr, locale)} ج`}
                 sub="للليلة المباعة" />
               <Kpi label="إيراد الغرفة المتاحة" value={`${egp(summary.revpar, locale)} ج`}
@@ -153,6 +160,22 @@ function Reports() {
           )}
 
           <DailyChart rows={daily} />
+
+          {extras.length > 0 && (
+            <section className="section">
+              <h2 style={{ fontSize: 14, marginBottom: 8 }}>الإضافات المباعة</h2>
+              <p className="section-note">اللي الفندق بيبيعه غير الغرفة.</p>
+              <div className="stack">
+                {extras.map((row) => (
+                  <div key={row.description} className="card spread" style={{ padding: "9px 12px" }}>
+                    <span style={{ fontSize: 13 }}>{row.description}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>×{egp(row.quantity, locale)}</span>
+                    <span className="mono" style={{ fontWeight: 600 }}>{egp(row.total, locale)} ج</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {methods.length > 0 && (
             <section className="section">

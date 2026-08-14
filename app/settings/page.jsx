@@ -5,7 +5,7 @@ import PinPrompt from "../../components/PinPrompt";
 import { supabase, egp } from "../../lib/supabase";
 import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ImagePlus, Trash2, Upload } from "lucide-react";
 import { isStaffUsername, normalizeStaffUsername } from "../../lib/auth-login";
 
@@ -22,6 +22,7 @@ const OCC = { 1: "سنجل", 2: "دابل", 3: "تريبل", 4: "رباعي", 5:
 const TABS = [
   ["rates", "الأسعار"],
   ["rooms", "الغرف"],
+  ["charges", "الإضافات"],
   ["staff", "الموظفين"],
   ["security", "الباسورد"],
   ["property", "بيانات النادي"],
@@ -38,18 +39,21 @@ function Settings() {
   const [rates, setRates] = useState({});
   const [rooms, setRooms] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [chargeItems, setChargeItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!property) return;
     setLoading(true);
-    const [t, p, r, rm, st] = await Promise.all([
+    const [t, p, r, rm, st, ci] = await Promise.all([
       supabase.from("room_types").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rate_plans").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rates").select("*").eq("property_id", property.id).is("valid_from", null),
       supabase.from("rooms").select("*, room_types(name, name_en)").eq("property_id", property.id),
       supabase.from("property_members").select("*, profiles(full_name, phone)")
         .eq("property_id", property.id),
+      supabase.from("charge_items").select("*").eq("property_id", property.id)
+        .order("sort_order"),
     ]);
     setTypes(t.data || []);
     setPlans(p.data || []);
@@ -60,6 +64,7 @@ function Settings() {
       String(a.number).localeCompare(String(b.number), "en", { numeric: true })
     ));
     setStaff(st.data || []);
+    setChargeItems(ci.data || []);
     setLoading(false);
   }, [property]);
 
@@ -67,7 +72,7 @@ function Settings() {
 
   if (loading) return <div className="empty">بيحمّل…</div>;
 
-  const shared = { property, types, plans, rates, rooms, staff, reload: load, showToast, locale };
+  const shared = { property, types, plans, rates, rooms, staff, chargeItems, reload: load, showToast, locale };
 
   return (
     <>
@@ -84,6 +89,7 @@ function Settings() {
 
       {tab === "rates" && <Rates {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
+      {tab === "charges" && <ChargeItems {...shared} />}
       {tab === "staff" && <Staff {...shared} />}
       {tab === "security" && <Security {...shared} />}
       {tab === "property" && <PropertyInfo {...shared} />}
@@ -324,6 +330,91 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
         </div>
       </section>
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+// The catalogue behind the extras. Its whole job is that the same breakfast
+// costs the same on every shift; reception can still override one line.
+function ChargeItems({ property, chargeItems, reload, showToast, locale }) {
+  const t = useTranslations("Charges");
+  const [form, setForm] = useState({ name: "", name_en: "", amount: "" });
+  const [busy, setBusy] = useState(false);
+
+  async function add() {
+    if (!form.name.trim()) return showToast(t("itemNeedName"), true);
+    setBusy(true);
+    const { error } = await supabase.from("charge_items").insert({
+      property_id: property.id,
+      name: form.name.trim(),
+      name_en: form.name_en.trim() || null,
+      default_amount: Number(form.amount) || 0,
+      sort_order: chargeItems.length + 1,
+    });
+    setBusy(false);
+    if (error) return showToast(error.message, true);
+    setForm({ name: "", name_en: "", amount: "" });
+    showToast(t("itemSaved"));
+    reload();
+  }
+
+  async function update(id, patch) {
+    const { error } = await supabase.from("charge_items").update(patch).eq("id", id);
+    if (error) return showToast(error.message, true);
+    reload();
+  }
+
+  return (
+    <section className="section">
+      <h2 style={{ fontSize: 14 }}>{t("settingsTitle")}</h2>
+      <p className="section-note">{t("settingsNote")}</p>
+
+      {chargeItems.length === 0 ? (
+        <div className="empty">{t("noItems")}</div>
+      ) : (
+        <div className="stack">
+          {chargeItems.map((item) => (
+            <div key={item.id} className="card spread" style={{ opacity: item.is_active ? 1 : .6 }}>
+              <div className="grow">
+                <div style={{ fontWeight: 600 }}>
+                  {localizedName(item, locale)}
+                  {!item.is_active && <span className="pill" style={{ marginInlineStart: 8 }}>{t("itemHidden")}</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{item.name_en || "—"}</div>
+              </div>
+              <div className="field" style={{ width: 120 }}>
+                <label htmlFor={`amount-${item.id}`}>{t("itemAmount")}</label>
+                <input id={`amount-${item.id}`} type="number" min="0" className="mono"
+                  defaultValue={item.default_amount}
+                  onBlur={(event) => {
+                    const next = Number(event.target.value) || 0;
+                    if (next !== Number(item.default_amount)) update(item.id, { default_amount: next });
+                  }} />
+              </div>
+              <button className="btn sm" style={{ marginInlineStart: 8 }}
+                onClick={() => update(item.id, { is_active: !item.is_active })}>
+                {item.is_active ? t("itemDeactivate") : t("itemActivate")}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card stack" style={{ marginTop: 10, background: "var(--paper)" }}>
+        <div className="row">
+          <div className="field grow"><label>{t("itemName")}</label>
+            <input value={form.name} placeholder="فطار"
+              onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} /></div>
+          <div className="field grow"><label>{t("itemNameEn")}</label>
+            <input value={form.name_en} placeholder="Breakfast" dir="ltr"
+              onChange={(e) => setForm((c) => ({ ...c, name_en: e.target.value }))} /></div>
+          <div className="field" style={{ width: 110 }}><label>{t("itemAmount")}</label>
+            <input className="mono" type="number" min="0" value={form.amount}
+              onChange={(e) => setForm((c) => ({ ...c, amount: e.target.value }))} /></div>
+        </div>
+        <button className="btn" disabled={busy} onClick={add}>{t("itemAdd")}</button>
+      </div>
+    </section>
   );
 }
 
