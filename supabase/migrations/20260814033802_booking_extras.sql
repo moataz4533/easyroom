@@ -58,6 +58,7 @@ create index if not exists booking_charges_booking_idx
 create index if not exists booking_charges_property_idx
   on public.booking_charges (property_id, created_at);
 
+drop trigger if exists trg_charge_items_updated_at on public.charge_items;
 create trigger trg_charge_items_updated_at before update on public.charge_items
   for each row execute function public.set_updated_at();
 
@@ -304,9 +305,11 @@ language sql stable security invoker set search_path = public as $$
     join bookings b on b.id = a.booking_id
     cross join lateral generate_series(a.starts_on, a.ends_on - 1, interval '1 day') d
     where a.property_id = p_property
-      and a.released_at is null
       and a.kind = 'booking'
       and b.status in ('confirmed', 'checked_in', 'checked_out')
+      -- Checking out releases the allocation. Without the second arm, every
+      -- completed stay would drop out of revenue the moment the guest left.
+      and (a.released_at is null or b.status = 'checked_out')
       and d::date >= p_from and d::date < p_to
   ),
   made as (

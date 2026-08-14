@@ -29,6 +29,7 @@ create table if not exists public.rate_seasons (
 create index if not exists rate_seasons_property_idx
   on public.rate_seasons (property_id, starts_on);
 
+drop trigger if exists trg_rate_seasons_updated_at on public.rate_seasons;
 create trigger trg_rate_seasons_updated_at before update on public.rate_seasons
   for each row execute function public.set_updated_at();
 
