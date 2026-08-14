@@ -19,7 +19,8 @@
     "reports": "Reports",
     "activity": "Activity log",
     "settings": "Settings",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "guests": "Guests"
   },
   "Auth": {
     "title": "Sign in",
@@ -114,5 +115,39 @@
     "copied": "Message copied",
     "copyFailed": "Copying failed — select the text and copy it manually",
     "noPhone": "This guest has no phone number saved. Add one to the booking first."
+  },
+  "Guests": {
+    "eyebrow": "OFFICIAL RECORD",
+    "title": "Guest records",
+    "subtitle": "Hotels in Egypt must record who stayed. Fill this in at check-in while the passport is in hand, and export the period whenever it is asked for.",
+    "from": "From",
+    "to": "To",
+    "rangeToday": "Today",
+    "rangeMonth": "This month",
+    "rangeLastMonth": "Last month",
+    "export": "Export {count} guests (CSV)",
+    "exportHint": "The file opens straight in Excel, and exports exactly what the current filters show.",
+    "exported": "Exported {count} rows",
+    "incomplete": "{count} guests are missing details in this period.",
+    "search": "Search by name, reference or ID number…",
+    "all": "All",
+    "missingOnly": "Missing only",
+    "none": "No guests in this period.",
+    "record": "Guest record",
+    "name": "Full name as written on the ID",
+    "nationality": "Nationality",
+    "dateOfBirth": "Date of birth",
+    "idNumber": "ID number",
+    "idHint": "Passport or national ID number",
+    "phone": "Phone",
+    "email": "Email",
+    "notes": "Notes",
+    "notesHint": "Allergy, late arrival…",
+    "stillMissing": "Still missing: {fields}",
+    "missingCount": "{count} missing",
+    "done": "Complete",
+    "nothingRecorded": "No official details recorded.",
+    "nameRequired": "Enter the guest's name",
+    "saved": "Record saved"
   }
 }

@@ -5,8 +5,8 @@
 // is worse than an honest "last updated at 14:02" label, which the app
 // handles in its own cache layer.
 
-const VERSION = "easyroom-v7-calendar";
-const ROUTES = ["", "/calendar", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings", "/login"];
+const VERSION = "easyroom-v8-guests";
+const ROUTES = ["", "/calendar", "/new-booking", "/bookings", "/guests", "/housekeeping", "/reports", "/settings", "/login"];
 const SHELL = [
   ...["ar", "en"].flatMap((locale) => ROUTES.map((route) => `/${locale}${route}`)),
   "/manifest-ar.json", "/manifest-en.json", "/easyroom-logo.png",
