@@ -119,6 +119,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .btn.sm { min-height: 36px; border-radius: 9px; padding: 8px 12px; font-size: 13px; }
 .btn.wide { width: 100%; }
 /* A pressed toggle reads as a chosen state, so it borrows the primary look. */
+/* Two ways of doing the same thing, each with its price. Neither is the
+   default one, so neither gets the primary treatment. */
+.btn.choice { justify-content: space-between; gap: 14px; text-align: start; }
+.btn.choice > span { min-width: 0; }
+.btn.choice > strong { flex: none; font-size: 15px; }
+
 .btn[data-active="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
 .pill { display: inline-flex; align-items: center; min-height: 26px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--muted); background: var(--surface-2); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .pill.dark { color: #fff; background: var(--deep); border-color: var(--deep); }

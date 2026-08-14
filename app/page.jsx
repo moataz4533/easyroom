@@ -5,7 +5,8 @@ import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import SetupChecklist from "../components/SetupChecklist";
 import ProvisionalBookings from "../components/ProvisionalBookings";
 import StuckActions from "../components/StuckActions";
-import { supabase, today, addDays, dayLabel } from "../lib/supabase";
+import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
+import { earlyDepartureAmounts, isLeavingEarly } from "../lib/checkout";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -419,7 +420,21 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
 function CheckOut({ row, busy, locale, run }) {
   const t = useTranslations("Checkout");
   const [asking, setAsking] = useState(false);
-  const leavingEarly = Boolean(row.ends_on) && row.ends_on > today();
+  const [nights, setNights] = useState(null);
+  const leavingEarly = isLeavingEarly(row.ends_on, today());
+
+  // Fetched only when the question is actually asked, and only so the two
+  // amounts can be shown: reception should be choosing between two numbers
+  // with the guest in front of them, not between two sentences.
+  useEffect(() => {
+    if (!asking || !row.booking_id) return;
+    supabase.from("allocation_nights")
+      .select("allocation_id, night, amount")
+      .eq("booking_id", row.booking_id)
+      .then(({ data }) => setNights(data || []));
+  }, [asking, row.booking_id]);
+
+  const amounts = nights ? earlyDepartureAmounts(nights, today()) : null;
 
   const go = (chargeUnstayed) => run(
     () => supabase.rpc("check_out_booking", {
@@ -456,11 +471,19 @@ function CheckOut({ row, busy, locale, run }) {
           {t("earlyBody", { date: dayLabel(row.ends_on, locale) })}
         </p>
       </div>
-      <button className="btn primary wide" disabled={busy} onClick={() => go(false)}>
-        {t("billNights")}
+      {/* Neither is preselected. Both carry their price, so the choice is
+          made on the amount rather than on which button looks default. */}
+      <button className="btn wide choice" disabled={busy} onClick={() => go(false)}>
+        <span>{t("billNights")}</span>
+        <strong className="mono">
+          {amounts ? `${egp(amounts.stayed, locale)} ج` : "…"}
+        </strong>
       </button>
-      <button className="btn wide" disabled={busy} onClick={() => go(true)}>
-        {t("billWholeStay")}
+      <button className="btn wide choice" disabled={busy} onClick={() => go(true)}>
+        <span>{t("billWholeStay")}</span>
+        <strong className="mono">
+          {amounts ? `${egp(amounts.booked, locale)} ج` : "…"}
+        </strong>
       </button>
       <button className="btn wide" disabled={busy} onClick={() => setAsking(false)}>
         {locale === "en" ? "Back" : "رجوع"}
