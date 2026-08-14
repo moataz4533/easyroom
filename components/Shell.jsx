@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  BarChart3, BedDouble, BookOpenCheck, CalendarPlus, ChevronLeft,
-  ChevronRight, CircleUserRound, ClipboardCheck, CloudOff, Hotel,
-  Languages, LayoutDashboard, ListChecks, LogOut, RefreshCw, Settings,
+  BarChart3, BedDouble, BookOpenCheck, CalendarPlus, CalendarRange,
+  ChevronLeft, ChevronRight, CircleUserRound, ClipboardCheck, CloudOff,
+  Hotel, Languages, LayoutDashboard, ListChecks, LogOut, RefreshCw, Settings,
 } from "lucide-react";
 import { supabase, PROPERTY_SLUG } from "../lib/supabase";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
@@ -18,6 +18,7 @@ export const useProperty = () => useContext(Ctx);
 
 const NAV = [
   { href: "/", key: "today", Icon: LayoutDashboard },
+  { href: "/calendar", key: "calendar", Icon: CalendarRange },
   { href: "/new-booking", key: "newBooking", mobileKey: "bookingShort", Icon: CalendarPlus },
   { href: "/bookings", key: "bookings", Icon: BookOpenCheck },
   { href: "/housekeeping", key: "housekeeping", Icon: ClipboardCheck },
@@ -27,9 +28,9 @@ const NAV = [
 ];
 
 const ALLOWED = {
-  owner: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
-  manager: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
-  reception: ["/", "/new-booking", "/bookings", "/housekeeping"],
+  owner: ["/", "/calendar", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
+  manager: ["/", "/calendar", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
+  reception: ["/", "/calendar", "/new-booking", "/bookings", "/housekeeping"],
   housekeeping: ["/housekeeping"],
 };
 

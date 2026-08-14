@@ -18,7 +18,8 @@
     "housekeeping": "Housekeeping",
     "reports": "Reports",
     "activity": "Activity log",
-    "settings": "Settings"
+    "settings": "Settings",
+    "calendar": "Calendar"
   },
   "Auth": {
     "title": "Sign in",
@@ -68,5 +69,39 @@
     "rooms": "Room status",
     "roomHint": "Select a room to view details and actions.",
     "checkIn": "Check in"
+  },
+  "Calendar": {
+    "title": "Calendar",
+    "subtitle": "Rooms are rows, days are columns. Select a free night to book it, or a stay to see its details.",
+    "room": "Room",
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next",
+    "window": "Range",
+    "windowDays": "{count} days",
+    "occupancy": "Occupancy",
+    "occupancyRow": "Occupancy rate",
+    "free": "Available",
+    "occupied": "Occupied",
+    "blocked": "Out of service",
+    "maintenance": "Maintenance",
+    "hold": "On hold",
+    "staff": "Staff",
+    "legend": "Legend",
+    "empty": "No rooms yet.",
+    "loading": "Loading…",
+    "noRooms": "Add rooms in settings first.",
+    "bookNight": "Book room {room} on {date}",
+    "continuesBefore": "Started before this range",
+    "continuesAfter": "Continues past this range",
+    "nights": "{count} nights",
+    "guests": "{count} guests",
+    "stay": "Stay",
+    "openBooking": "Open in bookings",
+    "newBookingHere": "Book this room from this date",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "stale": "Saved data, not live.",
+    "summary": "{occupied} of {total} rooms occupied on {date}"
   }
 }

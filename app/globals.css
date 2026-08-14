@@ -191,6 +191,50 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .room-legend i[data-state="occupied"] { background: #117894; }
 .room-legend i[data-state="dirty"] { background: #e3a000; }
 .room-legend i[data-state="ooo"] { background: #64737d; }
+/* Tape chart: rooms are rows, nights are columns. The grid places the day
+   cells and the stay bars in the same tracks, so a bar can never drift away
+   from the night it belongs to. */
+.tape-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.tape-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tape-range { color: var(--muted); font-size: 12px; }
+.tape-lengths { display: flex; gap: 6px; }
+.tape-lengths .btn[data-active="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
+.tape-scroll { overflow-x: auto; overflow-y: visible; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); overscroll-behavior-x: contain; }
+/* Equal day columns that fill a wide screen and scroll on a narrow one. The
+   explicit width beats content-based sizing, so a long guest name stretches
+   nothing — it is clipped inside its own bar instead. */
+.tape-grid { --tape-col: 62px; --tape-room: 116px; display: grid; width: max(100%, calc(var(--tape-room) + var(--tape-days) * var(--tape-col))); grid-template-columns: var(--tape-room) repeat(var(--tape-days), 1fr); }
+.tape-corner, .tape-head, .tape-room, .tape-cell, .tape-bar, .tape-foot, .tape-foot-label { min-width: 0; }
+.tape-corner, .tape-room { position: sticky; inset-inline-start: 0; z-index: 3; background: var(--surface-2); border-inline-end: 1px solid var(--line-strong); }
+.tape-corner { grid-row: 1; grid-column: 1; z-index: 4; display: flex; align-items: center; padding: 8px 12px; color: var(--muted); font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--line-strong); }
+.tape-head { grid-row: 1; display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-bottom: 1px solid var(--line-strong); border-inline-start: 1px solid var(--line); }
+.tape-head strong { font-family: var(--font-mono), monospace; font-size: 14px; }
+.tape-head span { color: var(--muted); font-size: 10px; }
+.tape-head em { color: var(--sea); font-size: 10px; font-style: normal; white-space: nowrap; }
+.tape-head[data-weekend="true"] { background: var(--surface-2); }
+.tape-head[data-today="true"] { color: #fff; background: var(--deep); }
+.tape-head[data-today="true"] span, .tape-head[data-today="true"] em { color: rgba(255,255,255,.82); }
+.tape-room { display: grid; align-content: center; gap: 2px; padding: 8px 12px; border-top: 1px solid var(--line); }
+.tape-room strong { font-size: 15px; }
+.tape-room span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.tape-cell { min-height: 54px; border-top: 1px solid var(--line); border-inline-start: 1px solid var(--line); background: var(--surface); }
+.tape-cell[data-weekend="true"] { background: var(--surface-2); }
+.tape-cell[data-today="true"] { background: var(--sea-soft); }
+.tape-cell:hover { background: var(--ok-soft); }
+.tape-bar { z-index: 2; margin: 7px 2px; padding: 4px 8px; display: flex; align-items: center; overflow: hidden; border: 0; border-radius: 8px; color: #fff; background: #117894; font: inherit; font-size: 12px; font-weight: 600; text-align: start; cursor: pointer; }
+.tape-bar:hover { filter: brightness(1.08); }
+.tape-bar-name { display: inline-flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tape-bar[data-status="checked_in"] { background: var(--ok); }
+.tape-bar[data-status="inquiry"] { color: #4d350d; background: #f0c369; }
+.tape-bar[data-kind="maintenance"], .tape-bar[data-kind="hold"], .tape-bar[data-kind="staff"] { background: #64737d; }
+.tape-bar[data-open-start="true"] { border-start-start-radius: 0; border-end-start-radius: 0; margin-inline-start: 0; }
+.tape-bar[data-open-end="true"] { border-start-end-radius: 0; border-end-end-radius: 0; margin-inline-end: 0; }
+.tape-foot-label, .tape-foot { border-top: 1px solid var(--line-strong); background: var(--surface-2); font-size: 12px; }
+.tape-foot-label { position: sticky; inset-inline-start: 0; z-index: 3; grid-column: 1; display: flex; align-items: center; padding: 8px 12px; color: var(--muted); font-size: 11px; font-weight: 700; border-inline-end: 1px solid var(--line-strong); }
+.tape-foot { display: grid; place-items: center; padding: 8px 4px; color: var(--muted); border-inline-start: 1px solid var(--line); }
+.tape-foot[data-full="true"] { color: var(--danger); font-weight: 700; }
+.tape-legend { margin-top: 18px; padding-top: 14px; }
+
 .rack { position: relative; padding-top: 18px; }
 .rail { position: absolute; top: 9px; inset-inline: 7px; height: 2px; background: linear-gradient(90deg, transparent, var(--deep) 8%, var(--deep) 92%, transparent); opacity: .65; }
 .rack-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); }
@@ -366,6 +410,12 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .room-legend { gap: 14px; margin-top: 20px; padding-top: 16px; font-size: 10px; }
   .rack-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .keycard { min-height: 118px; }
+  .tape-grid { --tape-col: 50px; --tape-room: 88px; }
+  .tape-cell { min-height: 46px; }
+  .tape-room strong { font-size: 13px; }
+  .tape-bar { margin: 5px 2px; font-size: 11px; }
+  .tape-toolbar { align-items: stretch; flex-direction: column; }
+  .tape-lengths .btn { flex: 1; }
   .spread.mobile-stack { align-items: stretch; flex-direction: column; }
   .activity-tools { grid-template-columns: 1fr; }
   .timeline { padding-inline-start: 20px; }

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName } from "../../lib/locale";
@@ -9,25 +9,36 @@ import { useLocale } from "next-intl";
 export default function Page() {
   return (
     <Shell>
-      <NewBooking />
+      {/* The calendar links here with a room and a night already chosen, and
+          reading those needs the URL, which is not known while prerendering. */}
+      <Suspense fallback={<div className="empty">…</div>}>
+        <NewBooking />
+      </Suspense>
     </Shell>
   );
 }
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Ordered for a phone call: who's calling, when, which room, done.
 function NewBooking() {
   const { property } = useProperty();
   const router = useRouter();
   const locale = useLocale();
+  const params = useSearchParams();
   const [toast, showToast] = useToast();
+
+  const presetRoom = params.get("room");
+  const presetDate = ISO_DATE.test(params.get("check_in") || "") ? params.get("check_in") : null;
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [guest, setGuest] = useState(null);
   const [searching, setSearching] = useState(false);
 
-  const [checkIn, setCheckIn] = useState(today());
-  const [checkOut, setCheckOut] = useState(addDays(today(), 1));
+  const [checkIn, setCheckIn] = useState(presetDate || today());
+  const [checkOut, setCheckOut] = useState(addDays(presetDate || today(), 1));
+  const [presetUsed, setPresetUsed] = useState(!presetRoom);
 
   const [plans, setPlans] = useState([]);
   const [planId, setPlanId] = useState("");
@@ -68,6 +79,16 @@ function NewBooking() {
       });
     });
   }, [property, checkIn, checkOut, n]);
+
+  // A room picked on the calendar is only selected once, and only if it
+  // really is free — the availability answer wins over the link.
+  useEffect(() => {
+    if (presetUsed || rooms.length === 0) return;
+    if (rooms.some((r) => r.room_id === presetRoom)) {
+      setPicked((prev) => ({ ...prev, [presetRoom]: 2 }));
+    }
+    setPresetUsed(true);
+  }, [rooms, presetRoom, presetUsed]);
 
   // Price the selection live, so the quote is ready before the guest asks.
   useEffect(() => {

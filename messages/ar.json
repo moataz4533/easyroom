@@ -18,7 +18,8 @@
     "housekeeping": "النظافة",
     "reports": "التقارير",
     "activity": "سجل العمليات",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "calendar": "التقويم"
   },
   "Auth": {
     "title": "تسجيل الدخول",
@@ -68,5 +69,39 @@
     "rooms": "حالة الغرف",
     "roomHint": "اختر غرفة لعرض التفاصيل والإجراءات.",
     "checkIn": "تسجيل الوصول"
+  },
+  "Calendar": {
+    "title": "التقويم",
+    "subtitle": "الغرف صفوف والأيام أعمدة. اضغط ليلة فاضية تحجزها، أو حجز عشان تشوف تفاصيله.",
+    "room": "الغرفة",
+    "today": "النهاردة",
+    "previous": "قبل",
+    "next": "بعد",
+    "window": "المدة",
+    "windowDays": "{count} يوم",
+    "occupancy": "الإشغال",
+    "occupancyRow": "نسبة الإشغال",
+    "free": "فاضية",
+    "occupied": "مشغولة",
+    "blocked": "معطلة",
+    "maintenance": "صيانة",
+    "hold": "محجوزة مؤقتاً",
+    "staff": "طاقم",
+    "legend": "دليل الألوان",
+    "empty": "مفيش غرف مسجلة.",
+    "loading": "بيحمّل…",
+    "noRooms": "ضيف الغرف من الإعدادات الأول.",
+    "bookNight": "احجز {room} يوم {date}",
+    "continuesBefore": "بدأت قبل المدة المعروضة",
+    "continuesAfter": "بتكمل بعد المدة المعروضة",
+    "nights": "{count} ليلة",
+    "guests": "{count} أفراد",
+    "stay": "الإقامة",
+    "openBooking": "افتح الحجز في الحجوزات",
+    "newBookingHere": "احجز الغرفة دي من التاريخ ده",
+    "call": "اتصل",
+    "whatsapp": "واتساب",
+    "stale": "البيانات دي محفوظة، مش لحظية.",
+    "summary": "{occupied} من {total} غرفة مشغولة يوم {date}"
   }
 }
