@@ -250,6 +250,24 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .tape-foot[data-full="true"] { color: var(--danger); font-weight: 700; }
 .tape-legend { margin-top: 18px; padding-top: 14px; }
 
+/* Setup checklist: shown until the hotel is actually ready, then gone. */
+.setup { border: 1px solid var(--line); border-inline-start: 4px solid var(--sea); border-radius: var(--radius); padding: 18px; margin-bottom: 26px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.setup[data-blocking="true"] { border-inline-start-color: var(--sand); }
+.setup-head { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 14px; }
+.setup-head svg { flex: none; margin-top: 2px; color: var(--sea); }
+.setup[data-blocking="true"] .setup-head svg { color: #bd7900; }
+.setup-head h2 { margin: 0 0 3px; font-size: 17px; }
+.setup-head p { margin: 0; color: var(--muted); font-size: 13px; }
+.setup-list { list-style: none; display: grid; gap: 9px; margin: 0; padding: 0; }
+.setup-list li { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.setup-list li > div { min-width: 0; display: grid; gap: 3px; }
+.setup-list strong { font-size: 14px; }
+.setup-list span { color: var(--muted); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.setup-list li[data-level="blocking"] { border-inline-start: 3px solid var(--sand); }
+.setup-list .btn { flex: none; }
+.setup-foot { display: flex; align-items: center; gap: 6px; margin: 13px 0 0; color: var(--muted); font-size: 11px; }
+.setup-foot svg { color: var(--ok); }
+
 /* Guest history: the four numbers reception actually asks about. */
 .guest-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
 .guest-figure { display: grid; gap: 3px; padding: 11px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast, roleLabel } from "../../components/Shell";
 import PinPrompt from "../../components/PinPrompt";
 import { supabase, egp, dayLabel } from "../../lib/supabase";
@@ -12,7 +13,11 @@ import { isStaffUsername, normalizeStaffUsername } from "../../lib/auth-login";
 export default function Page() {
   return (
     <Shell>
-      <Settings />
+      {/* The setup checklist links straight to a tab, and reading which one
+          needs the URL, which is not known while prerendering. */}
+      <Suspense fallback={<div className="empty">…</div>}>
+        <Settings />
+      </Suspense>
     </Shell>
   );
 }
@@ -29,10 +34,14 @@ const TABS = [
   ["property", "بيانات الفندق"],
 ];
 
+const TAB_IDS = TABS.map(([id]) => id);
+
 function Settings() {
   const { property } = useProperty();
   const locale = useLocale();
-  const [tab, setTab] = useState("rates");
+  const params = useSearchParams();
+  const requested = params.get("tab");
+  const [tab, setTab] = useState(TAB_IDS.includes(requested) ? requested : "rates");
   const [toast, showToast] = useToast();
 
   const [types, setTypes] = useState([]);

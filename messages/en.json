@@ -234,5 +234,36 @@
     "needName": "Enter the season name",
     "needDates": "Set the season's start and end",
     "badDates": "The season must end after it starts"
+  },
+  "Setup": {
+    "title": "Before you go live",
+    "blockingNote": "{count} things stand between this and real use.",
+    "advisoryNote": "The app is ready to work; these finish it off.",
+    "fix": "Set it up",
+    "disappears": "This list disappears on its own once every item is done.",
+    "rates": {
+      "title": "Real rates",
+      "why": "Every box is empty, so a new booking prices at zero."
+    },
+    "roomTypes": {
+      "title": "Real room types",
+      "why": "Every room is still “standard room”, and the price depends on the type."
+    },
+    "managerPassword": {
+      "title": "Manager password",
+      "why": "Without it, cancelling, taking a line off a bill and changing rates all pass unchallenged."
+    },
+    "whatsapp": {
+      "title": "WhatsApp number",
+      "why": "The booking confirmation is sent from it."
+    },
+    "policy": {
+      "title": "Cancellation policy",
+      "why": "It appears in the confirmation the guest receives."
+    },
+    "staff": {
+      "title": "Staff accounts",
+      "why": "Only the owner's account exists; reception needs its own."
+    }
   }
 }
