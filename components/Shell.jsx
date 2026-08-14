@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   BarChart3, BedDouble, BookOpenCheck, CalendarPlus, ChevronLeft,
   ChevronRight, CircleUserRound, ClipboardCheck, CloudOff, Hotel,
-  Languages, LayoutDashboard, LogOut, RefreshCw, Settings,
+  Languages, LayoutDashboard, ListChecks, LogOut, RefreshCw, Settings,
 } from "lucide-react";
 import { supabase, PROPERTY_SLUG } from "../lib/supabase";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
@@ -22,12 +22,13 @@ const NAV = [
   { href: "/bookings", key: "bookings", Icon: BookOpenCheck },
   { href: "/housekeeping", key: "housekeeping", Icon: ClipboardCheck },
   { href: "/reports", key: "reports", Icon: BarChart3 },
+  { href: "/activity", key: "activity", Icon: ListChecks },
   { href: "/settings", key: "settings", Icon: Settings },
 ];
 
 const ALLOWED = {
-  owner: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings"],
-  manager: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/settings"],
+  owner: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
+  manager: ["/", "/new-booking", "/bookings", "/housekeeping", "/reports", "/activity", "/settings"],
   reception: ["/", "/new-booking", "/bookings", "/housekeeping"],
   housekeeping: ["/housekeeping"],
 };
@@ -205,7 +206,10 @@ function MobileNav({ path, allowed }) {
   const t = useTranslations("Nav");
   const common = useTranslations("Common");
   let items = NAV.filter((item) => allowed.includes(item.href));
-  if (items.length > 5) items = [...items.slice(0, 4), { ...items[5], key: "settings", mobileLabel: common("more") }];
+  if (items.length > 5) {
+    const settings = items.find((item) => item.href === "/settings") || items.at(-1);
+    items = [...items.slice(0, 4), { ...settings, key: "settings", mobileLabel: common("more") }];
+  }
   return (
     <nav className="mobile-nav" aria-label={t("today")}>
       {items.map(({ href, key, mobileKey, mobileLabel, Icon }) => (

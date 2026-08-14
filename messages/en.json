@@ -17,6 +17,7 @@
     "bookings": "Bookings",
     "housekeeping": "Housekeeping",
     "reports": "Reports",
+    "activity": "Activity log",
     "settings": "Settings"
   },
   "Auth": {

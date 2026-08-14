@@ -2,9 +2,13 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Shell, { useProperty, Toast, useToast } from "../components/Shell";
-import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
+import { supabase, today, addDays, dayLabel } from "../lib/supabase";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
 import { useLocale } from "next-intl";
+import {
+  Ban, BedDouble, Brush, CalendarDays, DoorOpen, LogIn,
+  LogOut, RefreshCw, UserRound,
+} from "lucide-react";
 
 export default function Page() {
   return (
@@ -38,7 +42,7 @@ function Board() {
         supabase.from("attention_queue").select("*").eq("property_id", property.id)),
       loadCached(`arrivals:${property.id}:${today()}`, () =>
         supabase.from("bookings")
-          .select("id, reference, check_in, check_out, adults, total_amount, guests(full_name, phone)")
+          .select("id, reference, source, check_in, check_out, adults, total_amount, notes, guests(full_name, phone), room_allocations(rooms(number))")
           .eq("property_id", property.id).eq("status", "confirmed").eq("check_in", today())),
     ]);
 
@@ -56,6 +60,7 @@ function Board() {
   const occupied = rows.filter((r) => r.booking_id).length;
   const dirty = rows.filter((r) => r.housekeeping_status === "dirty").length;
   const departing = rows.filter((r) => r.departing_today).length;
+  const isEn = locale === "en";
 
   return (
     <>
@@ -87,27 +92,49 @@ function Board() {
         </div>
       )}
 
-      <div className="row" style={{ marginBottom: 16 }}>
-        <Stat label="مشغولة" value={`${occupied}/${rows.length}`} />
-        <Stat label="خروج النهاردة" value={departing} />
-        <Stat label="محتاجة نضافة" value={dirty} tone={dirty ? "warn" : null} />
+      <div className="dashboard-heading">
+        <div>
+          <span className="eyebrow">{isEn ? "DAILY OPERATIONS" : "تشغيل الفندق"}</span>
+          <h1>{isEn ? "Today overview" : "نظرة اليوم"}</h1>
+        </div>
+        <button className="btn dashboard-refresh" onClick={load} disabled={loading}>
+          <RefreshCw size={17} className={loading ? "spin" : ""} />
+          {isEn ? "Refresh" : "تحديث"}
+        </button>
       </div>
 
-      {arrivals.length > 0 && (
-        <section className="section">
-          <h2>وصول النهاردة</h2>
-          <div className="stack">
+      <div className="dashboard-stats">
+        <Stat icon={BedDouble} label={isEn ? "Occupied rooms" : "الغرف المشغولة"}
+          value={occupied} suffix={`${isEn ? "of" : "من"} ${rows.length}`} tone="sea" />
+        <Stat icon={LogOut} label={isEn ? "Departures today" : "مغادرة اليوم"}
+          value={departing} tone="sand" />
+        <Stat icon={Brush} label={isEn ? "Needs cleaning" : "تحتاج تنظيف"}
+          value={dirty} tone="danger" />
+      </div>
+
+      <section className="section dashboard-section">
+        <div className="dashboard-section-title">
+          <CalendarDays size={22} />
+          <h2>{isEn ? "Arrivals today" : "وصول اليوم"}</h2>
+          <span className="pill">{arrivals.length}</span>
+        </div>
+        {arrivals.length > 0 ? (
+          <div className="arrivals-table">
+            <div className="arrival-row arrival-head" aria-hidden="true">
+              <span>{isEn ? "Booking" : "رقم الحجز"}</span><span>{isEn ? "Guest" : "النزيل"}</span>
+              <span>{isEn ? "Stay" : "الإقامة"}</span><span>{isEn ? "Room" : "الغرفة"}</span>
+              <span>{isEn ? "Source" : "نوع الحجز"}</span><span>{isEn ? "Notes" : "ملاحظات"}</span><span />
+            </div>
             {arrivals.map((b) => (
-              <div key={b.id} className="card spread">
-                <div className="grow">
-                  <div style={{ fontWeight: 600 }}>{b.guests?.full_name}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    <span className="code">{b.reference}</span>{" "}
-                    {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)} · {b.adults} أفراد
-                  </div>
-                </div>
+              <div key={b.id} className="arrival-row">
+                <span className="code arrival-reference">{b.reference}</span>
+                <span className="arrival-guest"><UserRound size={17} />{b.guests?.full_name}</span>
+                <span className="arrival-stay">{dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}<small>{b.adults} {isEn ? "guests" : "أفراد"}</small></span>
+                <span className="mono arrival-room">{arrivalRooms(b)}</span>
+                <span>{sourceLabel(b.source, locale)}</span>
+                <span className="arrival-notes">{b.notes || "—"}</span>
                 <button
-                  className="btn primary sm"
+                  className="btn primary sm arrival-action"
                   onClick={async () => {
                     if (!navigator.onLine) {
                       queueAdd({ kind: "rpc", fn: "check_in_booking", args: { p_booking: b.id } });
@@ -119,45 +146,34 @@ function Board() {
                     else { showToast("تم التسكين"); load(); }
                   }}
                 >
-                  تسكين
+                  <LogIn size={16} />{isEn ? "Check in" : "تسجيل الوصول"}
                 </button>
               </div>
             ))}
           </div>
-        </section>
-      )}
+        ) : <div className="empty compact-empty">{isEn ? "No arrivals scheduled for today." : "مفيش وصول مسجل النهارده."}</div>}
+      </section>
 
-      <section className="section">
-        <div className="spread" style={{ marginBottom: 4 }}>
-          <h2>الغرف</h2>
-          <button className="btn sm" onClick={load}>تحديث</button>
+      <section className="section dashboard-section">
+        <div className="dashboard-section-title">
+          <BedDouble size={22} />
+          <h2>{isEn ? "Room status" : "حالة الغرف"}</h2>
         </div>
-        <p className="section-note">اضغط على غرفة تشوف تفاصيلها وتعمل إجراء.</p>
+        <p className="section-note">{isEn ? "Select a room to view details and available actions." : "اضغط على أي غرفة لعرض التفاصيل والإجراءات."}</p>
 
         {loading ? (
           <div className="empty">بيحمّل…</div>
         ) : (
-          <div className="rack">
-            <div className="rail" />
-            <div className="rack-grid">
+          <>
+            <div className="room-status-grid">
               {rows.map((r) => (
-                <button
-                  key={r.room_id}
-                  className="keycard"
-                  data-state={stateOf(r)}
-                  onClick={() => setSheet(r)}
-                >
-                  <div className="num">{r.room_number}</div>
-                  <div className="band" />
-                  <div className="who">{r.guest_name || stateLabel(stateOf(r))}</div>
-                  <div className="sub" style={{ color: "var(--muted)" }}>
-                    {r.departing_today ? (locale === "en" ? "Departure today" : "خروج النهاردة")
-                      : r.ends_on ? `${locale === "en" ? "Until" : "لحد"} ${dayLabel(r.ends_on, locale)}` : ""}
-                  </div>
-                </button>
+                <RoomStatusCard key={r.room_id} room={r} locale={locale} onClick={() => setSheet(r)} />
               ))}
             </div>
-          </div>
+            <div className="room-legend" aria-label={isEn ? "Room status legend" : "دليل حالات الغرف"}>
+              {["free", "occupied", "dirty", "ooo"].map((state) => <span key={state}><i data-state={state} />{stateLabel(state, locale)}</span>)}
+            </div>
+          </>
         )}
       </section>
 
@@ -175,14 +191,11 @@ function Board() {
   );
 }
 
-function Stat({ label, value, tone }) {
+function Stat({ icon: Icon, label, value, suffix, tone }) {
   return (
-    <div className="card grow" style={{ textAlign: "center", minWidth: 96 }}>
-      <div className="mono" style={{ fontSize: 22, fontWeight: 600,
-        color: tone === "warn" ? "var(--sand)" : "var(--ink)" }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>{label}</div>
+    <div className="dashboard-stat card" data-tone={tone}>
+      <div className="stat-icon"><Icon size={25} /></div>
+      <div><span>{label}</span><strong className="mono">{value}{suffix && <small>{suffix}</small>}</strong></div>
     </div>
   );
 }
@@ -194,8 +207,35 @@ function stateOf(r) {
   return "free";
 }
 
-function stateLabel(s) {
-  return { free: "فاضية", occupied: "مشغولة", dirty: "محتاجة نضافة", ooo: "معطلة" }[s];
+function stateLabel(s, locale = "ar") {
+  const labels = locale === "en"
+    ? { free: "Available", occupied: "Occupied", dirty: "Needs cleaning", ooo: "Out of service" }
+    : { free: "متاحة", occupied: "مشغولة", dirty: "تحتاج تنظيف", ooo: "خارج الخدمة" };
+  return labels[s];
+}
+
+function RoomStatusCard({ room, locale, onClick }) {
+  const state = stateOf(room);
+  const Icon = state === "dirty" ? Brush : state === "ooo" ? Ban : BedDouble;
+  return <button className="room-status-card" data-state={state} onClick={onClick}>
+    <div className="room-status-icon"><Icon size={27} /></div>
+    <div className="room-status-copy">
+      <div className="room-status-top"><strong className="mono">{room.room_number}</strong><span>{stateLabel(state, locale)}</span></div>
+      {room.booking_id ? <><div className="room-guest">{room.guest_name}</div><div className="room-departure"><DoorOpen size={14} />{room.departing_today ? (locale === "en" ? "Departs today" : "مغادرة اليوم") : `${locale === "en" ? "Departs" : "المغادرة"} ${dayLabel(room.ends_on, locale)}`}</div></> : <div className="room-empty-note">{locale === "en" ? "Ready for the next guest" : state === "free" ? "جاهزة للنزيل القادم" : "اضغط لعرض التفاصيل"}</div>}
+    </div>
+  </button>;
+}
+
+function arrivalRooms(booking) {
+  const rooms = (booking.room_allocations || []).map((item) => item.rooms?.number).filter(Boolean);
+  return rooms.length ? rooms.join("، ") : "—";
+}
+
+function sourceLabel(source, locale) {
+  const labels = locale === "en"
+    ? { whatsapp: "WhatsApp", phone: "Phone", walk_in: "Walk-in", website: "Website", ota: "OTA", referral: "Referral", other: "Other" }
+    : { whatsapp: "واتساب", phone: "مكالمة", walk_in: "مباشر", website: "الموقع", ota: "مواقع حجز", referral: "توصية", other: "أخرى" };
+  return labels[source] || source || "—";
 }
 
 function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
@@ -213,10 +253,13 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
       return;
     }
     setBusy(true);
-    const { error } = await fn();
-    setBusy(false);
-    if (error) onError(error.message);
-    else onDone(msg);
+    try {
+      const { error } = await fn();
+      if (error) onError(error.message);
+      else onDone(msg);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function testExtension() {
@@ -343,7 +386,9 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                       { kind: "rpc", fn: "check_out_booking", args: { p_booking: row.booking_id } }
                     )}
                   >
-                    تسجيل خروج
+                    {busy
+                      ? (locale === "en" ? "Checking out…" : "جارٍ تسجيل الخروج…")
+                      : (locale === "en" ? "Check out" : "تسجيل خروج")}
                   </button>
                 </div>
               </>

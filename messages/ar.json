@@ -17,6 +17,7 @@
     "bookings": "الحجوزات",
     "housekeeping": "النظافة",
     "reports": "التقارير",
+    "activity": "سجل العمليات",
     "settings": "الإعدادات"
   },
   "Auth": {
