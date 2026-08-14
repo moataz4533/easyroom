@@ -307,5 +307,12 @@
     "retry": "Try again",
     "discard": "Delete",
     "discardNote": "Deleting only removes it from the queue. If it still needs doing, do it from its own screen."
+  },
+  "Checkout": {
+    "earlyTitle": "The guest is leaving early",
+    "earlyBody": "The booking runs to {date}. How should the nights they did not stay be billed?",
+    "billNights": "Bill only the nights slept",
+    "billWholeStay": "Bill the whole booking (early-departure fee)",
+    "earlyNote": "Either way the room-nights are recorded as the guest actually slept them, so occupancy and average rate stay honest. Billing the whole booking adds the difference as an early-departure line, which a manager can take off later with their password."
   }
 }

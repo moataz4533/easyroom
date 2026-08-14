@@ -7,7 +7,7 @@ import ProvisionalBookings from "../components/ProvisionalBookings";
 import StuckActions from "../components/StuckActions";
 import { supabase, today, addDays, dayLabel } from "../lib/supabase";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Ban, BedDouble, Brush, CalendarDays, DoorOpen, LogIn,
   LogOut, RefreshCw, UserRound,
@@ -373,18 +373,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                   {online && row.allocation_id && (
                     <MoveGuest row={row} onDone={onDone} onError={onError} />
                   )}
-                  <button
-                    className="btn primary wide" disabled={busy}
-                    onClick={() => run(
-                      () => supabase.rpc("check_out_booking", { p_booking: row.booking_id }),
-                      "تم تسجيل المغادرة، وأُضيفت الغرفة إلى قائمة النظافة",
-                      { kind: "rpc", fn: "check_out_booking", args: { p_booking: row.booking_id } }
-                    )}
-                  >
-                    {busy
-                      ? (locale === "en" ? "Checking out…" : "جارٍ تسجيل الخروج…")
-                      : (locale === "en" ? "Check out" : "تسجيل خروج")}
-                  </button>
+                  <CheckOut row={row} busy={busy} locale={locale} run={run} />
                 </div>
               </>
             )}
@@ -411,6 +400,72 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Checking out, and the one question only the hotel can answer.
+ *
+ * A guest leaving on the day they booked is just a check-out. A guest
+ * leaving early is a decision: bill the nights they slept, or bill the stay
+ * they booked. Most small hotels do the first for a direct booking and the
+ * second for a held or high-season one, so the app asks instead of choosing.
+ *
+ * Either way the room-nights stay at what was slept — billing the full stay
+ * puts the difference on the bill as a line, because a night nobody slept in
+ * would inflate the occupancy and rate figures in every report.
+ */
+function CheckOut({ row, busy, locale, run }) {
+  const t = useTranslations("Checkout");
+  const [asking, setAsking] = useState(false);
+  const leavingEarly = Boolean(row.ends_on) && row.ends_on > today();
+
+  const go = (chargeUnstayed) => run(
+    () => supabase.rpc("check_out_booking", {
+      p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed,
+    }),
+    "تم تسجيل المغادرة، وأُضيفت الغرفة إلى قائمة النظافة",
+    { kind: "rpc", fn: "check_out_booking",
+      args: { p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed } }
+  );
+
+  if (!leavingEarly) {
+    return (
+      <button className="btn primary wide" disabled={busy} onClick={() => go(false)}>
+        {busy
+          ? (locale === "en" ? "Checking out…" : "جارٍ تسجيل الخروج…")
+          : (locale === "en" ? "Check out" : "تسجيل خروج")}
+      </button>
+    );
+  }
+
+  if (!asking) {
+    return (
+      <button className="btn primary wide" disabled={busy} onClick={() => setAsking(true)}>
+        {locale === "en" ? "Check out" : "تسجيل خروج"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="card stack" style={{ background: "var(--paper)" }}>
+      <div>
+        <h2 style={{ fontSize: 14, marginBottom: 4 }}>{t("earlyTitle")}</h2>
+        <p className="section-note" style={{ margin: 0 }}>
+          {t("earlyBody", { date: dayLabel(row.ends_on, locale) })}
+        </p>
+      </div>
+      <button className="btn primary wide" disabled={busy} onClick={() => go(false)}>
+        {t("billNights")}
+      </button>
+      <button className="btn wide" disabled={busy} onClick={() => go(true)}>
+        {t("billWholeStay")}
+      </button>
+      <button className="btn wide" disabled={busy} onClick={() => setAsking(false)}>
+        {locale === "en" ? "Back" : "رجوع"}
+      </button>
+      <p className="field-hint" style={{ margin: 0 }}>{t("earlyNote")}</p>
     </div>
   );
 }

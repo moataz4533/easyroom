@@ -8,6 +8,7 @@ const staffLogin = readFileSync(new URL("../supabase/migrations/20260813135907_s
 const staffAdmin = readFileSync(new URL("../supabase/functions/staff-admin/index.ts", import.meta.url), "utf8");
 const checkoutTimeline = readFileSync(new URL("../supabase/migrations/20260813185755_fix_checkout_and_activity_timeline.sql", import.meta.url), "utf8");
 const checkoutBill = readFileSync(new URL("../supabase/migrations/20260814220000_recalc_bill_on_checkout.sql", import.meta.url), "utf8");
+const earlyDeparture = readFileSync(new URL("../supabase/migrations/20260814231500_early_departure_choice.sql", import.meta.url), "utf8");
 
 describe("database hardening migration", () => {
   it("contains the exact recovered production history before the new migration", () => {
@@ -46,6 +47,19 @@ describe("database hardening migration", () => {
     // this migration redefines one function and no others.
     expect(checkoutBill.match(/create or replace function/gi)).toHaveLength(1);
     expect(checkoutBill).toContain("create or replace function public.check_out_booking");
+  });
+  it("leaves the hotel the early-departure decision, without inventing nights", () => {
+    // One check-out in the database, not two: the old single-argument version
+    // is dropped so nothing can reach a version that cannot be told what to do.
+    expect(earlyDeparture).toContain("drop function if exists public.check_out_booking(uuid)");
+    expect(earlyDeparture).toContain("p_charge_unstayed boolean default false");
+    // Billing the whole stay is a line on the bill, never an extra night.
+    expect(earlyDeparture).toMatch(/if p_charge_unstayed and v_booked > v_stayed then[\s\S]*add_booking_charge/);
+    expect(earlyDeparture).not.toMatch(/insert into public\.allocation_nights/);
+    // A replayed check-out must not bill the fee a second time.
+    expect(earlyDeparture).toMatch(/if v_booking\.status = 'checked_out' then[\s\S]*?return v_booking;/);
+    expect(earlyDeparture.split("return v_booking;")[0]).not.toContain("add_booking_charge");
+    expect(earlyDeparture).toContain("grant execute on function public.check_out_booking(uuid, boolean) to authenticated");
   });
   it("limits hotel logo uploads to admin images no larger than 5MB", () => {
     expect(logoStorage).toContain("5242880");
