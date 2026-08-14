@@ -22,8 +22,8 @@ const RANGES = [
 ];
 
 const SOURCE_LABEL = {
-  whatsapp: "واتساب", phone: "مكالمة", walk_in: "حضر بنفسه",
-  website: "الموقع", ota: "مواقع حجز", referral: "توصية", other: "غير كده",
+  whatsapp: "واتساب", phone: "مكالمة", walk_in: "حضور مباشر",
+  website: "الموقع", ota: "مواقع حجز", referral: "توصية", other: "أخرى",
 };
 
 function rangeDates(key) {
@@ -91,7 +91,7 @@ function Reports() {
       <Toast {...(toast || {})} />
       <h2 style={{ marginBottom: 4 }}>التقارير</h2>
       <p className="section-note">
-        الإيراد محسوب بالليلة — الإقامة اللي على شهرين بتتقسم على الاتنين.
+        الإيراد محسوب بالليلة — الإقامة الممتدة على شهرين تُقسَّم بينهما.
       </p>
 
       <div className="tabs" role="tablist">
@@ -119,14 +119,14 @@ function Reports() {
       )}
 
       {loading ? (
-        <div className="empty">بيحسب…</div>
+        <div className="empty">جارٍ الحساب…</div>
       ) : !summary ? (
-        <div className="empty">مفيش بيانات.</div>
+        <div className="empty">لا توجد بيانات.</div>
       ) : (
         <>
           {empty && (
             <div className="banner warn">
-              مفيش ليالي مباعة في المدة دي. الأرقام كلها أصفار.
+              لا توجد ليالٍ مباعة في هذه المدة. كل الأرقام أصفار.
             </div>
           )}
 
@@ -164,7 +164,7 @@ function Reports() {
           {extras.length > 0 && (
             <section className="section">
               <h2 style={{ fontSize: 14, marginBottom: 8 }}>الإضافات المباعة</h2>
-              <p className="section-note">اللي الفندق بيبيعه غير الغرفة.</p>
+              <p className="section-note">ما يبيعه الفندق غير الغرفة.</p>
               <div className="stack">
                 {extras.map((row) => (
                   <div key={row.description} className="card spread" style={{ padding: "9px 12px" }}>

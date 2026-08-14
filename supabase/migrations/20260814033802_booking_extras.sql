@@ -182,13 +182,13 @@ begin
     raise exception 'not authorised' using errcode = '42501';
   end if;
   if v_booking.status in ('cancelled', 'no_show') then
-    raise exception 'الحجز ده ملغي، مينفعش يتحطله إضافات';
+    raise exception 'هذا الحجز ملغى، ولا يمكن إضافة بنود إليه';
   end if;
 
   if p_item is not null then
     select * into v_item from charge_items
      where id = p_item and property_id = v_booking.property_id;
-    if not found then raise exception 'الصنف ده مش تابع للفندق ده'; end if;
+    if not found then raise exception 'هذا الصنف لا يتبع هذا الفندق'; end if;
   end if;
 
   -- The catalogue supplies the default; an explicit price still wins, because
@@ -196,10 +196,10 @@ begin
   v_description := coalesce(nullif(trim(coalesce(p_description, '')), ''), v_item.name);
   v_amount      := coalesce(p_amount, v_item.default_amount);
 
-  if v_description is null then raise exception 'اكتب اسم الإضافة'; end if;
-  if v_amount is null then raise exception 'اكتب المبلغ'; end if;
-  if coalesce(p_quantity, 0) <= 0 then raise exception 'الكمية لازم تكون أكبر من صفر'; end if;
-  if v_amount < 0 then raise exception 'المبلغ ميقدرش يكون بالسالب'; end if;
+  if v_description is null then raise exception 'أدخل اسم الإضافة'; end if;
+  if v_amount is null then raise exception 'أدخل المبلغ'; end if;
+  if coalesce(p_quantity, 0) <= 0 then raise exception 'الكمية يجب أن تكون أكبر من صفر'; end if;
+  if v_amount < 0 then raise exception 'المبلغ لا يمكن أن يكون سالباً'; end if;
 
   insert into booking_charges (
     property_id, booking_id, charge_item_id, description,
@@ -233,7 +233,7 @@ begin
     raise exception 'not authorised' using errcode = '42501';
   end if;
   if v_charge.voided_at is not null then
-    raise exception 'السطر ده ملغي أصلاً';
+    raise exception 'هذا السطر ملغى بالفعل';
   end if;
 
   -- Removing money from a bill is a financial action, like a refund.

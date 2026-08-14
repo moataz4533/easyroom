@@ -12,7 +12,7 @@ const ACTIONS = {
     housekeeping_status_changed: "تغيرت حالة النظافة", received: "تم تسجيل دفعة", refunded: "تم تسجيل استرداد",
     extended: "تم تمديد الإقامة", shortened: "تم تقصير الإقامة", room_moved: "تم نقل الغرفة",
     cancelled: "تم إلغاء الحجز", no_show: "تم تسجيل عدم حضور", room_blocked: "تم تعطيل الغرفة",
-    room_unblocked: "تمت إعادة الغرفة للخدمة", pin_changed: "تم تغيير باسورد المدير", updated: "تم تحديث البيانات",
+    room_unblocked: "تمت إعادة الغرفة للخدمة", pin_changed: "تم تغيير كلمة مرور المدير", updated: "تم تحديث البيانات",
   },
   en: {
     created: "Booking created", checked_in: "Guest checked in", checked_out: "Guest checked out",
@@ -67,7 +67,7 @@ function ActivityLog() {
   return <>
     <Toast {...(toast || {})} />
     <div className="page-header">
-      <div><h1>{isEn ? "Activity log" : "سجل العمليات"}</h1><p>{isEn ? "A complete, time-ordered record of hotel operations." : "كل عمليات الفندق بالترتيب والموظف اللي نفّذها."}</p></div>
+      <div><h1>{isEn ? "Activity log" : "سجل العمليات"}</h1><p>{isEn ? "A complete, time-ordered record of hotel operations." : "كل عمليات الفندق بالترتيب، والموظف الذي نفّذها."}</p></div>
       <button className="btn" onClick={load} disabled={loading}><RefreshCw size={17} className={loading ? "spin" : ""} />{isEn ? "Refresh" : "تحديث"}</button>
     </div>
     <div className="activity-tools card">
@@ -76,7 +76,7 @@ function ActivityLog() {
         <option value="all">{isEn ? "All operations" : "كل العمليات"}</option><option value="booking">{isEn ? "Bookings and stays" : "الحجوزات والإقامة"}</option><option value="housekeeping">{isEn ? "Housekeeping" : "النظافة والغرف"}</option><option value="money">{isEn ? "Payments" : "المدفوعات"}</option><option value="admin">{isEn ? "Administration" : "الإدارة"}</option>
       </select>
     </div>
-    {loading ? <div className="empty">{isEn ? "Loading activity…" : "جارٍ تحميل السجل…"}</div> : filtered.length === 0 ? <div className="empty-state"><div className="empty-icon"><ListChecks size={23} /></div><p>{isEn ? "No matching operations." : "مفيش عمليات مطابقة."}</p></div> : <div className="timeline" aria-live="polite">{filtered.map((row, index) => <ActivityRow key={row.id} row={row} locale={locale} showDay={index === 0 || dayKey(filtered[index - 1].created_at) !== dayKey(row.created_at)} />)}</div>}
+    {loading ? <div className="empty">{isEn ? "Loading activity…" : "جارٍ تحميل السجل…"}</div> : filtered.length === 0 ? <div className="empty-state"><div className="empty-icon"><ListChecks size={23} /></div><p>{isEn ? "No matching operations." : "لا توجد عمليات مطابقة."}</p></div> : <div className="timeline" aria-live="polite">{filtered.map((row, index) => <ActivityRow key={row.id} row={row} locale={locale} showDay={index === 0 || dayKey(filtered[index - 1].created_at) !== dayKey(row.created_at)} />)}</div>}
   </>;
 }
 

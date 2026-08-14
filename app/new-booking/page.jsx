@@ -120,8 +120,8 @@ function NewBooking() {
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
 
   async function submit() {
-    if (!name.trim()) return showToast("اكتب اسم النزيل", true);
-    if (!Object.keys(picked).length) return showToast("اختار غرفة على الأقل", true);
+    if (!name.trim()) return showToast("أدخل اسم النزيل", true);
+    if (!Object.keys(picked).length) return showToast("اختر غرفة واحدة على الأقل", true);
     setBusy(true);
 
     let guestId = guest?.id;
@@ -151,13 +151,13 @@ function NewBooking() {
       // The exclusion constraint fires if someone took the room first.
       return showToast(
         error.message.includes("exclusion") || error.code === "23P01"
-          ? "الغرفة اتحجزت من ثانية. حدّث الصفحة واختار غرفة تانية."
+          ? "تم حجز الغرفة منذ لحظات. حدّث الصفحة واختر غرفة أخرى."
           : error.message,
         true
       );
     }
 
-    showToast(`الحجز اتسجل — ${booking.reference}`);
+    showToast(`تم تسجيل الحجز — ${booking.reference}`);
     setTimeout(() => router.push(localePath("/", locale)), 900);
   }
 
@@ -165,13 +165,13 @@ function NewBooking() {
     <>
       <Toast {...(toast || {})} />
       <h2 style={{ marginBottom: 4 }}>حجز جديد</h2>
-      <p className="section-note">ابدأ برقم الموبايل — لو النزيل جه قبل كده هيظهر لوحده.</p>
+      <p className="section-note">ابدأ برقم الهاتف — إذا سبق للنزيل الإقامة ستظهر بياناته تلقائياً.</p>
 
       <section className="section">
         <div className="card stack">
           <div className="row">
             <div className="field grow">
-              <label htmlFor="phone">رقم الموبايل</label>
+              <label htmlFor="phone">رقم الهاتف</label>
               <input
                 id="phone" className="mono" dir="ltr" style={{ textAlign: "left" }}
                 value={phone} placeholder="+2010…"
@@ -181,7 +181,7 @@ function NewBooking() {
             </div>
             <button className="btn" onClick={findGuest} disabled={searching}
               style={{ alignSelf: "flex-end" }}>
-              {searching ? "…" : "دور"}
+              {searching ? "…" : "بحث"}
             </button>
           </div>
 
@@ -192,7 +192,7 @@ function NewBooking() {
 
           {guest && (
             <div className="banner ok" style={{ margin: 0 }}>
-              نزيل سابق. {guest.notes ? `ملاحظات: ${guest.notes}` : "مفيش ملاحظات."}
+              نزيل سابق. {guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
             </div>
           )}
         </div>
@@ -217,17 +217,17 @@ function NewBooking() {
             </div>
           </div>
           <p className="section-note" style={{ margin: "8px 0 0" }}>
-            {n > 0 ? `${n} ليلة` : "الخروج لازم يكون بعد الدخول"}
+            {n > 0 ? `${n} ليلة` : "تاريخ المغادرة يجب أن يكون بعد الوصول"}
           </p>
         </div>
       </section>
 
       <section className="section">
-        <h2>الغرف الفاضية</h2>
-        <p className="section-note">اضغط غرفة تختارها، وحدد عدد الأفراد فيها.</p>
+        <h2>الغرف الشاغرة</h2>
+        <p className="section-note">اضغط على غرفة لاختيارها، وحدد عدد الأفراد بها.</p>
 
         {rooms.length === 0 ? (
-          <div className="empty">مفيش غرف فاضية في التواريخ دي.</div>
+          <div className="empty">لا توجد غرف شاغرة في هذه التواريخ.</div>
         ) : (
           <div className="rack">
             <div className="rail" />
@@ -298,13 +298,13 @@ function NewBooking() {
           )}
 
           <div className="field">
-            <label htmlFor="src">الحجز جه منين</label>
+            <label htmlFor="src">مصدر الحجز</label>
             <select id="src" value={source} onChange={(e) => setSource(e.target.value)}>
               <option value="whatsapp">واتساب</option>
               <option value="phone">مكالمة</option>
-              <option value="walk_in">حضر بنفسه</option>
+              <option value="walk_in">حضور مباشر</option>
               <option value="referral">توصية</option>
-              <option value="other">غير كده</option>
+              <option value="other">أخرى</option>
             </select>
           </div>
 
@@ -330,13 +330,13 @@ function NewBooking() {
         </div>
         {quote === 0 && Object.keys(picked).length > 0 && (
           <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
-            السعر صفر — التركيبة دي لسه مالهاش سعر في الإعدادات.
+            السعر صفر — هذه التركيبة ليس لها سعر بعد في الإعدادات.
           </div>
         )}
         <button className="btn wide" disabled={busy || !Object.keys(picked).length || n < 1}
           onClick={submit}
           style={{ background: "#fff", color: "var(--deep)", borderColor: "#fff", fontWeight: 600 }}>
-          {busy ? "بيسجل…" : "أكّد الحجز"}
+          {busy ? "جارٍ التسجيل…" : "تأكيد الحجز"}
         </button>
       </div>
     </>

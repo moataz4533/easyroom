@@ -59,16 +59,16 @@ declare
   v_count int := 0;
 begin
   if not is_admin(p_property) then
-    raise exception 'المدير أو المالك بس اللي يقدر يغير الأسعار' using errcode = '42501';
+    raise exception 'المدير أو المالك فقط من يمكنه تغيير الأسعار' using errcode = '42501';
   end if;
   if p_from is null or p_to is null then
-    raise exception 'الموسم محتاج تاريخ بداية ونهاية';
+    raise exception 'الموسم يتطلب تاريخ بداية وتاريخ نهاية';
   end if;
   if p_to < p_from then
-    raise exception 'نهاية الموسم لازم تكون بعد بدايته';
+    raise exception 'نهاية الموسم يجب أن تكون بعد بدايته';
   end if;
   if coalesce(trim(p_name), '') = '' then
-    raise exception 'اكتب اسم الموسم';
+    raise exception 'أدخل اسم الموسم';
   end if;
 
   perform require_action_pin(p_property, p_pin);
@@ -128,7 +128,7 @@ language plpgsql volatile security invoker set search_path = public, auth as $$
 declare v_count int;
 begin
   if not is_admin(p_property) then
-    raise exception 'المدير أو المالك بس اللي يقدر يغير الأسعار' using errcode = '42501';
+    raise exception 'المدير أو المالك فقط من يمكنه تغيير الأسعار' using errcode = '42501';
   end if;
 
   perform require_action_pin(p_property, p_pin);

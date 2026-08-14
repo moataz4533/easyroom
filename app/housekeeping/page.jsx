@@ -14,9 +14,9 @@ export default function Page() {
 }
 
 const HK = {
-  dirty:        { label: "محتاجة نضافة", pill: "warn" },
-  clean:        { label: "نضيفة",         pill: "ok" },
-  inspected:    { label: "اتراجعت",       pill: "ok" },
+  dirty:        { label: "تحتاج تنظيف", pill: "warn" },
+  clean:        { label: "نظيفة",         pill: "ok" },
+  inspected:    { label: "تمت مراجعتها",       pill: "ok" },
   out_of_order: { label: "معطلة",         pill: "bad" },
 };
 
@@ -63,19 +63,19 @@ function Housekeeping() {
   const pending = rooms.filter((r) => r.housekeeping_status === "dirty");
   const rest = rooms.filter((r) => r.housekeeping_status !== "dirty");
 
-  if (loading) return <div className="empty">بيحمّل…</div>;
+  if (loading) return <div className="empty">جارٍ التحميل…</div>;
 
   return (
     <>
       <Toast {...(toast || {})} />
-      <h2 style={{ marginBottom: 4 }}>النضافة</h2>
+      <h2 style={{ marginBottom: 4 }}>النظافة</h2>
       <p className="section-note">
-        {pending.length ? `${pending.length} غرفة محتاجة شغل.` : "كل الغرف مظبوطة."}
+        {pending.length ? `${pending.length} غرفة تحتاج إجراءً.` : "كل الغرف جاهزة."}
       </p>
 
       {pending.length > 0 && (
         <section className="section">
-          <h2 style={{ fontSize: 14 }}>محتاجة نضافة</h2>
+          <h2 style={{ fontSize: 14 }}>تحتاج تنظيف</h2>
           <div className="stack">
             {pending.map((r) => (
               <RoomLine key={r.id} room={r} onSet={setStatus} locale={locale} highlight />
@@ -114,7 +114,7 @@ function RoomLine({ room, onSet, highlight, locale }) {
       ) : room.housekeeping_status === "dirty" ? (
         <button className="btn primary" onClick={() => onSet(room, "clean")}>خلصت</button>
       ) : (
-        <button className="btn sm" onClick={() => onSet(room, "dirty")}>محتاجة نضافة</button>
+        <button className="btn sm" onClick={() => onSet(room, "dirty")}>تحتاج تنظيف</button>
       )}
     </div>
   );

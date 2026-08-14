@@ -68,7 +68,7 @@ function Board() {
 
       {attention.length > 0 && (
         <div className="banner bad">
-          <strong>{attention.length} حجز محتاج تدخل.</strong>
+          <strong>{attention.length} حجز يحتاج تدخلاً.</strong>
           <div className="stack" style={{ marginTop: 8 }}>
             {attention.map((a) => (
               <div key={a.booking_id} className="spread" style={{ fontSize: 13 }}>
@@ -88,7 +88,7 @@ function Board() {
         <div className="stale">
           آخر تحديث: {new Date(stale).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
             hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
-          {" — "}البيانات دي محفوظة، مش لحظية.
+          {" — "}هذه بيانات محفوظة، وليست لحظية.
         </div>
       )}
 
@@ -138,7 +138,7 @@ function Board() {
                   onClick={async () => {
                     if (!navigator.onLine) {
                       queueAdd({ kind: "rpc", fn: "check_in_booking", args: { p_booking: b.id } });
-                      showToast("اتسجل، وهيتبعت أول ما النت يرجع");
+                      showToast("تم التسجيل، وسيُرسل فور عودة الاتصال");
                       return;
                     }
                     const { error } = await supabase.rpc("check_in_booking", { p_booking: b.id });
@@ -151,7 +151,7 @@ function Board() {
               </div>
             ))}
           </div>
-        ) : <div className="empty compact-empty">{isEn ? "No arrivals scheduled for today." : "مفيش وصول مسجل النهارده."}</div>}
+        ) : <div className="empty compact-empty">{isEn ? "No arrivals scheduled for today." : "لا يوجد وصول مسجّل اليوم."}</div>}
       </section>
 
       <section className="section dashboard-section">
@@ -162,7 +162,7 @@ function Board() {
         <p className="section-note">{isEn ? "Select a room to view details and available actions." : "اضغط على أي غرفة لعرض التفاصيل والإجراءات."}</p>
 
         {loading ? (
-          <div className="empty">بيحمّل…</div>
+          <div className="empty">جارٍ التحميل…</div>
         ) : (
           <>
             <div className="room-status-grid">
@@ -249,7 +249,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
     // The booking already exists, so replaying these later is safe.
     if (!navigator.onLine && queued) {
       queueAdd(queued);
-      onDone("اتسجل، وهيتبعت أول ما النت يرجع");
+      onDone("تم التسجيل، وسيُرسل فور عودة الاتصال");
       return;
     }
     setBusy(true);
@@ -334,13 +334,13 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                       onChange={(e) => { setExtendTo(e.target.value); setCheck(null); }}
                     />
                     <button className="btn" onClick={testExtension} disabled={!navigator.onLine}>
-                      اتأكد
+                      تحقق
                     </button>
                   </div>
 
                   {!online && (
                     <div className="banner warn" style={{ marginTop: 10 }}>
-                      التمديد محتاج نت — لازم نتأكد إن الغرفة فاضية فعلاً قبل ما تأكد للنزيل.
+                      التمديد يتطلب اتصالاً — يجب التأكد أن الغرفة شاغرة فعلاً قبل تأكيدها للنزيل.
                     </div>
                   )}
 
@@ -350,13 +350,13 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                         الغرفة {blocked.room_number} محجوزة من{" "}
                         {dayLabel(blocked.blocked_from, locale)} ({blocked.blocked_by}).
                         <div style={{ marginTop: 6, fontSize: 12 }}>
-                          محتاج تنقل النزيل لغرفة تانية عشان تمدد — زرار «نقل
-                          لغرفة تانية» تحت.
+                          لتمديد الإقامة انقل النزيل إلى غرفة أخرى — زر «نقل
+                          إلى غرفة أخرى» بالأسفل.
                         </div>
                       </div>
                     ) : (
                       <div className="banner ok" style={{ marginTop: 10 }}>
-                        الغرفة فاضية لحد التاريخ ده.
+                        الغرفة شاغرة حتى هذا التاريخ.
                         <button
                           className="btn primary wide" style={{ marginTop: 8 }}
                           disabled={busy}
@@ -364,10 +364,10 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                             () => supabase.rpc("extend_stay", {
                               p_booking: row.booking_id, p_new_check_out: extendTo,
                             }),
-                            "التمديد اتسجل"
+                            "تم تسجيل التمديد"
                           )}
                         >
-                          أكّد التمديد
+                          تأكيد التمديد
                         </button>
                       </div>
                     )
@@ -382,7 +382,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                     className="btn primary wide" disabled={busy}
                     onClick={() => run(
                       () => supabase.rpc("check_out_booking", { p_booking: row.booking_id }),
-                      "تم الخروج، والغرفة اتحطت في قايمة النضافة",
+                      "تم تسجيل المغادرة، وأُضيفت الغرفة إلى قائمة النظافة",
                       { kind: "rpc", fn: "check_out_booking", args: { p_booking: row.booking_id } }
                     )}
                   >
@@ -407,7 +407,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                 className="btn wide" disabled={busy}
                 onClick={() => run(
                   () => supabase.rpc("unblock_room", { p_room: row.room_id }),
-                  "الغرفة رجعت للخدمة"
+                  "عادت الغرفة للخدمة"
                 )}
               >
                 إرجاع الغرفة للخدمة
@@ -451,13 +451,13 @@ function MoveGuest({ row, onDone, onError }) {
     });
     setBusy(false);
     if (error) return onError(error.message);
-    onDone("النزيل اتنقل، والحساب اتظبط");
+    onDone("تم نقل النزيل وتعديل الحساب");
   }
 
   if (!open) {
     return (
       <button className="btn wide" onClick={() => { setOpen(true); look(); }}>
-        نقل لغرفة تانية
+        نقل إلى غرفة أخرى
       </button>
     );
   }
@@ -475,23 +475,23 @@ function MoveGuest({ row, onDone, onError }) {
         />
       </div>
       <p className="section-note" style={{ margin: 0 }}>
-        لو اخترت تاريخ بعد بداية الإقامة، الليالي اللي فاتت هتفضل على الغرفة
+        إذا اخترت تاريخاً بعد بداية الإقامة، تبقى الليالي السابقة على الغرفة
         الحالية والباقي على الجديدة.
       </p>
 
       {!options ? (
         <button className="btn" onClick={look} disabled={busy}>
-          {busy ? "بيدور…" : "شوف الغرف المتاحة"}
+          {busy ? "جارٍ البحث…" : "عرض الغرف المتاحة"}
         </button>
       ) : options.length === 0 ? (
         <div className="banner bad" style={{ margin: 0 }}>
-          مفيش غرفة فاضية تستحمل {row.occupancy} أفراد في التواريخ دي.
+          لا توجد غرفة شاغرة تتسع لـ {row.occupancy} أفراد في التواريخ دي.
         </div>
       ) : (
         <>
           <div className="field">
             <label>السبب (اختياري)</label>
-            <input value={reason} placeholder="تكييف بايظ"
+            <input value={reason} placeholder="تكييف معطل"
               onChange={(e) => setReason(e.target.value)} />
           </div>
           <div className="stack">
@@ -503,7 +503,7 @@ function MoveGuest({ row, onDone, onError }) {
                   </span>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     {o.type_name}
-                    {!o.same_type && " — نوع مختلف، السعر ممكن يتغير"}
+                    {!o.same_type && " — نوع مختلف، وقد يتغير السعر"}
                   </div>
                 </div>
                 <button className="btn primary sm" disabled={busy}
@@ -548,7 +548,7 @@ function BlockRoom({ row, onDone, onError }) {
         </div>
         <div className="field">
           <label>السبب</label>
-          <input value={reason} placeholder="تكييف بايظ" onChange={(e) => setReason(e.target.value)} />
+          <input value={reason} placeholder="تكييف معطل" onChange={(e) => setReason(e.target.value)} />
         </div>
         <button
           className="btn danger wide" disabled={busy}
@@ -562,12 +562,12 @@ function BlockRoom({ row, onDone, onError }) {
             if (error) return onError(error.message);
             onDone(
               data?.length
-                ? `الغرفة اتعطلت. ${data.length} حجز محتاج نقل — شوف التنبيه فوق.`
-                : "الغرفة اتعطلت"
+                ? `تم تعطيل الغرفة. ${data.length} حجز يحتاج نقلاً — راجع التنبيه بالأعلى.`
+                : "تم تعطيل الغرفة"
             );
           }}
         >
-          أكّد التعطيل
+          تأكيد التعطيل
         </button>
         <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
       </div>

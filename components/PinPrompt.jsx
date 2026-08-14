@@ -17,7 +17,7 @@ export default function PinPrompt({ title, note, confirmLabel, danger, busy, onC
       {note && <p className="section-note" style={{ margin: 0 }}>{note}</p>}
 
       <div className="field">
-        <label htmlFor="pin">باسورد المدير</label>
+        <label htmlFor="pin">كلمة مرور المدير</label>
         <input
           id="pin"
           type="password"
@@ -38,7 +38,7 @@ export default function PinPrompt({ title, note, confirmLabel, danger, busy, onC
         disabled={busy || !pin}
         onClick={() => onConfirm(pin)}
       >
-        {busy ? "بيتنفذ…" : confirmLabel}
+        {busy ? "جارٍ التنفيذ…" : confirmLabel}
       </button>
       <button className="btn wide" onClick={onCancel}>رجوع</button>
     </div>

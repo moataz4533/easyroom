@@ -28,7 +28,7 @@ const STATUS = {
 
 const FILTERS = [
   ["active", "الحالية والقادمة"],
-  ["today", "النهاردة"],
+  ["today", "اليوم"],
   ["past", "المنتهية"],
   ["cancelled", "الملغية"],
 ];
@@ -94,7 +94,7 @@ function Bookings() {
     <>
       <Toast {...(toast || {})} />
       <h2 style={{ marginBottom: 4 }}>الحجوزات</h2>
-      <p className="section-note">دوّر بالاسم أو رقم الموبايل أو رقم الحجز.</p>
+      <p className="section-note">ابحث بالاسم أو رقم الهاتف أو رقم الحجز.</p>
 
       <input
         value={search}
@@ -113,9 +113,9 @@ function Bookings() {
       </div>
 
       {loading ? (
-        <div className="empty">بيحمّل…</div>
+        <div className="empty">جارٍ التحميل…</div>
       ) : shown.length === 0 ? (
-        <div className="empty">مفيش حجوزات هنا.</div>
+        <div className="empty">لا توجد حجوزات هنا.</div>
       ) : (
         <div className="stack">
           {shown.map((b) => (
@@ -167,7 +167,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
 
   async function submit() {
     const n = Number(amount);
-    if (!n || n <= 0) return onError("اكتب مبلغ صحيح");
+    if (!n || n <= 0) return onError("أدخل مبلغاً صحيحاً");
 
     setBusy(true);
     const { error } = await supabase.rpc("record_payment", {
@@ -179,7 +179,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
     setBusy(false);
     if (error) return onError(error.message);
 
-    onDone(refund ? `اتسجل استرداد ${egp(n, locale)} ج` : `اتسجل ${egp(n, locale)} ج`);
+    onDone(refund ? `تم تسجيل استرداد ${egp(n, locale)} ج` : `تم تسجيل ${egp(n, locale)} ج`);
   }
 
   return (
@@ -221,7 +221,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
 
       {!online ? (
         <div className="banner warn" style={{ margin: 0 }}>
-          تسجيل الدفعات محتاج نت — عشان الرصيد ميتعارضش لو اتسجل من جهازين.
+          تسجيل الدفعات يتطلب اتصالاً — حتى لا يتعارض الرصيد إذا سُجّل من جهازين.
         </div>
       ) : !open ? (
         <button className="btn ghost wide" onClick={() => setOpen(true)}>
@@ -267,12 +267,12 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
 
           <button className={`btn wide ${refund ? "danger" : "primary"}`}
             disabled={busy} onClick={submit}>
-            {busy ? "بيسجل…" : refund ? "سجّل الاسترداد" : "سجّل الدفعة"}
+            {busy ? "جارٍ التسجيل…" : refund ? "تسجيل الاسترداد" : "تسجيل الدفعة"}
           </button>
           <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
 
           <p className="section-note" style={{ margin: 0 }}>
-            الدفعات مبتتمسحش. الغلط بيتصحح باسترداد، عشان السجل يفضل كامل.
+            الدفعات لا تُحذف. يُصحَّح الخطأ باسترداد، حتى يبقى السجل كاملاً.
           </p>
         </div>
       )}
@@ -297,7 +297,7 @@ function BookingRow({ b, onOpen }) {
         <div className="row" style={{ gap: 8 }}>
           <span style={{ fontWeight: 600 }}>{b.guests?.full_name || "—"}</span>
           <span className={`pill ${s.pill}`}>{s.label}</span>
-          {b.attention_reason && <span className="pill warn">محتاج تدخل</span>}
+          {b.attention_reason && <span className="pill warn">يحتاج تدخلاً</span>}
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
           <span className="code">{b.reference}</span>{" "}
@@ -418,7 +418,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
         <section className="section">
           <h2 style={{ fontSize: 14, marginBottom: 8 }}>الغرف</h2>
           {live.length === 0 ? (
-            <div className="empty" style={{ padding: 16 }}>مفيش غرف على الحجز ده.</div>
+            <div className="empty" style={{ padding: 16 }}>لا توجد غرف على هذا الحجز.</div>
           ) : (
             <div className="stack">
               {live.map((a) => (
@@ -461,27 +461,27 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
         {roomToRelease && (
           <PinPrompt
             title={`إلغاء غرفة ${roomToRelease.rooms?.number}`}
-            note="باقي غرف الحجز هتفضل زي ما هي، والحساب هيتظبط."
-            confirmLabel="أكّد إلغاء الغرفة"
+            note="باقي غرف الحجز تبقى كما هي، ويُعدّل الحساب تلقائياً."
+            confirmLabel="تأكيد إلغاء الغرفة"
             danger busy={busy}
             onCancel={() => setRoomToRelease(null)}
             onConfirm={(pin) => call("release_booking_room",
               { p_allocation: roomToRelease.id, p_reason: "إلغاء غرفة", p_pin: pin },
-              "الغرفة اتلغت من الحجز")}
+              "تم إلغاء الغرفة من الحجز")}
           />
         )}
 
         {!canManage ? null : !isOpen ? (
-          <div className="banner">الحجز ده مقفول، مفيش إجراءات عليه.</div>
+          <div className="banner">هذا الحجز مغلق، ولا توجد إجراءات عليه.</div>
         ) : !online ? (
           <div className="banner warn">
-            الإلغاء والتعديل محتاجين نت — عشان الغرفة تترجع للبيع فوراً.
+            الإلغاء والتعديل يتطلبان اتصالاً — حتى تعود الغرفة للبيع فوراً.
           </div>
         ) : !mode ? (
           <div className="stack">
             {b.status === "checked_in" ? (
               <button className="btn wide" onClick={() => setMode("early")}>
-                خروج بدري (تقصير الإقامة)
+                مغادرة مبكرة (تقصير الإقامة)
               </button>
             ) : (
               <button className="btn wide" onClick={() => setMode("noshow")}>
@@ -497,7 +497,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             <h2 style={{ fontSize: 14 }}>إلغاء الحجز</h2>
             <p className="section-note" style={{ margin: 0 }}>
               {b.status === "checked_in"
-                ? "النزيل ساكن دلوقتي. الإلغاء هيفضي الغرفة فوراً — لو هو خارج بدري استخدم «خروج بدري» بدل كده."
+                ? "النزيل مقيم حالياً. الإلغاء سيُخلي الغرفة فوراً — إذا كان سيغادر مبكراً فاستخدم «مغادرة مبكرة» بدلاً من ذلك."
                 : `الغرف (${live.map((a) => a.rooms?.number).join("، ")}) هترجع متاحة للبيع على طول.`}
             </p>
             <div className="field">
@@ -506,20 +506,20 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                 onChange={(e) => setReason(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بباسورد المدير"
-              confirmLabel="أكّد الإلغاء"
+              title="تأكيد بكلمة مرور المدير"
+              confirmLabel="تأكيد الإلغاء"
               danger busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("cancel_booking",
                 { p_booking: b.id, p_reason: reason || "بدون سبب محدد", p_pin: pin },
-                "الحجز اتلغى والغرف رجعت متاحة")}
+                "تم إلغاء الحجز وعادت الغرف متاحة")}
             />
           </div>
         ) : mode === "noshow" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
             <h2 style={{ fontSize: 14 }}>عدم حضور</h2>
             <p className="section-note" style={{ margin: 0 }}>
-              الغرف هترجع للبيع على طول، عشان لسه ممكن تتباع الليلادي.
+              تعود الغرف للبيع فوراً، فما زال من الممكن بيع هذه الليلة.
             </p>
             <div className="field">
               <label>مبلغ يتحمّل عليه (لو في)</label>
@@ -527,20 +527,20 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                 onChange={(e) => setCharge(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بباسورد المدير"
-              confirmLabel="أكّد عدم الحضور"
+              title="تأكيد بكلمة مرور المدير"
+              confirmLabel="تأكيد عدم الحضور"
               danger busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("mark_no_show",
                 { p_booking: b.id, p_charge: Number(charge) || 0, p_pin: pin },
-                "اتسجل عدم حضور")}
+                "تم تسجيل عدم الحضور")}
             />
           </div>
         ) : mode === "early" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
-            <h2 style={{ fontSize: 14 }}>خروج بدري</h2>
+            <h2 style={{ fontSize: 14 }}>مغادرة مبكرة</h2>
             <p className="section-note" style={{ margin: 0 }}>
-              الليالي اللي مش هيقعدها هتتشال من الحساب، والغرفة ترجع للبيع.
+              تُحذف الليالي التي لن يقيمها من الحساب، وتعود الغرفة للبيع.
             </p>
             <div className="field">
               <label>تاريخ الخروج الجديد</label>
@@ -549,14 +549,14 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                 onChange={(e) => setNewOut(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بباسورد المدير"
-              note="الخروج البدري بيقلل الحساب، عشان كده محتاج تأكيد."
-              confirmLabel="أكّد الخروج البدري"
+              title="تأكيد بكلمة مرور المدير"
+              note="المغادرة المبكرة تُنقص الحساب، ولذلك تتطلب تأكيداً."
+              confirmLabel="تأكيد المغادرة المبكرة"
               busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("shorten_stay",
                 { p_booking: b.id, p_new_check_out: newOut, p_pin: pin },
-                "الإقامة اتقصرت والحساب اتظبط")}
+                "تم تقصير الإقامة وتعديل الحساب")}
             />
           </div>
         ) : null}

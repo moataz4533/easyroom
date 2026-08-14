@@ -25,8 +25,8 @@ const TABS = [
   ["rooms", "الغرف"],
   ["charges", "الإضافات"],
   ["staff", "الموظفين"],
-  ["security", "الباسورد"],
-  ["property", "بيانات النادي"],
+  ["security", "كلمة مرور المدير"],
+  ["property", "بيانات الفندق"],
 ];
 
 function Settings() {
@@ -71,7 +71,7 @@ function Settings() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="empty">بيحمّل…</div>;
+  if (loading) return <div className="empty">جارٍ التحميل…</div>;
 
   const shared = { property, types, plans, rates, rooms, staff, chargeItems, reload: load, showToast, locale };
 
@@ -193,16 +193,16 @@ function Rates({ property, types, plans, rates, reload, showToast, locale }) {
     if (error) return showToast(error.message, true);
 
     setAsking(false);
-    showToast(`${rows.length} سعر اتحفظ`);
+    showToast(`${rows.length} سعر تم الحفظ`);
     reload();
   }
 
-  if (!types.length) return <div className="empty">اعمل نوع غرفة الأول من تبويب الغرف.</div>;
+  if (!types.length) return <div className="empty">أضف نوع غرفة أولاً من تبويب الغرف.</div>;
 
   return (
     <>
       <p className="section-note">
-        سعر الليلة للغرفة كاملة. الخانة الفاضية معناها إن التركيبة دي مش للبيع.
+        سعر الليلة للغرفة كاملة. الخانة الفارغة تعني أن هذه التركيبة غير معروضة للبيع.
       </p>
 
       <RateMatrix types={types} plans={plans} locale={locale}
@@ -219,8 +219,8 @@ function Rates({ property, types, plans, rates, reload, showToast, locale }) {
         <div style={{ marginTop: 14 }}>
           <PinPrompt
             title="تأكيد تغيير الأسعار"
-            note="تغيير السعر بيأثر على كل حجز جديد، عشان كده محتاج باسورد المدير."
-            confirmLabel="احفظ الأسعار"
+            note="تغيير السعر يؤثر على كل حجز جديد، ولذلك يتطلب كلمة مرور المدير."
+            confirmLabel="حفظ الأسعار"
             busy={saving}
             onCancel={() => setAsking(false)}
             onConfirm={save}
@@ -243,7 +243,7 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
   const [typeMax, setTypeMax] = useState(2);
 
   async function addType() {
-    if (!typeName.trim() || !typeCode.trim()) return showToast("محتاج اسم وكود", true);
+    if (!typeName.trim() || !typeCode.trim()) return showToast("الاسم والكود مطلوبان", true);
     const { error } = await supabase.from("room_types").insert({
       property_id: property.id,
       code: typeCode.trim().toUpperCase(),
@@ -257,17 +257,17 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
     });
     if (error) return showToast(error.message, true);
     setTypeName(""); setTypeNameEn(""); setTypeDescription(""); setTypeDescriptionEn(""); setTypeCode(""); setTypeMax(2);
-    showToast("النوع اتضاف"); reload();
+    showToast("تمت إضافة النوع"); reload();
   }
 
   async function addRoom() {
     const tId = newType || types[0]?.id;
-    if (!newRoom.trim() || !tId) return showToast("اكتب رقم الغرفة", true);
+    if (!newRoom.trim() || !tId) return showToast("أدخل رقم الغرفة", true);
     const { error } = await supabase.from("rooms").insert({
       property_id: property.id, room_type_id: tId, number: newRoom.trim(),
     });
     if (error) return showToast(error.message, true);
-    setNewRoom(""); showToast("الغرفة اتضافت"); reload();
+    setNewRoom(""); showToast("تمت إضافة الغرفة"); reload();
   }
 
   async function setRoomType(roomId, typeId) {
@@ -282,7 +282,7 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
     <>
       <section className="section">
         <h2 style={{ fontSize: 14 }}>أنواع الغرف</h2>
-        <p className="section-note">«أقصى عدد» بيحدد صفوف مصفوفة الأسعار.</p>
+        <p className="section-note">«أقصى عدد» يحدد صفوف مصفوفة الأسعار.</p>
         <div className="stack">
           {types.map((t, i) => (
             <div key={t.id} className="card spread">
@@ -443,7 +443,7 @@ function Seasons({ property, types, plans, showToast, locale }) {
     loadSeasons();
   }
 
-  if (!types.length) return <div className="empty">اعمل نوع غرفة الأول من تبويب الغرف.</div>;
+  if (!types.length) return <div className="empty">أضف نوع غرفة أولاً من تبويب الغرف.</div>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(stored);
 
@@ -662,10 +662,10 @@ function Staff({ property, staff, reload, showToast }) {
 
   async function create() {
     if (!form.full_name.trim() || !isStaffUsername(form.username)) {
-      return showToast("محتاج الاسم واسم مستخدم إنجليزي بسيط من 3 حروف على الأقل", true);
+      return showToast("الاسم واسم المستخدم بالإنجليزية مطلوبان، بحد أدنى 3 أحرف", true);
     }
-    if (form.password.length < 8) return showToast("الباسورد لازم 8 حروف على الأقل", true);
-    if (form.password !== form.password_again) return showToast("الباسوردين مش متطابقين", true);
+    if (form.password.length < 8) return showToast("كلمة المرور يجب أن تكون 8 أحرف على الأقل", true);
+    if (form.password !== form.password_again) return showToast("كلمتا المرور غير متطابقتين", true);
 
     setBusy(true);
     const out = await call({
@@ -679,7 +679,7 @@ function Staff({ property, staff, reload, showToast }) {
     setBusy(false);
 
     if (out.error) return showToast(out.error, true);
-    showToast(`${form.full_name} اتضاف. اديله اسم المستخدم والباسورد.`);
+    showToast(`تمت إضافة ${form.full_name}. سلّمه اسم المستخدم وكلمة المرور.`);
     setForm({ full_name: "", username: "", phone: "", password: "", password_again: "", role: "reception" });
     setOpen(false);
     reload();
@@ -688,25 +688,25 @@ function Staff({ property, staff, reload, showToast }) {
   async function changeRole(m, role) {
     const out = await call({ action: "set_role", member_id: m.id, role });
     if (out.error) return showToast(out.error, true);
-    showToast("الصلاحية اتغيرت");
+    showToast("تم تغيير الصلاحية");
     reload();
   }
 
   async function toggle(m) {
     const out = await call({ action: "set_active", member_id: m.id });
     if (out.error) return showToast(out.error, true);
-    showToast(out.is_active ? "الحساب اتفعّل" : "الحساب اتوقف");
+    showToast(out.is_active ? "تم تفعيل الحساب" : "تم إيقاف الحساب");
     reload();
   }
 
   async function resetPassword() {
-    if (resetValue.length < 8) return showToast("الباسورد لازم 8 حروف على الأقل", true);
-    if (resetValue !== resetAgain) return showToast("الباسوردين مش متطابقين", true);
+    if (resetValue.length < 8) return showToast("كلمة المرور يجب أن تكون 8 أحرف على الأقل", true);
+    if (resetValue !== resetAgain) return showToast("كلمتا المرور غير متطابقتين", true);
     setBusy(true);
     const out = await call({ action: "reset_password", member_id: resetMember.id, password: resetValue });
     setBusy(false);
     if (out.error) return showToast(out.error, true);
-    showToast("الباسورد اتغير. اديله الجديد.");
+    showToast("تم تغيير كلمة المرور. سلّمه الكلمة الجديدة.");
     setResetMember(null); setResetValue(""); setResetAgain("");
   }
 
@@ -715,7 +715,7 @@ function Staff({ property, staff, reload, showToast }) {
   return (
     <>
       <p className="section-note">
-        كل موظف بيشوف اللي يخصه بس. الهاوس كيبينج مش بيشوف فلوس ولا بيانات نزلاء.
+        كل موظف يرى ما يخصه فقط. موظف النظافة لا يرى المبالغ ولا بيانات النزلاء.
       </p>
 
       <div className="stack">
@@ -741,12 +741,12 @@ function Staff({ property, staff, reload, showToast }) {
               >
                 <option value="owner">المالك</option>
                 <option value="manager">مدير</option>
-                <option value="reception">ريسبشن</option>
-                <option value="housekeeping">هاوس كيبينج</option>
+                <option value="reception">استقبال</option>
+                <option value="housekeeping">نظافة</option>
               </select>
             </div>
             <div className="row" style={{ marginTop: 10 }}>
-              <button className="btn sm" onClick={() => { setResetMember(m); setResetValue(""); setResetAgain(""); }}>غيّر الباسورد</button>
+              <button className="btn sm" onClick={() => { setResetMember(m); setResetValue(""); setResetAgain(""); }}>تغيير كلمة المرور</button>
               <button className="btn sm danger" onClick={() => toggle(m)}>
                 {m.is_active ? "إيقاف الحساب" : "تفعيل الحساب"}
               </button>
@@ -764,51 +764,51 @@ function Staff({ property, staff, reload, showToast }) {
           <h2 style={{ fontSize: 14 }}>موظف جديد</h2>
           <div className="field"><label>الاسم</label>
             <input value={form.full_name} onChange={set("full_name")} placeholder="أحمد محمود" /></div>
-          <div className="field"><label>اسم المستخدم (ده اللي هيدخل بيه)</label>
+          <div className="field"><label>اسم المستخدم (يُستخدم لتسجيل الدخول)</label>
             <input dir="ltr" className="mono" style={{ textAlign: "left" }} autoComplete="off"
               value={form.username} onChange={set("username")} placeholder="ahmed" /></div>
-          <p className="field-hint">3 حروف إنجليزية أو أرقام على الأقل، من غير مسافات. مثال: ahmed أو reception1</p>
-          <div className="field"><label>رقم الموبايل</label>
+          <p className="field-hint">3 أحرف إنجليزية أو أرقام على الأقل، دون مسافات. مثال: ahmed أو reception1</p>
+          <div className="field"><label>رقم الهاتف</label>
             <input className="mono" dir="ltr" style={{ textAlign: "left" }}
               value={form.phone} onChange={set("phone")} /></div>
-          <div className="field"><label>الباسورد المبدئي</label>
+          <div className="field"><label>كلمة المرور المبدئي</label>
             <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password}
               onChange={set("password")} placeholder="8 حروف على الأقل" /></div>
-          <div className="field"><label>تأكيد الباسورد</label>
+          <div className="field"><label>تأكيد كلمة المرور</label>
             <input type="password" autoComplete="new-password" dir="ltr" style={{ textAlign: "left" }} value={form.password_again}
-              onChange={set("password_again")} placeholder="اكتب نفس الباسورد تاني" /></div>
+              onChange={set("password_again")} placeholder="أعد إدخال كلمة المرور" /></div>
           <div className="field"><label>الدور</label>
             <select value={form.role} onChange={set("role")}>
-              <option value="reception">ريسبشن — يحجز ويسكّن ويقبض</option>
-              <option value="housekeeping">هاوس كيبينج — النضافة بس</option>
+              <option value="reception">استقبال — يحجز ويسكّن ويقبض</option>
+              <option value="housekeeping">نظافة — النظافة بس</option>
               <option value="manager">مدير — كل حاجة والأسعار</option>
             </select></div>
 
           <div className="banner warn" style={{ margin: 0 }}>
-            الموظف هيدخل باسم المستخدم والباسورد فقط، من غير إيميل. سلّمه الاتنين بنفسك.
+            يسجّل الموظف الدخول باسم المستخدم وكلمة المرور فقط، دون بريد إلكتروني. سلّمه الاثنين بنفسك.
           </div>
 
           <button className="btn primary wide" disabled={busy} onClick={create}>
-            {busy ? "بيضيف…" : "إنشاء الحساب"}
+            {busy ? "جارٍ الإضافة…" : "إنشاء الحساب"}
           </button>
           <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
         </div>
       )}
       <Dialog
         open={!!resetMember}
-        title={`باسورد جديد لـ ${resetMember?.profiles?.full_name || "الموظف"}`}
-        description="اكتب 8 حروف على الأقل، ثم سلّم الباسورد للموظف بطريقة آمنة."
+        title={`كلمة مرور جديدة لـ ${resetMember?.profiles?.full_name || "الموظف"}`}
+        description="أدخل 8 أحرف على الأقل، ثم سلّم كلمة المرور للموظف بطريقة آمنة."
         onClose={() => { setResetMember(null); setResetValue(""); setResetAgain(""); }}
       >
         <div className="stack">
-          <label className="field"><span>الباسورد الجديد</span>
+          <label className="field"><span>كلمة المرور الجديد</span>
             <input type="password" autoComplete="new-password" dir="ltr" value={resetValue} onChange={(e) => setResetValue(e.target.value)} />
           </label>
-          <label className="field"><span>تأكيد الباسورد الجديد</span>
+          <label className="field"><span>تأكيد كلمة المرور الجديدة</span>
             <input type="password" autoComplete="new-password" dir="ltr" value={resetAgain} onChange={(e) => setResetAgain(e.target.value)} />
           </label>
           <div className="row">
-            <button className="btn primary grow" disabled={busy || resetValue.length < 8 || resetAgain.length < 8} onClick={resetPassword}>{busy ? "بيتنفذ…" : "غيّر الباسورد"}</button>
+            <button className="btn primary grow" disabled={busy || resetValue.length < 8 || resetAgain.length < 8} onClick={resetPassword}>{busy ? "جارٍ التنفيذ…" : "تغيير كلمة المرور"}</button>
             <button className="btn" onClick={() => { setResetMember(null); setResetAgain(""); }}>إلغاء</button>
           </div>
         </div>
@@ -831,8 +831,8 @@ function Security({ property, showToast }) {
   }, [property.id]);
 
   async function save() {
-    if (pin.length < 4) return showToast("لازم 4 أرقام على الأقل", true);
-    if (pin !== again) return showToast("الباسورد مش متطابق", true);
+    if (pin.length < 4) return showToast("4 أرقام على الأقل", true);
+    if (pin !== again) return showToast("كلمة المرور غير متطابقة", true);
 
     setBusy(true);
     const { error } = await supabase.rpc("set_action_pin", {
@@ -842,7 +842,7 @@ function Security({ property, showToast }) {
     if (error) return showToast(error.message, true);
 
     setPin(""); setAgain(""); setIsSet(true);
-    showToast("الباسورد اتحفظ");
+    showToast("تم حفظ كلمة المرور");
   }
 
   async function clear() {
@@ -850,52 +850,52 @@ function Security({ property, showToast }) {
     if (error) return showToast(error.message, true);
     setIsSet(false);
     setConfirmClear(false);
-    showToast("الباسورد اتشال");
+    showToast("تمت إزالة كلمة المرور");
   }
 
   return (
     <>
       <p className="section-note">
-        باسورد بيتطلب قبل الإلغاء وعدم الحضور والخروج البدري وتغيير الأسعار.
+        كلمة مرور تُطلب قبل الإلغاء وعدم الحضور والمغادرة المبكرة وتغيير الأسعار.
       </p>
 
       <div className={`banner ${isSet ? "ok" : "warn"}`}>
-        {isSet === null ? "بيحمّل…"
+        {isSet === null ? "جارٍ التحميل…"
           : isSet
-          ? "الباسورد مفعّل. الإجراءات دي محتاجة تأكيد."
-          : "مفيش باسورد. أي حد ليه صلاحية يقدر يلغي من غير تأكيد."}
+          ? "كلمة المرور مفعّلة. هذه الإجراءات تتطلب تأكيداً."
+          : "لا توجد كلمة مرور. أي مستخدم لديه صلاحية يمكنه الإلغاء دون تأكيد."}
       </div>
 
       <div className="card stack">
         <div className="field">
-          <label>{isSet ? "باسورد جديد" : "الباسورد"}</label>
+          <label>{isSet ? "كلمة مرور جديدة" : "كلمة المرور"}</label>
           <input type="password" inputMode="numeric" className="mono" dir="ltr"
             style={{ textAlign: "center", fontSize: 20, letterSpacing: ".3em" }}
             value={pin} onChange={(e) => setPin(e.target.value)} />
         </div>
         <div className="field">
-          <label>اكتبه تاني</label>
+          <label>أعد إدخاله</label>
           <input type="password" inputMode="numeric" className="mono" dir="ltr"
             style={{ textAlign: "center", fontSize: 20, letterSpacing: ".3em" }}
             value={again} onChange={(e) => setAgain(e.target.value)} />
         </div>
 
         <button className="btn primary wide" disabled={busy} onClick={save}>
-          {busy ? "بيحفظ…" : isSet ? "غيّر الباسورد" : "فعّل الباسورد"}
+          {busy ? "جارٍ الحفظ…" : isSet ? "تغيير كلمة المرور" : "تفعيل كلمة المرور"}
         </button>
 
         {isSet && (
-          <button className="btn wide danger" onClick={() => setConfirmClear(true)}>شيل الباسورد</button>
+          <button className="btn wide danger" onClick={() => setConfirmClear(true)}>شيل كلمة المرور</button>
         )}
       </div>
 
       <div className="banner warn" style={{ marginTop: 14 }}>
-        الباسورد متخزّن مشفّر — مش أنا ولا أي حد يقدر يقراه، فلو نسيته
+        كلمة المرور متخزّن مشفّر — مش أنا ولا أي حد يقدر يقراه، فلو نسيته
         هتعمل واحد جديد من هنا. وبعد 5 محاولات غلط بيتقفل ربع ساعة.
       </div>
-      <Dialog open={confirmClear} danger title="إزالة باسورد التأكيد؟" description="بعد الإزالة، إجراءات الإلغاء والـ no-show لن تطلب تأكيدًا إضافيًا." onClose={() => setConfirmClear(false)}>
+      <Dialog open={confirmClear} danger title="إزالة كلمة مرور التأكيد؟" description="بعد الإزالة، لن تطلب إجراءات الإلغاء وعدم الحضور تأكيداً إضافياً." onClose={() => setConfirmClear(false)}>
         <div className="row">
-          <button className="btn danger grow" onClick={clear}>نعم، شيل الباسورد</button>
+          <button className="btn danger grow" onClick={clear}>نعم، شيل كلمة المرور</button>
           <button className="btn" onClick={() => setConfirmClear(false)}>رجوع</button>
         </div>
       </Dialog>
@@ -940,14 +940,14 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     tooLarge: "The image must be 5MB or smaller.",
     saving: "Uploading and saving…",
   } : {
-    logo: "لوجو الفندق",
+    logo: "شعار الفندق",
     logoHint: "PNG أو JPG أو WebP — بحد أقصى 5 ميجا.",
     choose: "اختيار صورة",
     remove: "حذف الصورة",
-    alt: "معاينة لوجو الفندق",
-    invalidType: "اختار صورة PNG أو JPG أو WebP.",
-    tooLarge: "حجم الصورة لازم يكون 5 ميجا أو أقل.",
-    saving: "بيرفع ويحفظ…",
+    alt: "معاينة شعار الفندق",
+    invalidType: "اختر صورة PNG أو JPG أو WebP.",
+    tooLarge: "حجم الصورة يجب ألا يتجاوز 5 ميجا.",
+    saving: "جارٍ الرفع والحفظ…",
   };
 
   useEffect(() => {
@@ -1023,7 +1023,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     setForm((current) => ({ ...current, logo_url: nextLogoUrl || "" }));
     setLogoFile(null);
     setRemoveLogo(false);
-    showToast("اتحفظ");
+    showToast("تم الحفظ");
     reload();
   }
 
@@ -1032,7 +1032,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
   return (
     <>
     <div className="card stack">
-      <div className="field"><label>اسم النادي</label>
+      <div className="field"><label>اسم الفندق</label>
         <input value={form.name} onChange={set("name")} /></div>
       <div className="field"><label>اسم الفندق بالإنجليزية</label>
         <input value={form.name_en} dir="ltr" onChange={set("name_en")} /></div>
@@ -1054,7 +1054,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
           <ImagePlus className="logo-upload-icon" size={20} aria-hidden="true" />
         </div>
       </div>
-      <div className="field"><label>لون النادي</label>
+      <div className="field"><label>لون الفندق</label>
         <input type="color" value={form.primary_color} onChange={set("primary_color")}
           style={{ height: 44, padding: 4 }} /></div>
       <div className="field"><label>رقم الواتساب</label>
@@ -1099,7 +1099,7 @@ function ManagedTranslations({ types, plans, reload, showToast }) {
     setSaving(false);
     const failed = results.find((result) => result.error);
     if (failed) return showToast(failed.error.message, true);
-    showToast("الترجمات الإنجليزية اتحفظت"); reload();
+    showToast("تم حفظ الترجمات الإنجليزية"); reload();
   }
 
   return (
@@ -1120,7 +1120,7 @@ function ManagedTranslations({ types, plans, reload, showToast }) {
           </div>
         ))}
       </div>
-      <button className="btn primary wide" style={{ marginTop: 12 }} disabled={saving} onClick={save}>{saving ? "بيحفظ…" : "حفظ المحتوى الإنجليزي"}</button>
+      <button className="btn primary wide" style={{ marginTop: 12 }} disabled={saving} onClick={save}>{saving ? "جارٍ الحفظ…" : "حفظ المحتوى الإنجليزي"}</button>
     </section>
   );
 }
