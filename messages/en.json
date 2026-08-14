@@ -265,5 +265,34 @@
       "title": "Staff accounts",
       "why": "Only the owner's account exists; reception needs its own."
     }
+  },
+  "Provisional": {
+    "title": "Provisional bookings",
+    "leadPending": "{count, plural, one {# booking was taken with no connection and has not arrived yet — the room is not held until it does.} other {# bookings were taken with no connection and have not arrived yet — the rooms are not held until they do.}}",
+    "leadFailed": "{count, plural, one {# provisional booking was refused and needs attention.} other {# provisional bookings were refused and need attention.}}",
+    "leadSent": "{count, plural, one {# provisional booking was confirmed.} other {# provisional bookings were confirmed.}}",
+    "offlineNotice": "No connection. This will be recorded provisionally, and the room is not actually held until the connection returns — tell the guest their confirmation follows shortly.",
+    "record": "Record a provisional booking",
+    "recording": "Recording…",
+    "recorded": "Recorded provisionally for {name}. It will be sent as soon as the connection returns.",
+    "noPrice": "The price is worked out when the booking arrives, because the rates live in the database.",
+    "availabilityUnknown": "These rooms come from the latest copy saved on this device, so availability is not certain.",
+    "heldByCache": "Occupied as of the last update",
+    "conflictsDraft": "Clashes with another provisional booking on this device",
+    "statePending": "Waiting for a connection",
+    "stateFailed": "Refused",
+    "stateSent": "Confirmed",
+    "reasonTaken": "The room went to another guest before the connection returned. Call the guest and pick another room.",
+    "reasonUnauthorised": "This account is not allowed to take bookings at this hotel.",
+    "reasonNoRatePlan": "There is no default booking channel in Settings.",
+    "reasonOther": "The booking was not accepted: {message}",
+    "retry": "Try again",
+    "discard": "Delete",
+    "dismiss": "OK",
+    "call": "Call",
+    "sendNow": "Send now",
+    "stay": "{nights, plural, one {# night} other {# nights}} · {rooms} · {heads, plural, one {# guest} other {# guests}}",
+    "reference": "Booking {reference}",
+    "noSavedRooms": "There is no saved copy of the rooms on this device. Open the app once with a connection, and after that bookings can be recorded offline."
   }
 }

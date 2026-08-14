@@ -193,13 +193,16 @@ export function Clock() {
 }
 
 function StatusStrip() {
-  const { online, pending, syncing, sync } = useOffline();
+  const { online, pending, provisional, syncing, sync } = useOffline();
   const t = useTranslations("Shell");
-  if (online && pending === 0) return null;
+  // A booking waiting to be sent counts as an action waiting to be sent —
+  // it is the one the hotel most needs to know is not through yet.
+  const waiting = pending + provisional;
+  if (online && waiting === 0) return null;
   return (
     <div className={`strip ${online ? "" : "off"}`} role="status">
       {!online && <><CloudOff size={16} /><span>{t("offline")}</span></>}
-      {pending > 0 && <><span>{t("pending", { count: pending })}</span>{online && <button className="strip-btn" onClick={sync} disabled={syncing}><RefreshCw size={14} />{syncing ? t("syncing") : t("syncNow")}</button>}</>}
+      {waiting > 0 && <><span>{t("pending", { count: waiting })}</span>{online && <button className="strip-btn" onClick={sync} disabled={syncing}><RefreshCw size={14} />{syncing ? t("syncing") : t("syncNow")}</button>}</>}
     </div>
   );
 }

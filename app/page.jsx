@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import SetupChecklist from "../components/SetupChecklist";
+import ProvisionalBookings from "../components/ProvisionalBookings";
 import { supabase, today, addDays, dayLabel } from "../lib/supabase";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
 import { useLocale } from "next-intl";
@@ -68,6 +69,8 @@ function Board() {
       <Toast {...(toast || {})} />
 
       <SetupChecklist property={property} role={role} />
+
+      <ProvisionalBookings />
 
       {attention.length > 0 && (
         <div className="banner bad">

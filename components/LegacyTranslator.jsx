@@ -263,6 +263,7 @@ export const LEGACY_EN = {
   "نزيل سابق.": "Previous guest.",
   "أدخل اسم النزيل": "Enter the guest's name",
   "اختر غرفة واحدة على الأقل": "Choose at least one room",
+  "راجع التواريخ": "Check the dates",
   "تم حجز الغرفة منذ لحظات. حدّث الصفحة واختر غرفة أخرى.": "The room was booked moments ago. Refresh and choose another.",
   "السعر صفر — هذه التركيبة ليس لها سعر بعد في الإعدادات.": "The price is zero — this combination has no rate in settings yet.",
   "أفراد": "guests",

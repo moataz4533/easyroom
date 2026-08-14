@@ -5,7 +5,11 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
-import { useLocale } from "next-intl";
+import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
+import {
+  newProvisional, roomsHeldOn, roomsWantedByDrafts, validateProvisional,
+} from "../../lib/provisional";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function Page() {
   return (
@@ -28,6 +32,8 @@ function NewBooking() {
   const locale = useLocale();
   const params = useSearchParams();
   const [toast, showToast] = useToast();
+  const t = useTranslations("Provisional");
+  const { online } = useOffline();
 
   const presetRoom = params.get("room");
   const presetDate = ISO_DATE.test(params.get("check_in") || "") ? params.get("check_in") : null;
@@ -48,6 +54,11 @@ function NewBooking() {
   const [accountId, setAccountId] = useState("");
 
   const [rooms, setRooms] = useState([]);
+  // Enough saved on the device to take a booking with no connection: which
+  // rooms exist, and what the last data we saw says is already taken.
+  const [savedRooms, setSavedRooms] = useState([]);
+  const [savedHolds, setSavedHolds] = useState([]);
+  const [drafts, setDrafts] = useState([]);
   const [picked, setPicked] = useState({});   // room_id -> occupancy
   const [source, setSource] = useState("whatsapp");
   const [notes, setNotes] = useState("");
@@ -67,9 +78,10 @@ function NewBooking() {
       .eq("is_active", true).order("name").then(({ data }) => setAccounts(data || []));
   }, [property]);
 
-  // Look up availability whenever the dates make sense.
+  // Look up availability whenever the dates make sense. Offline there is no
+  // availability to look up, so the saved room list stands in for it.
   useEffect(() => {
-    if (!property || n < 1) return setRooms([]);
+    if (!property || n < 1 || !online) return setRooms([]);
     supabase.rpc("available_rooms", {
       p_property: property.id, p_check_in: checkIn, p_check_out: checkOut,
     }).then(({ data }) => {
@@ -80,7 +92,45 @@ function NewBooking() {
         return ok;
       });
     });
-  }, [property, checkIn, checkOut, n]);
+  }, [property, checkIn, checkOut, n, online]);
+
+  // Refreshed whenever this screen is opened with a connection, so the copy
+  // on the device is the one from the last time reception was online — not
+  // from whenever the app was installed.
+  useEffect(() => {
+    if (!property) return;
+    loadCached(`rooms:${property.id}`, () =>
+      supabase.from("rooms").select("id, number, room_types(name, name_en)")
+        .eq("property_id", property.id).eq("is_active", true)
+    ).then(({ data }) => setSavedRooms(data || []));
+
+    loadCached(`holds:${property.id}`, () =>
+      supabase.from("room_allocations").select("room_id, starts_on, ends_on")
+        .eq("property_id", property.id).is("released_at", null).gte("ends_on", today())
+    ).then(({ data }) => setSavedHolds(data || []));
+  }, [property]);
+
+  useEffect(() => {
+    const read = () => setDrafts(provisionalList());
+    read();
+    window.addEventListener("easyroom:provisional", read);
+    return () => window.removeEventListener("easyroom:provisional", read);
+  }, []);
+
+  // One shape for the picker, whichever answer it came from.
+  const choices = online
+    ? rooms.map((r) => ({
+        id: r.room_id, number: r.room_number,
+        type: locale === "en" ? (r.type_name_en || r.type_name) : r.type_name,
+      }))
+    : [...savedRooms]
+        .sort((a, b) => String(a.number).localeCompare(String(b.number), "en", { numeric: true }))
+        .map((r) => ({ id: r.id, number: r.number, type: localizedName(r.room_types, locale) }));
+
+  // Offline the app cannot ask what is free, so it says what it last knew
+  // instead of pretending to know now.
+  const held = online ? new Set() : roomsHeldOn(savedHolds, checkIn, checkOut);
+  const draftHeld = online ? new Set() : roomsWantedByDrafts(drafts, checkIn, checkOut);
 
   // A room picked on the calendar is only selected once, and only if it
   // really is free — the availability answer wins over the link.
@@ -95,7 +145,7 @@ function NewBooking() {
   // Price the selection live, so the quote is ready before the guest asks.
   useEffect(() => {
     const ids = Object.keys(picked);
-    if (!property || !planId || !ids.length || n < 1) return setQuote(null);
+    if (!property || !planId || !ids.length || n < 1 || !online) return setQuote(null);
 
     Promise.all(ids.map(async (rid) => {
       const room = rooms.find((r) => r.room_id === rid);
@@ -107,7 +157,7 @@ function NewBooking() {
       });
       return Number(data) || 0;
     })).then((v) => setQuote(v.reduce((a, b) => a + b, 0)));
-  }, [picked, planId, rooms, property, checkIn, checkOut, n]);
+  }, [picked, planId, rooms, property, checkIn, checkOut, n, online]);
 
   async function findGuest() {
     if (!phone.trim() || !property) return;
@@ -133,7 +183,43 @@ function NewBooking() {
 
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
 
+  /**
+   * With no connection nothing can be held: the room is only reserved when
+   * the request reaches the database. So this writes the booking down as
+   * provisional and says so — it does not pretend to have confirmed it.
+   */
+  function recordProvisional() {
+    const record = newProvisional({
+      propertyId: property.id,
+      guestName: name, guestPhone: phone,
+      checkIn, checkOut,
+      rooms: picked,
+      roomLabels: Object.fromEntries(
+        Object.keys(picked).map((id) => [id, choices.find((c) => c.id === id)?.number || id])
+      ),
+      ratePlanId: planId || null,
+      source, notes,
+    });
+
+    const problems = validateProvisional(record);
+    if (problems.includes("name")) return showToast("أدخل اسم النزيل", true);
+    if (problems.includes("rooms")) return showToast("اختر غرفة واحدة على الأقل", true);
+    if (problems.length) return showToast("راجع التواريخ", true);
+
+    setBusy(true);
+    try {
+      provisionalAdd(record);
+    } catch (e) {
+      setBusy(false);
+      return showToast(String(e?.message || e), true);
+    }
+    setBusy(false);
+    showToast(t("recorded", { name: record.guestName }));
+    setTimeout(() => router.push(localePath("/", locale)), 900);
+  }
+
   async function submit() {
+    if (!online) return recordProvisional();
     if (!name.trim()) return showToast("أدخل اسم النزيل", true);
     if (!Object.keys(picked).length) return showToast("اختر غرفة واحدة على الأقل", true);
     setBusy(true);
@@ -180,6 +266,8 @@ function NewBooking() {
       <Toast {...(toast || {})} />
       <h2 style={{ marginBottom: 4 }}>حجز جديد</h2>
       <p className="section-note">ابدأ برقم الهاتف — إذا سبق للنزيل الإقامة ستظهر بياناته تلقائياً.</p>
+
+      {!online && <div className="banner warn">{t("offlineNotice")}</div>}
 
       <section className="section">
         <div className="card stack">
@@ -253,22 +341,28 @@ function NewBooking() {
 
       <section className="section">
         <h2>الغرف الشاغرة</h2>
-        <p className="section-note">اضغط على غرفة لاختيارها، وحدد عدد الأفراد بها.</p>
+        <p className="section-note">
+          {online ? "اضغط على غرفة لاختيارها، وحدد عدد الأفراد بها." : t("availabilityUnknown")}
+        </p>
 
-        {rooms.length === 0 ? (
-          <div className="empty">لا توجد غرف شاغرة في هذه التواريخ.</div>
+        {choices.length === 0 ? (
+          <div className="empty">
+            {online ? "لا توجد غرف شاغرة في هذه التواريخ." : t("noSavedRooms")}
+          </div>
         ) : (
           <div className="rack">
             <div className="rail" />
             <div className="rack-grid">
-              {rooms.map((r) => {
-                const on = picked[r.room_id];
+              {choices.map((r) => {
+                const on = picked[r.id];
+                const warn = draftHeld.has(r.id) ? t("conflictsDraft")
+                  : held.has(r.id) ? t("heldByCache") : null;
                 return (
-                  <div key={r.room_id} className="keycard" data-selected={!!on}
+                  <div key={r.id} className="keycard" data-selected={!!on} data-warn={!!warn}
                     onClick={() => setPicked((p) => {
                       const next = { ...p };
-                      if (next[r.room_id]) delete next[r.room_id];
-                      else next[r.room_id] = 2;
+                      if (next[r.id]) delete next[r.id];
+                      else next[r.id] = 2;
                       return next;
                     })}
                     role="button" tabIndex={0}
@@ -276,9 +370,12 @@ function NewBooking() {
                       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); }
                     }}
                   >
-                    <div className="num">{r.room_number}</div>
+                    <div className="num">{r.number}</div>
                     <div className="band" style={{ background: on ? "var(--sea)" : undefined }} />
-                    <div className="who">{locale === "en" ? (r.type_name_en || r.type_name) : r.type_name}</div>
+                    <div className="who">{r.type}</div>
+                    {/* Marked, not forbidden: the saved copy may be out of
+                        date, and the guest on the phone is not. */}
+                    {warn && <div className="keycard-warn">{warn}</div>}
                     {on && (
                       <select
                         className="mono" style={{ marginTop: 6, padding: "4px 6px", fontSize: 13 }}
@@ -286,7 +383,7 @@ function NewBooking() {
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           e.stopPropagation();
-                          setPicked((p) => ({ ...p, [r.room_id]: Number(e.target.value) }));
+                          setPicked((p) => ({ ...p, [r.id]: Number(e.target.value) }));
                         }}
                       >
                         {[1, 2, 3, 4, 5, 6].map((o) => (
@@ -357,15 +454,22 @@ function NewBooking() {
             </div>
           </div>
         </div>
-        {quote === 0 && Object.keys(picked).length > 0 && (
+        {online && quote === 0 && Object.keys(picked).length > 0 && (
           <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
             السعر صفر — هذه التركيبة ليس لها سعر بعد في الإعدادات.
+          </div>
+        )}
+        {!online && (
+          <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
+            {t("noPrice")}
           </div>
         )}
         <button className="btn wide" disabled={busy || !Object.keys(picked).length || n < 1}
           onClick={submit}
           style={{ background: "#fff", color: "var(--deep)", borderColor: "#fff", fontWeight: 600 }}>
-          {busy ? "جارٍ التسجيل…" : "تأكيد الحجز"}
+          {busy
+            ? (online ? "جارٍ التسجيل…" : t("recording"))
+            : (online ? "تأكيد الحجز" : t("record"))}
         </button>
       </div>
     </>

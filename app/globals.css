@@ -268,6 +268,29 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .setup-foot { display: flex; align-items: center; gap: 6px; margin: 13px 0 0; color: var(--muted); font-size: 11px; }
 .setup-foot svg { color: var(--ok); }
 
+/* Bookings taken with no connection. It sits next to the setup checklist
+   because it is the same kind of thing: something the hotel still owes. */
+.provisional { border: 1px solid var(--line); border-inline-start: 4px solid var(--sand); border-radius: var(--radius); padding: 18px; margin-bottom: 26px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.provisional[data-failed="true"] { border-inline-start-color: var(--danger); }
+.provisional-head { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 14px; }
+.provisional-head > svg { flex: none; margin-top: 2px; color: #bd7900; }
+.provisional[data-failed="true"] .provisional-head > svg { color: var(--danger); }
+.provisional-head > div { flex: 1; min-width: 0; }
+.provisional-head h2 { margin: 0 0 3px; font-size: 17px; }
+.provisional-head p { margin: 0 0 2px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.provisional-head .btn { flex: none; }
+.provisional-list { list-style: none; display: grid; gap: 9px; margin: 0; padding: 0; }
+.provisional-list li { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.provisional-list li[data-state="failed"] { border-inline-start: 3px solid var(--danger); }
+.provisional-list li[data-state="sent"] { opacity: .75; }
+.provisional-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.provisional-row strong { display: block; font-size: 14px; }
+.provisional-row .pill { flex: none; }
+.provisional-stay { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.provisional-ref { display: inline-block; margin-top: 5px; font-size: 12px; }
+.provisional-reason { margin: 9px 0 0; color: var(--danger); font-size: 12px; line-height: 1.6; }
+.provisional-actions:not(:empty) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+
 /* Guest history: the four numbers reception actually asks about. */
 .guest-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
 .guest-figure { display: grid; gap: 3px; padding: 11px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
@@ -291,6 +314,10 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .keycard .band { height: 4px; border-radius: 999px; margin: 12px 0 8px; background: var(--line); }
 .keycard .who { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .keycard .sub { font-size: 11px; margin-top: 3px; }
+/* Offline: the saved copy says somebody is in this room. Marked, not
+   disabled — the copy can be out of date and the guest on the phone cannot. */
+.keycard[data-warn="true"] { border-color: var(--sand); }
+.keycard-warn { margin-top: 6px; color: #a06a00; font-size: 11px; line-height: 1.4; }
 .keycard[data-state="occupied"] .band { background: var(--sea); }
 .keycard[data-state="dirty"] .band { background: var(--sand); }
 .keycard[data-state="ooo"] .band { background: var(--danger); }
