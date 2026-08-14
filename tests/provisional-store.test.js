@@ -20,6 +20,7 @@ Object.defineProperty(globalThis, "navigator", { value: net, configurable: true,
 const {
   provisionalAdd, provisionalCount, provisionalFlush, provisionalList,
   provisionalRemove, provisionalRetry,
+  queueAdd, queueClearOne, queueCount, queueFlush, queueStuck,
 } = await import("../lib/offline");
 const { newProvisional } = await import("../lib/provisional");
 
@@ -139,6 +140,46 @@ describe("sending them", () => {
     rpc.mockResolvedValueOnce(ok("GR26-0050")).mockRejectedValueOnce(taken());
     await provisionalFlush();
     expect(provisionalCount()).toBe(0);
+  });
+});
+
+describe("the ordered queue, when it jams", () => {
+  it("writes the reason onto the item instead of stalling in silence", async () => {
+    queueAdd({ kind: "rpc", fn: "check_out_booking", args: { p_booking: "b1" } });
+    queueAdd({ kind: "room_status", room_id: "r1", status: "clean" });
+    rpc.mockResolvedValueOnce({ error: { message: "booking is already checked out" } });
+
+    await queueFlush();
+    const [stuck] = queueStuck();
+    expect(stuck).toMatchObject({ fn: "check_out_booking" });
+    expect(stuck.error).toMatchObject({ permanent: true });
+    // The cleaning status behind it was not sent, and not lost either.
+    expect(queueCount()).toBe(2);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the rest through once the stuck one is discarded", async () => {
+    queueAdd({ kind: "rpc", fn: "check_out_booking", args: { p_booking: "b1" } });
+    queueAdd({ kind: "room_status", room_id: "r1", status: "clean" });
+    rpc.mockResolvedValueOnce({ error: { message: "booking is already checked out" } });
+    await queueFlush();
+
+    queueClearOne(queueStuck()[0].id);
+    rpc.mockResolvedValueOnce({ error: null });
+    expect(await queueFlush()).toMatchObject({ done: 1 });
+    expect(queueCount()).toBe(0);
+  });
+
+  it("does not blame the item when the connection died mid-flush", async () => {
+    queueAdd({ kind: "room_status", room_id: "r1", status: "clean" });
+    rpc.mockImplementationOnce(async () => {
+      net.onLine = false;
+      throw new Error("Failed to fetch");
+    });
+
+    await queueFlush();
+    expect(queueStuck()).toEqual([]);
+    expect(queueCount()).toBe(1);
   });
 });
 

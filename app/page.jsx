@@ -4,6 +4,7 @@ import Link from "next/link";
 import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import SetupChecklist from "../components/SetupChecklist";
 import ProvisionalBookings from "../components/ProvisionalBookings";
+import StuckActions from "../components/StuckActions";
 import { supabase, today, addDays, dayLabel } from "../lib/supabase";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
 import { useLocale } from "next-intl";
@@ -70,6 +71,7 @@ function Board() {
 
       <SetupChecklist property={property} role={role} />
 
+      <StuckActions />
       <ProvisionalBookings />
 
       {attention.length > 0 && (

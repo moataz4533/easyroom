@@ -294,5 +294,18 @@
     "stay": "{nights, plural, one {# night} other {# nights}} · {rooms} · {heads, plural, one {# guest} other {# guests}}",
     "reference": "Booking {reference}",
     "noSavedRooms": "There is no saved copy of the rooms on this device. Open the app once with a connection, and after that bookings can be recorded offline."
+  },
+  "Queue": {
+    "title": "An action is stuck",
+    "lead": "This action was not accepted, and everything else recorded offline is waiting behind it — the order is kept so a check-out cannot overtake a check-in. Deal with it or delete it so the rest can go through.",
+    "housekeeping": "Room cleaning status",
+    "checkIn": "Check a guest in",
+    "checkOut": "Check a guest out",
+    "unknown": "Unknown action",
+    "permanent": "Trying again will not help — something about the booking changed since this was recorded.",
+    "temporary": "Trying again may work.",
+    "retry": "Try again",
+    "discard": "Delete",
+    "discardNote": "Deleting only removes it from the queue. If it still needs doing, do it from its own screen."
   }
 }
