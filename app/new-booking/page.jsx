@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName } from "../../lib/locale";
+import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { useLocale } from "next-intl";
 
 export default function Page() {
@@ -34,6 +35,7 @@ function NewBooking() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [guest, setGuest] = useState(null);
+  const [history, setHistory] = useState(null);
   const [searching, setSearching] = useState(false);
 
   const [checkIn, setCheckIn] = useState(presetDate || today());
@@ -112,7 +114,19 @@ function NewBooking() {
     setSearching(true);
     const { data } = await supabase.from("guests").select("*")
       .eq("property_id", property.id).eq("phone", phone.trim()).maybeSingle();
+
+    // How often they have stayed, and whether they have failed to turn up,
+    // is worth knowing before promising the last room on a busy night.
+    let past = [];
+    if (data) {
+      const { data: bookings } = await supabase.from("bookings")
+        .select("status, check_in, check_out, total_amount, paid_amount")
+        .eq("guest_id", data.id).limit(100);
+      past = bookings || [];
+    }
+
     setSearching(false);
+    setHistory(data ? summariseStays(past) : null);
     if (data) { setGuest(data); setName(data.full_name); showToast(`نزيل سابق: ${data.full_name}`); }
     else { setGuest(null); showToast("نزيل جديد"); }
   }
@@ -175,7 +189,7 @@ function NewBooking() {
               <input
                 id="phone" className="mono" dir="ltr" style={{ textAlign: "left" }}
                 value={phone} placeholder="+2010…"
-                onChange={(e) => { setPhone(e.target.value); setGuest(null); }}
+                onChange={(e) => { setPhone(e.target.value); setGuest(null); setHistory(null); }}
                 onKeyDown={(e) => e.key === "Enter" && findGuest()}
               />
             </div>
@@ -192,7 +206,22 @@ function NewBooking() {
 
           {guest && (
             <div className="banner ok" style={{ margin: 0 }}>
-              نزيل سابق. {guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
+              {history && isReturning(history)
+                ? `نزيل عائد — أقام ${egp(history.stays, locale)} مرات، آخرها ${dayLabel(history.lastVisit, locale)}.`
+                : "نزيل سابق."}
+              {" "}{guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
+            </div>
+          )}
+
+          {history && isUnreliable(history) && (
+            <div className="banner bad" style={{ margin: 0 }}>
+              هذا النزيل لم يحضر {egp(history.noShows, locale)} مرات سابقاً.
+            </div>
+          )}
+
+          {history && history.outstanding > 0 && (
+            <div className="banner warn" style={{ margin: 0 }}>
+              عليه متبقٍ {egp(history.outstanding, locale)} ج من إقامة سابقة.
             </div>
           )}
         </div>

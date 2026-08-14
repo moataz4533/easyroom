@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Download, RefreshCw, X } from "lucide-react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import GuestRecord from "../../components/GuestRecord";
+import GuestProfile from "../../components/GuestProfile";
 import { supabase, today, addDays, dayLabel } from "../../lib/supabase";
 import { shiftDate } from "../../lib/format";
 import {
@@ -36,6 +37,7 @@ function Guests() {
   const [stays, setStays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
+  const [tab, setTab] = useState("record");
 
   const load = useCallback(async () => {
     if (!property) return;
@@ -155,7 +157,7 @@ function Guests() {
         <div className="stack">
           {shown.map((stay) => (
             <StayRow key={stay.id} stay={stay} locale={locale} t={t}
-              onOpen={() => setEditing(stay)} />
+              onOpen={() => { setEditing(stay); setTab("record"); }} />
           ))}
         </div>
       )}
@@ -163,9 +165,9 @@ function Guests() {
       {editing && (
         <div className="dialog-backdrop" onClick={() => setEditing(null)} role="presentation">
           <div className="dialog-panel" onClick={(event) => event.stopPropagation()}>
-            <div className="spread" style={{ marginBottom: 14 }}>
+            <div className="spread" style={{ marginBottom: 12 }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 18 }}>{t("record")}</h2>
+                <h2 style={{ margin: 0, fontSize: 18 }}>{editing.guests?.full_name || t("record")}</h2>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
                   <span className="code">{editing.reference}</span>{" "}
                   {dayLabel(editing.check_in, locale)} ← {dayLabel(editing.check_out, locale)}
@@ -175,11 +177,28 @@ function Guests() {
                 <X size={16} />
               </button>
             </div>
-            <GuestRecord
-              guest={editing.guests}
-              onSaved={(message) => { showToast(message); setEditing(null); load(); }}
-              onError={(message) => showToast(message, true)}
-            />
+
+            {/* The official data is what the law wants; the history is what
+                reception wants. Same guest, two different questions. */}
+            <div className="tabs" role="tablist">
+              <button className="tab" role="tab" aria-selected={tab === "record"}
+                onClick={() => setTab("record")}>{t("record")}</button>
+              <button className="tab" role="tab" aria-selected={tab === "history"}
+                onClick={() => setTab("history")}>{t("history")}</button>
+            </div>
+
+            {tab === "record" ? (
+              <GuestRecord
+                guest={editing.guests}
+                onSaved={(message) => { showToast(message); setEditing(null); load(); }}
+                onError={(message) => showToast(message, true)}
+              />
+            ) : (
+              <GuestProfile
+                guest={editing.guests}
+                onError={(message) => showToast(message, true)}
+              />
+            )}
           </div>
         </div>
       )}
