@@ -188,5 +188,30 @@
     "itemActivate": "Show",
     "itemHidden": "Hidden",
     "noItems": "No items yet. Add the first one so reception finds it ready."
+  },
+  "Seasons": {
+    "note": "A season overrides the standing price for its dates only. Pricing is night by night, so a stay crossing a season boundary is charged correctly on each side.",
+    "addTitle": "New season",
+    "addConfirm": "Open the price grid",
+    "name": "Season name",
+    "nameEn": "English name",
+    "from": "From",
+    "to": "To",
+    "back": "Back",
+    "current": "Running now",
+    "noPrices": "No prices",
+    "priceCount": "{count} prices",
+    "emptyMeansStanding": "An empty box means this combination falls back to the standing price during this season.",
+    "saveButton": "Save season prices",
+    "saved": "{count} prices saved for the season",
+    "deleteButton": "Delete season",
+    "deleted": "Season deleted; prices fall back to standing",
+    "confirmSave": "Confirm season prices",
+    "confirmSaveNote": "These prices apply to every new booking in this period. Bookings already taken do not change.",
+    "confirmDelete": "Delete season",
+    "confirmDeleteNote": "The season's prices are removed and the period returns to the standing price. Bookings already taken keep what they were quoted.",
+    "needName": "Enter the season name",
+    "needDates": "Set the season's start and end",
+    "badDates": "The season must end after it starts"
   }
 }

@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast, roleLabel } from "../../components/Shell";
 import PinPrompt from "../../components/PinPrompt";
-import { supabase, egp } from "../../lib/supabase";
+import { supabase, egp, dayLabel } from "../../lib/supabase";
 import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
 import { useLocale, useTranslations } from "next-intl";
@@ -21,6 +21,7 @@ const BANDS = ["#1E5F74", "#D99A2B", "#C96F5A", "#6E9075", "#6C6B9E"];
 const OCC = { 1: "سنجل", 2: "دابل", 3: "تريبل", 4: "رباعي", 5: "خماسي", 6: "سداسي" };
 const TABS = [
   ["rates", "الأسعار"],
+  ["seasons", "المواسم"],
   ["rooms", "الغرف"],
   ["charges", "الإضافات"],
   ["staff", "الموظفين"],
@@ -88,11 +89,70 @@ function Settings() {
       </div>
 
       {tab === "rates" && <Rates {...shared} />}
+      {tab === "seasons" && <Seasons {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
       {tab === "charges" && <ChargeItems {...shared} />}
       {tab === "staff" && <Staff {...shared} />}
       {tab === "security" && <Security {...shared} />}
       {tab === "property" && <PropertyInfo {...shared} />}
+    </>
+  );
+}
+
+
+/* ------------------------------------------------------------------ */
+// The price grid, shared by the standing prices and by each season. Same
+// shape in both places on purpose: a season is the same question asked for
+// a different stretch of the year.
+export function rateKey(typeId, planId, occupancy) {
+  return `${typeId}|${planId}|${occupancy}`;
+}
+
+function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }) {
+  const type = types.find((x) => x.id === active);
+  return (
+    <>
+      <div className="tabs" role="tablist">
+        {types.map((x, i) => (
+          <button key={x.id} className="tab" role="tab" aria-selected={active === x.id}
+            onClick={() => setActive(x.id)}>
+            <span className="dot" style={{ background: BANDS[i % BANDS.length] }} />
+            {localizedName(x, locale)}
+          </button>
+        ))}
+      </div>
+
+      {type && (
+        <div className="matrix-wrap">
+          <table className="matrix">
+            <thead>
+              <tr>
+                <th>عدد الأفراد</th>
+                {plans.map((p) => <th key={p.id}>{localizedName(p, locale)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: type.max_occupancy }, (_, i) => i + 1).map((o) => (
+                <tr key={o}>
+                  <td className="occ">{OCC[o] || `${o} أفراد`}<small>{o} pax</small></td>
+                  {plans.map((p) => (
+                    <td key={p.id}>
+                      <input
+                        type="number" min="0" placeholder="—"
+                        aria-label={`${OCC[o]} · ${localizedName(p, locale)}`}
+                        value={draft[rateKey(type.id, p.id, o)] ?? ""}
+                        onChange={(e) => setDraft((d) => ({
+                          ...d, [rateKey(type.id, p.id, o)]: e.target.value === "" ? "" : Number(e.target.value),
+                        }))}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
@@ -107,8 +167,6 @@ function Rates({ property, types, plans, rates, reload, showToast, locale }) {
   useEffect(() => setDraft(rates), [rates]);
   useEffect(() => { if (!active && types[0]) setActive(types[0].id); }, [types, active]);
 
-  const t = types.find((x) => x.id === active);
-  const key = (ty, pl, o) => `${ty}|${pl}|${o}`;
   const dirty = JSON.stringify(draft) !== JSON.stringify(rates);
 
   // Writes go through save_rates: direct writes to the rates table are
@@ -147,47 +205,8 @@ function Rates({ property, types, plans, rates, reload, showToast, locale }) {
         سعر الليلة للغرفة كاملة. الخانة الفاضية معناها إن التركيبة دي مش للبيع.
       </p>
 
-      <div className="tabs" role="tablist">
-        {types.map((x, i) => (
-          <button key={x.id} className="tab" role="tab" aria-selected={active === x.id}
-            onClick={() => setActive(x.id)}>
-            <span className="dot" style={{ background: BANDS[i % BANDS.length] }} />
-            {localizedName(x, locale)}
-          </button>
-        ))}
-      </div>
-
-      {t && (
-        <div className="matrix-wrap">
-          <table className="matrix">
-            <thead>
-              <tr>
-                <th>عدد الأفراد</th>
-                {plans.map((p) => <th key={p.id}>{localizedName(p, locale)}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: t.max_occupancy }, (_, i) => i + 1).map((o) => (
-                <tr key={o}>
-                  <td className="occ">{OCC[o] || `${o} أفراد`}<small>{o} pax</small></td>
-                  {plans.map((p) => (
-                    <td key={p.id}>
-                      <input
-                        type="number" min="0" placeholder="—"
-                        aria-label={`${OCC[o]} · ${localizedName(p, locale)}`}
-                        value={draft[key(t.id, p.id, o)] ?? ""}
-                        onChange={(e) => setDraft((d) => ({
-                          ...d, [key(t.id, p.id, o)]: e.target.value === "" ? "" : Number(e.target.value),
-                        }))}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <RateMatrix types={types} plans={plans} locale={locale}
+        active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
 
       {dirty && !asking && (
         <button className="btn primary wide" style={{ marginTop: 14 }}
@@ -329,6 +348,200 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
           <button className="btn" style={{ alignSelf: "flex-end" }} onClick={addRoom}>إضافة</button>
         </div>
       </section>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+// Seasonal prices.
+//
+// The database has always priced night by night, so a stay crossing a season
+// boundary is charged correctly on each side without anything here knowing
+// about it. All this screen does is write the dated rows.
+function Seasons({ property, types, plans, showToast, locale }) {
+  const t = useTranslations("Seasons");
+  const [seasons, setSeasons] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [stored, setStored] = useState({});
+  const [draft, setDraft] = useState({});
+  const [active, setActive] = useState(types[0]?.id);
+  const [form, setForm] = useState({ name: "", name_en: "", from: "", to: "" });
+  const [asking, setAsking] = useState(null); // "save" | "delete"
+  const [busy, setBusy] = useState(false);
+
+  const loadSeasons = useCallback(async () => {
+    const { data, error } = await supabase.rpc("list_seasons", { p_property: property.id });
+    if (error) return showToast(error.message, true);
+    setSeasons(data || []);
+  }, [property.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { loadSeasons(); }, [loadSeasons]);
+  useEffect(() => { if (!active && types[0]) setActive(types[0].id); }, [types, active]);
+
+  // A season's prices are the rate rows stamped with its start date.
+  const openSeason = useCallback(async (season) => {
+    setSelected(season);
+    const { data } = await supabase.from("rates").select("*")
+      .eq("property_id", property.id).eq("valid_from", season.starts_on);
+    const map = Object.fromEntries((data || []).map((row) =>
+      [rateKey(row.room_type_id, row.rate_plan_id, row.occupancy), row.amount]));
+    setStored(map);
+    setDraft(map);
+  }, [property.id]);
+
+  function createSeason() {
+    if (!form.name.trim()) return showToast(t("needName"), true);
+    if (!form.from || !form.to) return showToast(t("needDates"), true);
+    if (form.to < form.from) return showToast(t("badDates"), true);
+    setSelected({ name: form.name.trim(), name_en: form.name_en.trim(), starts_on: form.from, ends_on: form.to, rate_count: 0 });
+    setStored({});
+    setDraft({});
+  }
+
+  async function save(pin) {
+    setBusy(true);
+    // Only what changed, so an untouched season is not rewritten wholesale.
+    const rows = Object.entries(draft)
+      .filter(([key, value]) => value !== stored[key])
+      .map(([key, value]) => {
+        const [room_type_id, rate_plan_id, occupancy] = key.split("|");
+        return {
+          room_type_id, rate_plan_id, occupancy: Number(occupancy),
+          amount: value === "" || value === null || value === undefined ? null : Number(value),
+        };
+      });
+
+    const { error } = await supabase.rpc("save_season_rates", {
+      p_property: property.id,
+      p_from: selected.starts_on,
+      p_to: selected.ends_on,
+      p_name: selected.name,
+      p_name_en: selected.name_en || null,
+      p_rows: rows,
+      p_pin: pin,
+    });
+    setBusy(false);
+    if (error) return showToast(error.message, true);
+
+    setAsking(null);
+    showToast(t("saved", { count: rows.length }));
+    setForm({ name: "", name_en: "", from: "", to: "" });
+    setStored(draft);
+    loadSeasons();
+  }
+
+  async function remove(pin) {
+    setBusy(true);
+    const { error } = await supabase.rpc("delete_season", {
+      p_property: property.id, p_from: selected.starts_on, p_pin: pin,
+    });
+    setBusy(false);
+    if (error) return showToast(error.message, true);
+    setAsking(null);
+    setSelected(null);
+    showToast(t("deleted"));
+    loadSeasons();
+  }
+
+  if (!types.length) return <div className="empty">اعمل نوع غرفة الأول من تبويب الغرف.</div>;
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(stored);
+
+  return (
+    <>
+      <p className="section-note">{t("note")}</p>
+
+      {seasons.length > 0 && (
+        <div className="stack" style={{ marginBottom: 14 }}>
+          {seasons.map((season) => (
+            <button key={season.id || season.starts_on} className="card spread"
+              style={{ textAlign: "start", cursor: "pointer", width: "100%",
+                fontFamily: "inherit", color: "inherit",
+                borderColor: selected?.starts_on === season.starts_on ? "var(--sea)" : undefined }}
+              onClick={() => openSeason(season)}>
+              <div className="grow">
+                <div className="row" style={{ gap: 8 }}>
+                  <span style={{ fontWeight: 600 }}>{localizedName(season, locale)}</span>
+                  {season.is_current && <span className="pill ok">{t("current")}</span>}
+                  {Number(season.rate_count) === 0 && <span className="pill warn">{t("noPrices")}</span>}
+                </div>
+                <div className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
+                  {dayLabel(season.starts_on, locale)} ← {dayLabel(season.ends_on, locale)}
+                  {" · "}{t("priceCount", { count: Number(season.rate_count) })}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!selected ? (
+        <div className="card stack" style={{ background: "var(--paper)" }}>
+          <h2 style={{ fontSize: 14, margin: 0 }}>{t("addTitle")}</h2>
+          <div className="row">
+            <div className="field grow"><label>{t("name")}</label>
+              <input value={form.name} placeholder="صيف ٢٠٢٦"
+                onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} /></div>
+            <div className="field grow"><label>{t("nameEn")}</label>
+              <input value={form.name_en} placeholder="Summer 2026" dir="ltr"
+                onChange={(e) => setForm((c) => ({ ...c, name_en: e.target.value }))} /></div>
+          </div>
+          <div className="row">
+            <div className="field grow"><label>{t("from")}</label>
+              <input type="date" className="mono" value={form.from}
+                onChange={(e) => setForm((c) => ({ ...c, from: e.target.value }))} /></div>
+            <div className="field grow"><label>{t("to")}</label>
+              <input type="date" className="mono" value={form.to} min={form.from}
+                onChange={(e) => setForm((c) => ({ ...c, to: e.target.value }))} /></div>
+          </div>
+          <button className="btn" onClick={createSeason}>{t("addConfirm")}</button>
+        </div>
+      ) : (
+        <>
+          <div className="spread" style={{ marginBottom: 10 }}>
+            <div>
+              <h2 style={{ fontSize: 15, margin: 0 }}>{localizedName(selected, locale) || selected.name}</h2>
+              <div className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                {dayLabel(selected.starts_on, locale)} ← {dayLabel(selected.ends_on, locale)}
+              </div>
+            </div>
+            <button className="btn sm" onClick={() => { setSelected(null); setAsking(null); }}>
+              {t("back")}
+            </button>
+          </div>
+
+          <p className="section-note">{t("emptyMeansStanding")}</p>
+
+          <RateMatrix types={types} plans={plans} locale={locale}
+            active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+
+          {asking === "save" ? (
+            <div style={{ marginTop: 14 }}>
+              <PinPrompt title={t("confirmSave")} note={t("confirmSaveNote")}
+                confirmLabel={t("saveButton")} busy={busy}
+                onCancel={() => setAsking(null)} onConfirm={save} />
+            </div>
+          ) : asking === "delete" ? (
+            <div style={{ marginTop: 14 }}>
+              <PinPrompt title={t("confirmDelete")} note={t("confirmDeleteNote")}
+                confirmLabel={t("deleteButton")} danger busy={busy}
+                onCancel={() => setAsking(null)} onConfirm={remove} />
+            </div>
+          ) : (
+            <div className="stack" style={{ marginTop: 14 }}>
+              <button className="btn primary wide" disabled={!dirty && Number(selected.rate_count) > 0}
+                onClick={() => setAsking("save")}>
+                {t("saveButton")}
+              </button>
+              {selected.id && (
+                <button className="btn wide danger" onClick={() => setAsking("delete")}>
+                  {t("deleteButton")}
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 }
