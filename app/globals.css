@@ -375,6 +375,18 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
 .strip { min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 9px; flex-wrap: wrap; padding: 7px 16px; color: #4d350d; background: var(--sand-soft); border-bottom: 1px solid #edc878; font-size: 12px; }
 .strip.off { color: #fff; background: var(--danger); border-color: var(--danger); }
 .strip-btn { min-height: 30px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid currentColor; border-radius: 999px; padding: 3px 10px; color: inherit; background: transparent; cursor: pointer; }
+/* Only ever rendered for somebody who works in more than one hotel. It names
+   the hotel you are in as much as it offers to change it. */
+/* A way out of an assumption, not an action: shown only until somebody needs
+   to say which hotel they work at. */
+.link-button { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--sea); font: inherit; font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-button:hover { color: var(--deep); }
+
+.property-switcher { position: relative; display: flex; align-items: center; gap: 7px; min-height: 38px; margin: 12px 0 4px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); }
+.property-switcher svg { flex: none; }
+.property-switcher select { flex: 1; min-width: 0; border: 0; padding: 6px 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.property-switcher select:focus-visible { outline: 2px solid var(--sea); outline-offset: 3px; border-radius: 6px; }
+.mobile-switcher { display: none; }
 .stale { margin-bottom: 12px; padding: 8px 10px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; text-align: center; font-size: 12px; }
 /* A sheet slides up from the bottom edge, which is exactly where the mobile
    tab bar lives. It sits above the bar rather than under it, and keeps a
@@ -438,6 +450,11 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .sidebar { display: none; }
   .topbar { height: 66px; justify-content: space-between; padding: 0 18px; }
   .mobile-brand { display: block; margin-inline-end: auto; }
+  .mobile-switcher { display: block; margin-inline-end: auto; min-width: 0; }
+  .mobile-switcher .property-switcher { margin: 0; }
+  /* The switcher already names the hotel, so the brand beside it would say
+     the same thing twice on the narrowest screen there is. */
+  .topbar:has(.mobile-switcher .property-switcher) .mobile-brand { display: none; }
   .brand-lockup.compact .brand-mark { width: 36px; height: 36px; border-radius: 11px; }
   .brand-lockup.compact .brand-copy strong { max-width: 160px; }
   /* The tab bar is 68px plus the home indicator; the page has to end above it. */

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { CircleAlert, RefreshCw, Trash2 } from "lucide-react";
 import { queueClearOne, queueStuck, useOffline } from "../lib/offline";
 import { describeQueued } from "../lib/offline-policy";
+import { useProperty } from "./Shell";
 
 /**
  * The one action that will not go through, and why.
@@ -17,16 +18,21 @@ import { describeQueued } from "../lib/offline-policy";
  */
 export default function StuckActions() {
   const t = useTranslations("Queue");
-  const [stuck, setStuck] = useState([]);
+  const { property } = useProperty();
+  const [all, setAll] = useState([]);
   const { online, syncing, sync } = useOffline();
 
   useEffect(() => {
-    const read = () => setStuck(queueStuck());
+    const read = () => setAll(queueStuck());
     read();
     window.addEventListener("easyroom:queue", read);
     return () => window.removeEventListener("easyroom:queue", read);
   }, []);
 
+  // Scoped to the hotel it is in, like everything else. An item queued
+  // before hotels could be switched carries no hotel, and is shown rather
+  // than hidden — an action nobody can see is an action nobody can clear.
+  const stuck = all.filter((item) => !item.property_id || item.property_id === property?.id);
   if (stuck.length === 0) return null;
 
   return (

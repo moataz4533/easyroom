@@ -5,6 +5,7 @@ import { CheckCircle2, CircleAlert, CloudOff, Phone, RefreshCw, Trash2 } from "l
 import {
   provisionalList, provisionalRemove, provisionalRetry, useOffline,
 } from "../lib/offline";
+import { useProperty } from "./Shell";
 import { FAILED, SENT, countByState, headCount, roomNumbers } from "../lib/provisional";
 import { dayLabel } from "../lib/supabase";
 import { countNights } from "../lib/format";
@@ -26,16 +27,21 @@ const REASON = {
 export default function ProvisionalBookings() {
   const locale = useLocale();
   const t = useTranslations("Provisional");
-  const [list, setList] = useState([]);
+  const { property } = useProperty();
+  const [all, setAll] = useState([]);
   const { online, syncing, sync } = useOffline();
 
   useEffect(() => {
-    const read = () => setList(provisionalList());
+    const read = () => setAll(provisionalList());
     read();
     window.addEventListener("easyroom:provisional", read);
     return () => window.removeEventListener("easyroom:provisional", read);
   }, []);
 
+  // The hotels are separate, so this screen shows only the hotel it is in.
+  // Anything recorded for another one is still sent when the connection
+  // returns — it simply belongs on that hotel's screen, not this one.
+  const list = all.filter((record) => record.propertyId === property?.id);
   if (list.length === 0) return null;
 
   const { pending, failed, sent } = countByState(list);

@@ -40,7 +40,11 @@
     "help": "Managers create staff accounts in Settings. Contact your manager if you do not have your login details.",
     "invalidOwner": "The email address or password is incorrect. Try again.",
     "invalidStaff": "The username or password is incorrect. Check the details provided by the owner.",
-    "unconfirmed": "This account still needs email confirmation."
+    "unconfirmed": "This account still needs email confirmation.",
+    "hotelCode": "Hotel code",
+    "hotelCodeHint": "Your manager gives you this. It is saved on this device, so you will not need to type it again.",
+    "hotelInvalid": "A hotel code is lowercase letters, numbers and hyphens only.",
+    "otherHotel": "I work at a different hotel"
   },
   "Shell": {
     "loading": "One moment…",
@@ -52,7 +56,8 @@
     "pending": "{count} actions are waiting to be sent.",
     "syncing": "Sending…",
     "syncNow": "Send now",
-    "connected": "Connected"
+    "connected": "Connected",
+    "switchHotel": "Switch hotel"
   },
   "Roles": {
     "owner": "Owner",

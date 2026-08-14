@@ -10,12 +10,44 @@ import {
   Hotel, IdCard, Languages, LayoutDashboard, ListChecks, LogOut, RefreshCw,
   Settings,
 } from "lucide-react";
-import { supabase, PROPERTY_SLUG } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
 import { useOffline } from "../lib/offline";
+import {
+  SAVED_KEY, foreignCacheKeys, needsSwitcher, pickProperty, roleIn, sortProperties,
+} from "../lib/property";
 
 const Ctx = createContext(null);
 export const useProperty = () => useContext(Ctx);
+
+function readSavedProperty() {
+  try {
+    return window.localStorage.getItem(SAVED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Switching hotels is a hard boundary, so it is done by reloading rather
+ * than by moving a value in React state. Every screen holds rows, caches and
+ * quotes belonging to the hotel it was opened in; carrying any of that across
+ * is exactly the mixing this must never do. A reload costs a second and
+ * removes the whole class of mistake.
+ */
+function switchProperty(id) {
+  try {
+    window.localStorage.setItem(SAVED_KEY, id);
+    // The saved copies for the other hotel are of no use here and would only
+    // be waiting to be shown by mistake.
+    for (const key of foreignCacheKeys(Object.keys(window.localStorage), id)) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    /* a device that refuses storage still switches, it just forgets */
+  }
+  window.location.reload();
+}
 
 const NAV = [
   { href: "/", key: "today", Icon: LayoutDashboard },
@@ -51,17 +83,25 @@ export default function Shell({ children }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return router.replace(localePath("/login", locale));
 
+      // Every hotel this account belongs to, and nothing else: the select
+      // policy on properties is is_member(id), so the list the database
+      // returns is already exactly theirs.
       const [propertyResult, memberResult, profileResult] = await Promise.all([
-        supabase.from("properties").select("*").eq("slug", PROPERTY_SLUG).maybeSingle(),
-        supabase.from("property_members").select("role, property_id").eq("user_id", session.user.id).eq("is_active", true).maybeSingle(),
+        supabase.from("properties").select("*"),
+        supabase.from("property_members").select("role, property_id, is_active").eq("user_id", session.user.id).eq("is_active", true),
         supabase.from("profiles").select("full_name, preferred_locale").eq("id", session.user.id).maybeSingle(),
       ]);
       if (!alive) return;
-      const property = propertyResult.data;
-      const membership = memberResult.data;
+
+      const properties = sortProperties(propertyResult.data || []);
+      const memberships = memberResult.data || [];
+      const property = pickProperty(properties, readSavedProperty());
+      const role = roleIn(memberships, property?.id);
+
       setState({
-        loading: false, session, property, profile: profileResult.data,
-        role: membership?.role || null, denied: !property || !membership,
+        loading: false, session, property, properties, memberships,
+        profile: profileResult.data,
+        role, denied: !property || !role,
         error: propertyResult.error?.message,
       });
     }
@@ -131,12 +171,40 @@ function Brand({ property, locale, compact = false }) {
   );
 }
 
+/**
+ * Only ever shown to somebody who works in more than one hotel, which is
+ * nobody until there is a second one. It names the hotel you are in as much
+ * as it offers to change it — on a screen where every number belongs to one
+ * hotel, knowing which is the point.
+ */
+function PropertySwitcher({ state, locale }) {
+  const t = useTranslations("Shell");
+  if (!needsSwitcher(state.properties)) return null;
+  return (
+    <label className="property-switcher">
+      <Hotel size={16} aria-hidden="true" />
+      <span className="sr-only">{t("switchHotel")}</span>
+      <select
+        value={state.property?.id || ""}
+        onChange={(event) => switchProperty(event.target.value)}
+      >
+        {state.properties.map((property) => (
+          <option key={property.id} value={property.id}>
+            {localizedName(property, locale)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function Sidebar({ state, path, allowed }) {
   const locale = useLocale();
   const t = useTranslations("Nav");
   return (
     <aside className="sidebar">
       <Brand property={state.property} locale={locale} />
+      <PropertySwitcher state={state} locale={locale} />
       <nav className="side-nav" aria-label={t("today")}>
         {NAV.filter((item) => allowed.includes(item.href)).map(({ href, key, Icon }) => (
           <Link key={href} href={localePath(href, locale)} data-active={path === href}>
@@ -162,6 +230,8 @@ function Topbar({ state, onLogout }) {
       <div className="mobile-brand"><Brand property={state.property} locale={locale} compact /></div>
       <Clock />
       <div className="topbar-actions">
+        {/* The sidebar carries it on a wide screen; this is the phone's copy. */}
+        <div className="mobile-switcher"><PropertySwitcher state={state} locale={locale} /></div>
         <button className="icon-button language-button" onClick={switchLocale} aria-label={common("language")}>
           <Languages size={18} /><span>{common("language")}</span>
         </button>

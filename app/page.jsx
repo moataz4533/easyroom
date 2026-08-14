@@ -146,7 +146,7 @@ function Board() {
                   className="btn primary sm arrival-action"
                   onClick={async () => {
                     if (!navigator.onLine) {
-                      queueAdd({ kind: "rpc", fn: "check_in_booking", args: { p_booking: b.id } });
+                      queueAdd({ kind: "rpc", fn: "check_in_booking", property_id: property.id, args: { p_booking: b.id } });
                       showToast("تم التسجيل، وسيُرسل فور عودة الاتصال");
                       return;
                     }
@@ -441,7 +441,7 @@ function CheckOut({ row, busy, locale, run }) {
       p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed,
     }),
     "تم تسجيل المغادرة، وأُضيفت الغرفة إلى قائمة النظافة",
-    { kind: "rpc", fn: "check_out_booking",
+    { kind: "rpc", fn: "check_out_booking", property_id: row.property_id,
       args: { p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed } }
   );
 

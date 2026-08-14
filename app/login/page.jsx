@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Languages, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Hotel, Languages, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { localePath, useAppLocale } from "../../lib/locale";
-import { supabase, PROPERTY_SLUG } from "../../lib/supabase";
-import { isStaffUsername, staffLoginEmail } from "../../lib/auth-login";
+import { supabase, DEFAULT_PROPERTY_SLUG } from "../../lib/supabase";
+import { isHotelSlug, isStaffUsername, normalizeHotelSlug, staffLoginEmail } from "../../lib/auth-login";
+
+// A staff username is unique inside a hotel, not across them, so a sign-in
+// has to say which hotel before anybody is signed in and the database can be
+// asked. The device remembers it, so staff type it once and never again.
+const HOTEL_KEY = "easyroom:login-hotel";
 
 export default function Login() {
   const router = useRouter();
@@ -18,6 +23,8 @@ export default function Login() {
   const [mode, setMode] = useState("staff");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [hotel, setHotel] = useState(DEFAULT_PROPERTY_SLUG);
+  const [showHotel, setShowHotel] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -26,6 +33,13 @@ export default function Login() {
   useEffect(() => {
     const savedMode = window.localStorage.getItem("easyroom-login-mode");
     if (savedMode === "owner" || savedMode === "staff") setMode(savedMode);
+    const savedHotel = window.localStorage.getItem(HOTEL_KEY);
+    if (savedHotel) {
+      setHotel(savedHotel);
+      // Somebody who has signed in to another hotel on this device keeps
+      // seeing the field, because for them it is not an assumption any more.
+      if (savedHotel !== DEFAULT_PROPERTY_SLUG) setShowHotel(true);
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.replace(localePath("/", locale));
     });
@@ -39,7 +53,12 @@ export default function Login() {
       setBusy(false);
       return;
     }
-    const loginEmail = mode === "staff" ? staffLoginEmail(PROPERTY_SLUG, username) : email.trim();
+    if (mode === "staff" && !isHotelSlug(hotel)) {
+      setError(t("hotelInvalid"));
+      setBusy(false);
+      return;
+    }
+    const loginEmail = mode === "staff" ? staffLoginEmail(hotel, username) : email.trim();
     const result = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     if (result.error) {
       setError(result.error.message.includes("Invalid login")
@@ -49,6 +68,7 @@ export default function Login() {
     }
     const { data: profile } = await supabase.from("profiles").select("preferred_locale").eq("id", result.data.user.id).maybeSingle();
     window.localStorage.setItem("easyroom-login-mode", mode);
+    if (mode === "staff") window.localStorage.setItem(HOTEL_KEY, normalizeHotelSlug(hotel));
     const destination = profile?.preferred_locale === "en" ? "en" : locale;
     document.cookie = `easyroom-locale=${destination}; Path=/; Max-Age=31536000; SameSite=Lax`;
     router.replace(localePath("/", destination));
@@ -73,7 +93,14 @@ export default function Login() {
               <button type="button" role="tab" aria-selected={mode === "owner"} onClick={() => { setMode("owner"); setError(null); }}><Mail size={16} />{t("ownerLogin")}</button>
             </div>
             {mode === "staff" ? (
-              <label className="field"><span>{t("username")}</span><div className="input-with-icon"><UserRound size={18} /><input required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed" dir="ltr" /></div></label>
+              <>
+                <label className="field"><span>{t("username")}</span><div className="input-with-icon"><UserRound size={18} /><input required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed" dir="ltr" /></div></label>
+                {showHotel ? (
+                  <label className="field"><span>{t("hotelCode")}</span><div className="input-with-icon"><Hotel size={18} /><input required autoComplete="organization" value={hotel} onChange={(e) => setHotel(e.target.value)} placeholder="greek-club-dahab" dir="ltr" /></div><span className="field-hint">{t("hotelCodeHint")}</span></label>
+                ) : (
+                  <button type="button" className="link-button" onClick={() => setShowHotel(true)}>{t("otherHotel")}</button>
+                )}
+              </>
             ) : (
               <label className="field"><span>{t("email")}</span><div className="input-with-icon"><Mail size={18} /><input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" /></div></label>
             )}

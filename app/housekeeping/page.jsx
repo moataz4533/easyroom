@@ -45,7 +45,7 @@ function Housekeeping() {
   async function setStatus(room, status) {
     // Safe to queue: the last write wins and no money depends on it.
     if (!navigator.onLine) {
-      queueAdd({ kind: "room_status", room_id: room.id, status });
+      queueAdd({ kind: "room_status", room_id: room.id, status, property_id: property.id });
       setRooms((prev) => prev.map((r) =>
         r.id === room.id ? { ...r, housekeeping_status: status } : r));
       showToast(`غرفة ${room.number}: ${HK[status].label} — هيتبعت لما النت يرجع`);
