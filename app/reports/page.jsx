@@ -16,18 +16,11 @@ export default function Page() {
 }
 
 // Ranges a hotel owner actually asks for, rather than arbitrary spans.
-const RANGES = [
-  ["7", "آخر ٧ أيام"],
-  ["30", "آخر شهر"],
-  ["month", "الشهر الحالي"],
-  ["90", "آخر ٣ شهور"],
-  ["custom", "مدة محددة"],
-];
+const RANGES = ["7", "30", "month", "90", "custom"];
 
-const SOURCE_LABEL = {
-  whatsapp: "واتساب", phone: "مكالمة", walk_in: "حضور مباشر",
-  website: "الموقع", ota: "مواقع حجز", referral: "توصية", other: "أخرى",
-};
+const METHODS = ["cash", "instapay", "vodafone_cash", "card", "transfer"];
+
+const SOURCES = ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"];
 
 function rangeDates(key) {
   const t = today();
@@ -53,7 +46,13 @@ function Reports() {
   const [extras, setExtras] = useState([]);
   const [loading, setLoading] = useState(true);
   const tx = useTranslations("Export");
+  const t = useTranslations("Reports");
+  const common = useTranslations("Common");
   const [toast, showToast] = useToast();
+
+  // Every figure on this screen is money in the same currency, written the
+  // same way. Once, here.
+  const money = (value) => `${egp(value, locale)} ${common("currency")}`;
 
   useEffect(() => {
     if (range !== "custom") setDates(rangeDates(range));
@@ -116,17 +115,15 @@ function Reports() {
   return (
     <>
       <Toast {...(toast || {})} />
-      <h2 style={{ marginBottom: 4 }}>التقارير</h2>
-      <p className="section-note">
-        الإيراد محسوب بالليلة — الإقامة الممتدة على شهرين تُقسَّم بينهما.
-      </p>
+      <h2 style={{ marginBottom: 4 }}>{t("title")}</h2>
+      <p className="section-note">{t("note")}</p>
 
       <div className="report-controls">
         <div className="tabs" role="tablist">
-          {RANGES.map(([k, label]) => (
-            <button key={k} className="tab" role="tab" aria-selected={range === k}
-              onClick={() => setRange(k)}>
-              {label}
+          {RANGES.map((key) => (
+            <button key={key} className="tab" role="tab" aria-selected={range === key}
+              onClick={() => setRange(key)}>
+              {t(`range_${key}`)}
             </button>
           ))}
         </div>
@@ -139,12 +136,12 @@ function Reports() {
       {range === "custom" && (
         <div className="card row" style={{ marginBottom: 14 }}>
           <div className="field grow">
-            <label>من</label>
+            <label>{t("from")}</label>
             <input type="date" className="mono" value={from}
               onChange={(e) => setDates([e.target.value, to])} />
           </div>
           <div className="field grow">
-            <label>لحد</label>
+            <label>{t("to")}</label>
             <input type="date" className="mono" value={to}
               onChange={(e) => setDates([from, e.target.value])} />
           </div>
@@ -152,58 +149,54 @@ function Reports() {
       )}
 
       {loading ? (
-        <div className="empty">جارٍ الحساب…</div>
+        <div className="empty">{t("calculating")}</div>
       ) : !summary ? (
-        <div className="empty">لا توجد بيانات.</div>
+        <div className="empty">{t("noData")}</div>
       ) : (
         <>
           {empty && (
             <div className="banner warn">
-              لا توجد ليالٍ مباعة في هذه المدة. كل الأرقام أصفار.
+              {t("noNights")}
             </div>
           )}
 
           <section className="section">
             <div className="kpis">
-              <Kpi label="نسبة الإشغال" value={`${summary.occupancy_pct}%`} big
-                sub={locale === "en"
-                  ? `${summary.nights_sold} of ${summary.nights_available} nights`
-                  : `${summary.nights_sold} من ${summary.nights_available} ليلة`} />
-              <Kpi label="إيراد الغرف" value={`${egp(summary.room_revenue, locale)} ج`} big />
+              <Kpi label={t("occupancy")} value={`${summary.occupancy_pct}%`} big
+                sub={t("nightsSold", { sold: summary.nights_sold, available: summary.nights_available })} />
+              <Kpi label={t("roomRevenue")} value={money(summary.room_revenue)} big />
               {/* Beside room revenue, never inside ADR or RevPAR: those are
                   per room-night, and a transfer to the airport is not. */}
-              <Kpi label="إيراد الإضافات" value={`${egp(summary.extras_revenue, locale)} ج`}
-                sub={`الإجمالي ${egp(summary.total_revenue, locale)} ج`} />
-              <Kpi label="متوسط سعر الليلة" value={`${egp(summary.adr, locale)} ج`}
-                sub="للليلة المباعة" />
-              <Kpi label="إيراد الغرفة المتاحة" value={`${egp(summary.revpar, locale)} ج`}
-                sub="مقياس الأداء الحقيقي" />
-              <Kpi label="حجوزات" value={summary.bookings_made} />
-              <Kpi label="ليالي ضيوف" value={summary.guests_hosted} />
-              <Kpi label="محصّل" value={`${egp(summary.collected, locale)} ج`} tone="ok" />
-              <Kpi label="متبقي" value={`${egp(summary.outstanding, locale)} ج`}
+              <Kpi label={t("extrasRevenue")} value={money(summary.extras_revenue)}
+                sub={t("totalRevenue", { amount: egp(summary.total_revenue, locale), currency: common("currency") })} />
+              <Kpi label={t("adr")} value={money(summary.adr)} sub={t("adrNote")} />
+              <Kpi label={t("revpar")} value={money(summary.revpar)} sub={t("revparNote")} />
+              <Kpi label={t("bookingsMade")} value={summary.bookings_made} />
+              <Kpi label={t("guestNights")} value={summary.guests_hosted} />
+              <Kpi label={t("collected")} value={money(summary.collected)} tone="ok" />
+              <Kpi label={t("outstanding")} value={money(summary.outstanding)}
                 tone={Number(summary.outstanding) > 0 ? "warn" : null} />
             </div>
           </section>
 
           {(Number(summary.cancellations) > 0 || Number(summary.no_shows) > 0) && (
             <div className="banner warn">
-              {summary.cancellations} إلغاء و {summary.no_shows} عدم حضور في المدة دي.
+              {t("lost", { cancellations: summary.cancellations, noShows: summary.no_shows })}
             </div>
           )}
 
-          <DailyChart rows={daily} />
+          <DailyChart rows={daily} t={t} />
 
           {extras.length > 0 && (
             <section className="section">
-              <h2 style={{ fontSize: 14, marginBottom: 8 }}>الإضافات المباعة</h2>
-              <p className="section-note">ما يبيعه الفندق غير الغرفة.</p>
+              <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("extrasSold")}</h2>
+              <p className="section-note">{t("extrasSoldNote")}</p>
               <div className="stack">
                 {extras.map((row) => (
                   <div key={row.description} className="card spread" style={{ padding: "9px 12px" }}>
                     <span style={{ fontSize: 13 }}>{row.description}</span>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>×{egp(row.quantity, locale)}</span>
-                    <span className="mono" style={{ fontWeight: 600 }}>{egp(row.total, locale)} ج</span>
+                    <span className="mono" style={{ fontWeight: 600 }}>{money(row.total)}</span>
                   </div>
                 ))}
               </div>
@@ -212,22 +205,21 @@ function Reports() {
 
           {methods.length > 0 && (
             <section className="section">
-              <h2 style={{ fontSize: 14, marginBottom: 8 }}>المحصّل حسب طريقة الدفع</h2>
-              <p className="section-note">لمطابقة الكاش آخر الوردية.</p>
+              <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("byMethod")}</h2>
+              <p className="section-note">{t("byMethodNote")}</p>
               <div className="stack">
                 {methods.map((m) => (
                   <div key={m.method} className="card spread">
                     <div className="grow">
                       <div style={{ fontWeight: 600 }}>
-                        {{ cash: "كاش", instapay: "إنستاباي", vodafone_cash: "فودافون كاش",
-                           card: "فيزا", transfer: "تحويل بنكي" }[m.method] || m.method}
+                        {METHODS.includes(m.method) ? t(`method_${m.method}`) : m.method}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        {m.count} عملية
+                        {t("transactionCount", { count: m.count })}
                       </div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600 }}>
-                      {egp(m.total, locale)} ج
+                      {money(m.total)}
                     </span>
                   </div>
                 ))}
@@ -237,20 +229,20 @@ function Reports() {
 
           {sources.length > 0 && (
             <section className="section">
-              <h2 style={{ fontSize: 14, marginBottom: 8 }}>الحجوزات جت منين</h2>
+              <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("whereFrom")}</h2>
               <div className="stack">
                 {sources.map((s) => (
                   <div key={s.source} className="card spread">
                     <div className="grow">
                       <div style={{ fontWeight: 600 }}>
-                        {SOURCE_LABEL[s.source] || s.source}
+                        {SOURCES.includes(s.source) ? t(`source_${s.source}`) : s.source}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        {s.bookings} حجز · {s.nights} غرفة
+                        {t("sourceLine", { bookings: s.bookings, nights: s.nights })}
                       </div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600 }}>
-                      {egp(s.revenue, locale)} ج
+                      {money(s.revenue)}
                     </span>
                   </div>
                 ))}
@@ -261,7 +253,7 @@ function Reports() {
           {owing.length > 0 && (
             <section className="section">
               <h2 style={{ fontSize: 14, marginBottom: 8 }}>
-                فلوس متبقية ({owing.length})
+                {t("owing", { count: owing.length })}
               </h2>
               <div className="stack">
                 {owing.map((o) => (
@@ -275,11 +267,11 @@ function Reports() {
                     </div>
                     <div style={{ textAlign: "end" }}>
                       <div className="mono" style={{ fontWeight: 600, color: "var(--sand)" }}>
-                        {egp(o.owed, locale)} ج
+                        {money(o.owed)}
                       </div>
                       {o.guest_phone && (
                         <a className="btn sm" style={{ marginTop: 4 }}
-                          href={`tel:${o.guest_phone}`}>اتصل</a>
+                          href={`tel:${o.guest_phone}`}>{t("call")}</a>
                       )}
                     </div>
                   </div>
@@ -290,8 +282,8 @@ function Reports() {
 
           {cancels.length > 0 && (
             <section className="section">
-              <h2 style={{ fontSize: 14, marginBottom: 8 }}>سجل الإلغاءات</h2>
-              <p className="section-note">مين ألغى إيه وامتى وليه.</p>
+              <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("cancellations")}</h2>
+              <p className="section-note">{t("cancellationsNote")}</p>
               <div className="stack">
                 {cancels.map((c, i) => (
                   <div key={i} className="card">
@@ -300,14 +292,15 @@ function Reports() {
                         <div style={{ fontWeight: 600 }}>{c.guest_name}</div>
                         <div style={{ fontSize: 12, color: "var(--muted)" }}>
                           <span className="code">{c.reference}</span>{" "}
-                          {c.status === "no_show" ? "لم يحضر" : "ملغي"} · بواسطة {c.cancelled_by}
+                          {c.status === "no_show" ? t("noShow") : t("cancelled")}
+                          {" · "}{t("by", { name: c.cancelled_by })}
                         </div>
                       </div>
-                      <span className="mono" style={{ fontSize: 13 }}>{egp(c.amount, locale)} ج</span>
+                      <span className="mono" style={{ fontSize: 13 }}>{money(c.amount)}</span>
                     </div>
                     {c.reason && (
                       <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
-                        السبب: {c.reason}
+                        {t("reason", { reason: c.reason })}
                       </div>
                     )}
                   </div>
@@ -337,7 +330,7 @@ function Kpi({ label, value, sub, big, tone }) {
 
 // Plain SVG rather than a charting library: one chart doesn't justify
 // shipping 50kB to a phone on Dahab wifi.
-function DailyChart({ rows }) {
+function DailyChart({ rows, t }) {
   if (!rows.length) return null;
 
   const max = Math.max(...rows.map((r) => Number(r.rooms_sold)), 1);
@@ -347,10 +340,10 @@ function DailyChart({ rows }) {
 
   return (
     <section className="section">
-      <h2 style={{ fontSize: 14, marginBottom: 8 }}>الإشغال يوم بيوم</h2>
+      <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("dailyOccupancy")}</h2>
       <div className="chart-wrap">
         <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h}
-          role="img" aria-label="رسم بياني للإشغال اليومي">
+          role="img" aria-label={t("chartLabel")}>
           <line x1="0" y1={h - pad} x2={w} y2={h - pad}
             stroke="var(--line)" strokeWidth="1" />
           {rows.map((r, i) => {
@@ -359,7 +352,7 @@ function DailyChart({ rows }) {
             const x = i * 26 + 6;
             return (
               <g key={r.day}>
-                <title>{`${r.day}: ${val} غرفة (${r.occupancy_pct}%)`}</title>
+                <title>{t("chartBar", { day: r.day, rooms: val, percent: r.occupancy_pct })}</title>
                 <rect x={x} y={h - pad - bh} width="14" height={bh} rx="3"
                   fill={val >= max * 0.8 ? "var(--sea)" : "var(--sand)"} />
                 {(i === 0 || i === rows.length - 1 || i % 7 === 0) && (

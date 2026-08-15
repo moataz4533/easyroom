@@ -110,6 +110,22 @@ describe("bilingual routing and messages", () => {
     for (const type of ["all", "booking", "housekeeping", "money", "admin"]) {
       expect(typeof ar.Activity[`type_${type}`], type).toBe("string");
     }
+    for (const key of ["7", "30", "month", "90", "custom"]) {
+      expect(typeof ar.Reports[`range_${key}`], key).toBe("string");
+    }
+    for (const method of ["cash", "instapay", "vodafone_cash", "card", "transfer"]) {
+      expect(typeof ar.Bookings[`method_${method}`], method).toBe("string");
+      expect(typeof ar.Reports[`method_${method}`], method).toBe("string");
+    }
+    for (const status of ["inquiry", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"]) {
+      expect(typeof ar.Bookings[`status_${status}`], status).toBe("string");
+    }
+    for (const key of ["active", "today", "past", "cancelled"]) {
+      expect(typeof ar.Bookings[`filter_${key}`], key).toBe("string");
+    }
+    for (const source of ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"]) {
+      expect(typeof ar.Reports[`source_${source}`], source).toBe("string");
+    }
   });
 
   it("preserves the current page while changing locale", () => {
