@@ -29,6 +29,10 @@ export default function Page() {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// "We could not work the price out" — deliberately not a number, so it can
+// never be added up, compared, or mistaken for a cheap night.
+const UNPRICED = Symbol("unpriced");
+
 // Ordered for a phone call: who's calling, when, which room, done.
 function NewBooking() {
   const { property } = useProperty();
@@ -160,21 +164,35 @@ function NewBooking() {
     setPresetUsed(true);
   }, [rooms, presetRoom, presetUsed]);
 
-  // Price the selection live, so the quote is ready before the guest asks.
+  /**
+   * Price the selection live, so the quote is ready before the guest asks.
+   *
+   * A leg that fails makes the whole quote unknown rather than cheaper. The
+   * old code read a failed call as zero, which put "٠ ج" on the screen with
+   * exactly the confidence of a real price — the one number reception must
+   * never be given wrongly.
+   */
   useEffect(() => {
     const ids = Object.keys(picked);
     if (!property || !planId || !ids.length || n < 1 || !online) return setQuote(null);
 
+    let current = true;
     Promise.all(ids.map(async (rid) => {
       const room = rooms.find((r) => r.room_id === rid);
       if (!room) return 0;
-      const { data } = await supabase.rpc("quote_stay", {
+      const { data, error } = await supabase.rpc("quote_stay", {
         p_property: property.id, p_room_type: room.room_type_id,
         p_rate_plan: planId, p_occupancy: picked[rid],
         p_check_in: checkIn, p_check_out: checkOut,
       });
+      if (error) throw error;
       return Number(data) || 0;
-    })).then((v) => setQuote(v.reduce((a, b) => a + b, 0)));
+    }))
+      .then((v) => { if (current) setQuote(v.reduce((a, b) => a + b, 0)); })
+      .catch(() => { if (current) setQuote(UNPRICED); });
+    // A slow answer for a selection reception has already changed is not an
+    // answer to anything, so it is dropped rather than shown.
+    return () => { current = false; };
   }, [picked, planId, rooms, property, checkIn, checkOut, n, online]);
 
   /**
@@ -200,24 +218,33 @@ function NewBooking() {
     // Several rows can carry one number — every booking taken without
     // searching first makes another. Asking for exactly one used to fail
     // outright on those numbers, which is the opposite of helpful.
-    const { data: matches } = await supabase.from("guests").select("*")
+    const { data: matches, error } = await supabase.from("guests").select("*")
       .eq("property_id", property.id).eq("phone", phone.trim());
+
+    // "New guest" is an answer, and a failed search has not earned it: the
+    // number may well belong to somebody who has stayed here five times.
+    if (error) {
+      setSearching(false);
+      return showToast("تعذّر البحث. جرّب تاني.", true);
+    }
 
     const found = pickGuest(matches || []);
     setDuplicates(duplicateCount(matches || []));
 
     // How often they have stayed, and whether they have failed to turn up,
-    // is worth knowing before promising the last room on a busy night.
-    let past = [];
+    // is worth knowing before promising the last room on a busy night. If
+    // that part fails the guest is still shown — with no history rather
+    // than an empty one, which would read as a first-time visitor.
+    let past = null;
     if (found) {
-      const { data: bookings } = await supabase.from("bookings")
+      const { data: bookings, error: historyFailed } = await supabase.from("bookings")
         .select("status, check_in, check_out, total_amount, paid_amount")
         .eq("guest_id", found.id).limit(100);
-      past = bookings || [];
+      if (!historyFailed) past = bookings || [];
     }
 
     setSearching(false);
-    setHistory(found ? summariseStays(past) : null);
+    setHistory(found && past ? summariseStays(past) : null);
     if (found) { setGuest(found); setName(found.full_name); showToast(`نزيل سابق: ${found.full_name}`); }
     else { setGuest(null); showToast("نزيل جديد"); }
   }
@@ -270,8 +297,17 @@ function NewBooking() {
       // Reception who types the number and goes straight to the rooms without
       // pressing search should still land on the guest already on file. This
       // is why one number ended up with twelve rows behind it.
-      const { data: onFile } = await supabase.from("guests").select("*")
+      const { data: onFile, error: lookupFailed } = await supabase.from("guests").select("*")
         .eq("property_id", property.id).eq("phone", phone.trim());
+
+      // A lookup that failed is not a lookup that found nobody. Carrying on
+      // here would add another row for a guest already on file — which is
+      // the very thing this lookup exists to prevent, defeated at exactly
+      // the moment the connection is bad enough to matter.
+      if (lookupFailed) {
+        setBusy(false);
+        return showToast("تعذّر البحث عن النزيل. حاول مرة أخرى قبل تسجيل الحجز.", true);
+      }
       guestId = guestToReuse(onFile || [], { name, phone })?.id;
     }
     if (!guestId) {
@@ -530,10 +566,15 @@ function NewBooking() {
               {Object.keys(picked).length} غرفة · {totalHeads} أفراد · {n} ليلة
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {quote !== null ? `${egp(quote, locale)} ج` : "—"}
+              {typeof quote === "number" ? `${egp(quote, locale)} ج` : "—"}
             </div>
           </div>
         </div>
+        {quote === UNPRICED && (
+          <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
+            تعذّر حساب السعر — راجع الاتصال. لا تؤكد الحجز بسعر غير ظاهر.
+          </div>
+        )}
         {online && quote === 0 && Object.keys(picked).length > 0 && (
           <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
             السعر صفر — هذه التركيبة ليس لها سعر بعد في الإعدادات.

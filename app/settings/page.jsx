@@ -441,14 +441,23 @@ function Seasons({ property, types, plans, showToast, locale }) {
 
   // A season's prices are the rate rows stamped with its start date.
   const openSeason = useCallback(async (season) => {
-    setSelected(season);
-    const { data } = await supabase.from("rates").select("*")
+    const { data, error } = await supabase.from("rates").select("*")
       .eq("property_id", property.id).eq("valid_from", season.starts_on);
+
+    // An empty grid and a grid we failed to load look identical, and one of
+    // them invites the manager to type prices over prices that are already
+    // there. So a failure does not open the season at all.
+    if (error) {
+      setSelected(null);
+      return showToast(error.message, true);
+    }
+
+    setSelected(season);
     const map = Object.fromEntries((data || []).map((row) =>
       [rateKey(row.room_type_id, row.rate_plan_id, row.occupancy), row.amount]));
     setStored(map);
     setDraft(map);
-  }, [property.id]);
+  }, [property.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createSeason() {
     if (!form.name.trim()) return showToast(t("needName"), true);
