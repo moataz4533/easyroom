@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync, readdirSync, statSync } from "fs";
+import { join } from "path";
 import { IntlMessageFormat } from "intl-messageformat";
 import ar from "../messages/ar.json";
 import en from "../messages/en.json";
@@ -34,6 +36,60 @@ describe("bilingual routing and messages", () => {
     const stay = new IntlMessageFormat(ar.Provisional.stay, "ar");
     expect(stay.format({ nights: 1, heads: 2, rooms: "101" })).toContain("ليلة واحدة");
     expect(stay.format({ nights: 3, heads: 2, rooms: "101" })).toContain("ليالٍ");
+  });
+
+  /**
+   * A key used in a screen but missing from the catalogue throws where it is
+   * rendered — which is on a phone at the desk, not here. So every literal
+   * key a screen asks for is checked against the catalogue.
+   *
+   * Only literal keys can be checked; `t(`state_${x}`)` is a template and is
+   * skipped, which is why every such family also has a literal test of its
+   * own further down.
+   */
+  it("has a message for every key the screens ask for", () => {
+    const files = [];
+    (function walk(dir) {
+      for (const entry of readdirSync(dir)) {
+        if (["node_modules", ".next", ".git", "tests"].includes(entry)) continue;
+        const path = join(dir, entry);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.jsx$/.test(path)) files.push(path);
+      }
+    })(".");
+
+    const missing = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      // Which catalogue each local name reads from: const t = useTranslations("Board").
+      // One file holds several components, and each may bind the same name to
+      // a different catalogue, so a name carries every namespace it is bound
+      // to anywhere in the file. A key is missing only when no catalogue that
+      // name ever reads from has it — enough to catch a typo or a forgotten
+      // entry, without needing to know which component a line sits in.
+      const namespaces = {};
+      for (const m of source.matchAll(/const\s+(\w+)\s*=\s*useTranslations\("([\w.]+)"\)/g)) {
+        (namespaces[m[1]] ||= []).push(m[2]);
+      }
+      for (const [name, spaces] of Object.entries(namespaces)) {
+        const uses = new RegExp(`\\b${name}\\("([\\w.]+)"`, "g");
+        for (const use of source.matchAll(uses)) {
+          const anywhere = spaces.some((namespace) =>
+            typeof `${namespace}.${use[1]}`.split(".").reduce((node, key) => (node ?? {})[key], ar) === "string");
+          if (!anywhere) missing.push(`${file}: ${[...new Set(spaces)].join("|")}.${use[1]}`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("has every member of the key families built from a variable", () => {
+    for (const state of ["free", "occupied", "dirty", "ooo"]) {
+      expect(typeof ar.Board[`state_${state}`], state).toBe("string");
+    }
+    for (const source of ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"]) {
+      expect(typeof ar.Board[`source_${source}`], source).toBe("string");
+    }
   });
 
   it("preserves the current page while changing locale", () => {

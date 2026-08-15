@@ -6,6 +6,7 @@ import SetupChecklist from "../components/SetupChecklist";
 import ProvisionalBookings from "../components/ProvisionalBookings";
 import StuckActions from "../components/StuckActions";
 import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
+import { joinList } from "../lib/format";
 import { earlyDepartureAmounts, isLeavingEarly } from "../lib/checkout";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
 import { useLocale, useTranslations } from "next-intl";
@@ -25,6 +26,7 @@ export default function Page() {
 function Board() {
   const { property, role } = useProperty();
   const locale = useLocale();
+  const t = useTranslations("Board");
   const [rows, setRows] = useState([]);
   const [attention, setAttention] = useState([]);
   const [arrivals, setArrivals] = useState([]);
@@ -64,7 +66,6 @@ function Board() {
   const occupied = rows.filter((r) => r.booking_id).length;
   const dirty = rows.filter((r) => r.housekeeping_status === "dirty").length;
   const departing = rows.filter((r) => r.departing_today).length;
-  const isEn = locale === "en";
 
   return (
     <>
@@ -77,7 +78,7 @@ function Board() {
 
       {attention.length > 0 && (
         <div className="banner bad">
-          <strong>{attention.length} حجز يحتاج تدخلاً.</strong>
+          <strong>{t("attention", { count: attention.length })}</strong>
           <div className="stack" style={{ marginTop: 8 }}>
             {attention.map((a) => (
               <div key={a.booking_id} className="spread" style={{ fontSize: 13 }}>
@@ -85,7 +86,7 @@ function Board() {
                   <span className="code">{a.reference}</span> {a.guest_name} — {a.reason}
                 </span>
                 {a.guest_phone && (
-                  <a className="btn sm" href={`tel:${a.guest_phone}`}>اتصل</a>
+                  <a className="btn sm" href={`tel:${a.guest_phone}`}>{t("call")}</a>
                 )}
               </div>
             ))}
@@ -95,92 +96,92 @@ function Board() {
 
       {stale && (
         <div className="stale">
-          آخر تحديث: {new Date(stale).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
-            hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
-          {" — "}هذه بيانات محفوظة، وليست لحظية.
+          {t("staleAt", { at: new Date(stale).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
+            hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) })}
+          {" — "}{t("staleNote")}
         </div>
       )}
 
       <div className="dashboard-heading">
         <div>
-          <span className="eyebrow">{isEn ? "DAILY OPERATIONS" : "تشغيل الفندق"}</span>
-          <h1>{isEn ? "Today overview" : "نظرة اليوم"}</h1>
+          <span className="eyebrow">{t("eyebrow")}</span>
+          <h1>{t("title")}</h1>
         </div>
         <button className="btn dashboard-refresh" onClick={load} disabled={loading}>
           <RefreshCw size={17} className={loading ? "spin" : ""} />
-          {isEn ? "Refresh" : "تحديث"}
+          {t("refresh")}
         </button>
       </div>
 
       <div className="dashboard-stats">
-        <Stat icon={BedDouble} label={isEn ? "Occupied rooms" : "الغرف المشغولة"}
-          value={occupied} suffix={`${isEn ? "of" : "من"} ${rows.length}`} tone="sea" />
-        <Stat icon={LogOut} label={isEn ? "Departures today" : "مغادرة اليوم"}
+        <Stat icon={BedDouble} label={t("occupied")}
+          value={occupied} suffix={t("ofRooms", { count: rows.length })} tone="sea" />
+        <Stat icon={LogOut} label={t("departures")}
           value={departing} tone="sand" />
-        <Stat icon={Brush} label={isEn ? "Needs cleaning" : "تحتاج تنظيف"}
+        <Stat icon={Brush} label={t("needsCleaning")}
           value={dirty} tone="danger" />
       </div>
 
       <section className="section dashboard-section">
         <div className="dashboard-section-title">
           <CalendarDays size={22} />
-          <h2>{isEn ? "Arrivals today" : "وصول اليوم"}</h2>
+          <h2>{t("arrivals")}</h2>
           <span className="pill">{arrivals.length}</span>
         </div>
         {arrivals.length > 0 ? (
           <div className="arrivals-table">
             <div className="arrival-row arrival-head" aria-hidden="true">
-              <span>{isEn ? "Booking" : "رقم الحجز"}</span><span>{isEn ? "Guest" : "النزيل"}</span>
-              <span>{isEn ? "Stay" : "الإقامة"}</span><span>{isEn ? "Room" : "الغرفة"}</span>
-              <span>{isEn ? "Source" : "نوع الحجز"}</span><span>{isEn ? "Notes" : "ملاحظات"}</span><span />
+              <span>{t("colBooking")}</span><span>{t("colGuest")}</span>
+              <span>{t("colStay")}</span><span>{t("colRoom")}</span>
+              <span>{t("colSource")}</span><span>{t("colNotes")}</span><span />
             </div>
             {arrivals.map((b) => (
               <div key={b.id} className="arrival-row">
                 <span className="code arrival-reference">{b.reference}</span>
                 <span className="arrival-guest"><UserRound size={17} />{b.guests?.full_name}</span>
-                <span className="arrival-stay">{dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}<small>{b.adults} {isEn ? "guests" : "أفراد"}</small></span>
-                <span className="mono arrival-room">{arrivalRooms(b)}</span>
-                <span>{sourceLabel(b.source, locale)}</span>
+                <span className="arrival-stay">{dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}<small>{t("paxCount", { count: b.adults || 0 })}</small></span>
+                <span className="mono arrival-room">{arrivalRooms(b, locale)}</span>
+                <span>{t(`source_${b.source || "other"}`)}</span>
                 <span className="arrival-notes">{b.notes || "—"}</span>
                 <button
                   className="btn primary sm arrival-action"
                   onClick={async () => {
                     if (!navigator.onLine) {
                       queueAdd({ kind: "rpc", fn: "check_in_booking", property_id: property.id, args: { p_booking: b.id } });
-                      showToast("تم التسجيل، وسيُرسل فور عودة الاتصال");
+                      showToast(t("queued"));
                       return;
                     }
                     const { error } = await supabase.rpc("check_in_booking", { p_booking: b.id });
                     if (error) showToast(error.message, true);
-                    else { showToast("تم التسكين"); load(); }
+                    else { showToast(t("checkedIn")); load(); }
                   }}
                 >
-                  <LogIn size={16} />{isEn ? "Check in" : "تسجيل الوصول"}
+                  <LogIn size={16} />{t("checkIn")}
                 </button>
               </div>
             ))}
           </div>
-        ) : <div className="empty compact-empty">{isEn ? "No arrivals scheduled for today." : "لا يوجد وصول مسجّل اليوم."}</div>}
+        ) : <div className="empty compact-empty">{t("noArrivals")}</div>}
       </section>
 
       <section className="section dashboard-section">
         <div className="dashboard-section-title">
           <BedDouble size={22} />
-          <h2>{isEn ? "Room status" : "حالة الغرف"}</h2>
+          <h2>{t("roomStatus")}</h2>
         </div>
-        <p className="section-note">{isEn ? "Select a room to view details and available actions." : "اضغط على أي غرفة لعرض التفاصيل والإجراءات."}</p>
+        <p className="section-note">{t("roomStatusNote")}</p>
 
         {loading ? (
-          <div className="empty">جارٍ التحميل…</div>
+          <div className="empty">{t("loading")}</div>
         ) : (
           <>
             <div className="room-status-grid">
               {rows.map((r) => (
-                <RoomStatusCard key={r.room_id} room={r} locale={locale} onClick={() => setSheet(r)} />
+                <RoomStatusCard key={r.room_id} room={r} locale={locale} t={t} onClick={() => setSheet(r)} />
               ))}
             </div>
-            <div className="room-legend" aria-label={isEn ? "Room status legend" : "دليل حالات الغرف"}>
-              {["free", "occupied", "dirty", "ooo"].map((state) => <span key={state}><i data-state={state} />{stateLabel(state, locale)}</span>)}
+            <div className="room-legend" aria-label={t("legend")}>
+              {["free", "occupied", "dirty", "ooo"].map((state) => <span key={state}><i data-state={state} />{t(`state_${state}`)}</span>)}
             </div>
           </>
         )}
@@ -216,38 +217,35 @@ function stateOf(r) {
   return "free";
 }
 
-function stateLabel(s, locale = "ar") {
-  const labels = locale === "en"
-    ? { free: "Available", occupied: "Occupied", dirty: "Needs cleaning", ooo: "Out of service" }
-    : { free: "متاحة", occupied: "مشغولة", dirty: "تحتاج تنظيف", ooo: "خارج الخدمة" };
-  return labels[s];
-}
-
-function RoomStatusCard({ room, locale, onClick }) {
+function RoomStatusCard({ room, locale, t, onClick }) {
   const state = stateOf(room);
   const Icon = state === "dirty" ? Brush : state === "ooo" ? Ban : BedDouble;
   return <button className="room-status-card" data-state={state} onClick={onClick}>
     <div className="room-status-icon"><Icon size={27} /></div>
     <div className="room-status-copy">
-      <div className="room-status-top"><strong className="mono">{room.room_number}</strong><span>{stateLabel(state, locale)}</span></div>
-      {room.booking_id ? <><div className="room-guest">{room.guest_name}</div><div className="room-departure"><DoorOpen size={14} />{room.departing_today ? (locale === "en" ? "Departs today" : "مغادرة اليوم") : `${locale === "en" ? "Departs" : "المغادرة"} ${dayLabel(room.ends_on, locale)}`}</div></> : <div className="room-empty-note">{locale === "en" ? "Ready for the next guest" : state === "free" ? "جاهزة للنزيل القادم" : "اضغط لعرض التفاصيل"}</div>}
+      <div className="room-status-top"><strong className="mono">{room.room_number}</strong><span>{t(`state_${state}`)}</span></div>
+      {room.booking_id ? (
+        <>
+          <div className="room-guest">{room.guest_name}</div>
+          <div className="room-departure">
+            <DoorOpen size={14} />
+            {room.departing_today ? t("departsToday") : t("departsOn", { date: dayLabel(room.ends_on, locale) })}
+          </div>
+        </>
+      ) : (
+        <div className="room-empty-note">{state === "free" ? t("readyNext") : t("tapForDetails")}</div>
+      )}
     </div>
   </button>;
 }
 
-function arrivalRooms(booking) {
+function arrivalRooms(booking, locale) {
   const rooms = (booking.room_allocations || []).map((item) => item.rooms?.number).filter(Boolean);
-  return rooms.length ? rooms.join("، ") : "—";
-}
-
-function sourceLabel(source, locale) {
-  const labels = locale === "en"
-    ? { whatsapp: "WhatsApp", phone: "Phone", walk_in: "Walk-in", website: "Website", ota: "OTA", referral: "Referral", other: "Other" }
-    : { whatsapp: "واتساب", phone: "مكالمة", walk_in: "مباشر", website: "الموقع", ota: "مواقع حجز", referral: "توصية", other: "أخرى" };
-  return labels[source] || source || "—";
+  return rooms.length ? joinList(rooms, locale) : "—";
 }
 
 function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
+  const t = useTranslations("Board");
   const { online } = useOffline();
   const [busy, setBusy] = useState(false);
   const [extendTo, setExtendTo] = useState(row.ends_on ? addDays(row.ends_on, 1) : "");
@@ -258,7 +256,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
     // The booking already exists, so replaying these later is safe.
     if (!navigator.onLine && queued) {
       queueAdd(queued);
-      onDone("تم التسجيل، وسيُرسل فور عودة الاتصال");
+      onDone(t("queued"));
       return;
     }
     setBusy(true);
@@ -287,12 +285,12 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
       <div className="card sheet" onClick={(e) => e.stopPropagation()}>
         <div className="spread" style={{ marginBottom: 12 }}>
           <h2 className="mono" style={{ fontSize: 26 }}>{row.room_number}</h2>
-          <button className="btn sm" onClick={onClose}>إغلاق</button>
+          <button className="btn sm" onClick={onClose}>{t("close")}</button>
         </div>
 
         <div className="row" style={{ marginBottom: 14 }}>
           <span className={`pill ${row.booking_id ? "dark" : "ok"}`}>
-            {stateLabel(stateOf(row))}
+            {t(`state_${stateOf(row)}`)}
           </span>
           <span className="pill">{locale === "en" ? (row.room_type_en || row.room_type) : row.room_type}</span>
         </div>
@@ -307,13 +305,13 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
               </div>
               {row.guest_phone && (
                 <div className="row" style={{ marginTop: 10 }}>
-                  <a className="btn sm" href={`tel:${row.guest_phone}`}>اتصل</a>
+                  <a className="btn sm" href={`tel:${row.guest_phone}`}>{t("call")}</a>
                   <a
                     className="btn sm"
                     target="_blank" rel="noreferrer"
                     href={`https://wa.me/${row.guest_phone.replace(/[^\d]/g, "")}`}
                   >
-                    واتساب
+                    {t("whatsapp")}
                   </a>
                 </div>
               )}
@@ -322,7 +320,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
             {canManage && (
               <>
                 <div className="section">
-                  <h2 style={{ fontSize: 14, marginBottom: 8 }}>تمديد الإقامة</h2>
+                  <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("extendTitle")}</h2>
                   <div className="row">
                     <input
                       type="date" className="mono grow" value={extendTo}
@@ -330,29 +328,29 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                       onChange={(e) => { setExtendTo(e.target.value); setCheck(null); }}
                     />
                     <button className="btn" onClick={testExtension} disabled={!navigator.onLine}>
-                      تحقق
+                      {t("checkAvailability")}
                     </button>
                   </div>
 
                   {!online && (
                     <div className="banner warn" style={{ marginTop: 10 }}>
-                      التمديد يتطلب اتصالاً — يجب التأكد أن الغرفة شاغرة فعلاً قبل تأكيدها للنزيل.
+                      {t("extendOffline")}
                     </div>
                   )}
 
                   {check && (
                     blocked ? (
                       <div className="banner bad" style={{ marginTop: 10 }}>
-                        الغرفة {blocked.room_number} محجوزة من{" "}
-                        {dayLabel(blocked.blocked_from, locale)} ({blocked.blocked_by}).
-                        <div style={{ marginTop: 6, fontSize: 12 }}>
-                          لتمديد الإقامة انقل النزيل إلى غرفة أخرى — زر «نقل
-                          إلى غرفة أخرى» بالأسفل.
-                        </div>
+                        {t("blockedFrom", {
+                          room: blocked.room_number,
+                          date: dayLabel(blocked.blocked_from, locale),
+                          by: blocked.blocked_by,
+                        })}
+                        <div style={{ marginTop: 6, fontSize: 12 }}>{t("blockedHint")}</div>
                       </div>
                     ) : (
                       <div className="banner ok" style={{ marginTop: 10 }}>
-                        الغرفة شاغرة حتى هذا التاريخ.
+                        {t("freeUntil")}
                         <button
                           className="btn primary wide" style={{ marginTop: 8 }}
                           disabled={busy}
@@ -360,10 +358,10 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                             () => supabase.rpc("extend_stay", {
                               p_booking: row.booking_id, p_new_check_out: extendTo,
                             }),
-                            "تم تسجيل التمديد"
+                            t("extended")
                           )}
                         >
-                          تأكيد التمديد
+                          {t("confirmExtend")}
                         </button>
                       </div>
                     )
@@ -382,7 +380,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
         ) : (
           <div className="stack">
             <Link className="btn primary wide" href="/new-booking">
-              احجز الغرفة دي
+              {t("bookThisRoom")}
             </Link>
             {canManage && stateOf(row) !== "ooo" && (
               <BlockRoom row={row} onDone={onDone} onError={onError} />
@@ -392,10 +390,10 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                 className="btn wide" disabled={busy}
                 onClick={() => run(
                   () => supabase.rpc("unblock_room", { p_room: row.room_id }),
-                  "عادت الغرفة للخدمة"
+                  t("returnedToService")
                 )}
               >
-                إرجاع الغرفة للخدمة
+                {t("backToService")}
               </button>
             )}
           </div>
@@ -419,6 +417,8 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
  */
 function CheckOut({ row, busy, locale, run }) {
   const t = useTranslations("Checkout");
+  const b = useTranslations("Board");
+  const common = useTranslations("Common");
   const [asking, setAsking] = useState(false);
   const [nights, setNights] = useState(null);
   const leavingEarly = isLeavingEarly(row.ends_on, today());
@@ -440,7 +440,7 @@ function CheckOut({ row, busy, locale, run }) {
     () => supabase.rpc("check_out_booking", {
       p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed,
     }),
-    "تم تسجيل المغادرة، وأُضيفت الغرفة إلى قائمة النظافة",
+    b("checkedOut"),
     { kind: "rpc", fn: "check_out_booking", property_id: row.property_id,
       args: { p_booking: row.booking_id, p_charge_unstayed: chargeUnstayed } }
   );
@@ -448,9 +448,7 @@ function CheckOut({ row, busy, locale, run }) {
   if (!leavingEarly) {
     return (
       <button className="btn primary wide" disabled={busy} onClick={() => go(false)}>
-        {busy
-          ? (locale === "en" ? "Checking out…" : "جارٍ تسجيل الخروج…")
-          : (locale === "en" ? "Check out" : "تسجيل خروج")}
+        {busy ? b("checkingOut") : b("checkOut")}
       </button>
     );
   }
@@ -458,7 +456,7 @@ function CheckOut({ row, busy, locale, run }) {
   if (!asking) {
     return (
       <button className="btn primary wide" disabled={busy} onClick={() => setAsking(true)}>
-        {locale === "en" ? "Check out" : "تسجيل خروج"}
+        {b("checkOut")}
       </button>
     );
   }
@@ -476,17 +474,17 @@ function CheckOut({ row, busy, locale, run }) {
       <button className="btn wide choice" disabled={busy} onClick={() => go(false)}>
         <span>{t("billNights")}</span>
         <strong className="mono">
-          {amounts ? `${egp(amounts.stayed, locale)} ج` : "…"}
+          {amounts ? `${egp(amounts.stayed, locale)} ${common("currency")}` : "…"}
         </strong>
       </button>
       <button className="btn wide choice" disabled={busy} onClick={() => go(true)}>
         <span>{t("billWholeStay")}</span>
         <strong className="mono">
-          {amounts ? `${egp(amounts.booked, locale)} ج` : "…"}
+          {amounts ? `${egp(amounts.booked, locale)} ${common("currency")}` : "…"}
         </strong>
       </button>
       <button className="btn wide" disabled={busy} onClick={() => setAsking(false)}>
-        {locale === "en" ? "Back" : "رجوع"}
+        {b("back")}
       </button>
       <p className="field-hint" style={{ margin: 0 }}>{t("earlyNote")}</p>
     </div>
@@ -496,6 +494,7 @@ function CheckOut({ row, busy, locale, run }) {
 // A move acts on one allocation, not the whole booking: a group in three
 // rooms might only need one of them changed.
 function MoveGuest({ row, onDone, onError }) {
+  const t = useTranslations("Board");
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState(null);
   const [from, setFrom] = useState(today());
@@ -524,23 +523,23 @@ function MoveGuest({ row, onDone, onError }) {
     });
     setBusy(false);
     if (error) return onError(error.message);
-    onDone("تم نقل النزيل وتعديل الحساب");
+    onDone(t("moved"));
   }
 
   if (!open) {
     return (
       <button className="btn wide" onClick={() => { setOpen(true); look(); }}>
-        نقل إلى غرفة أخرى
+        {t("moveOpen")}
       </button>
     );
   }
 
   return (
     <div className="card stack" style={{ background: "var(--paper)" }}>
-      <h2 style={{ fontSize: 14 }}>نقل النزيل</h2>
+      <h2 style={{ fontSize: 14 }}>{t("moveTitle")}</h2>
 
       <div className="field">
-        <label>النقل يبدأ من</label>
+        <label>{t("moveFrom")}</label>
         <input
           type="date" className="mono" value={from}
           min={row.starts_on} max={addDays(row.ends_on, -1)}
@@ -548,23 +547,22 @@ function MoveGuest({ row, onDone, onError }) {
         />
       </div>
       <p className="section-note" style={{ margin: 0 }}>
-        إذا اخترت تاريخاً بعد بداية الإقامة، تبقى الليالي السابقة على الغرفة
-        الحالية والباقي على الجديدة.
+        {t("moveHint")}
       </p>
 
       {!options ? (
         <button className="btn" onClick={look} disabled={busy}>
-          {busy ? "جارٍ البحث…" : "عرض الغرف المتاحة"}
+          {busy ? t("searching") : t("showAvailable")}
         </button>
       ) : options.length === 0 ? (
         <div className="banner bad" style={{ margin: 0 }}>
-          لا توجد غرفة شاغرة تتسع لـ {row.occupancy} أفراد في التواريخ دي.
+          {t("noneFit", { count: row.occupancy || 0 })}
         </div>
       ) : (
         <>
           <div className="field">
-            <label>السبب (اختياري)</label>
-            <input value={reason} placeholder="تكييف معطل"
+            <label>{t("reasonOptional")}</label>
+            <input value={reason} placeholder={t("reasonPlaceholder")}
               onChange={(e) => setReason(e.target.value)} />
           </div>
           <div className="stack">
@@ -576,12 +574,12 @@ function MoveGuest({ row, onDone, onError }) {
                   </span>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     {o.type_name}
-                    {!o.same_type && " — نوع مختلف، وقد يتغير السعر"}
+                    {!o.same_type && t("differentType")}
                   </div>
                 </div>
                 <button className="btn primary sm" disabled={busy}
                   onClick={() => move(o.room_id)}>
-                  انقل هنا
+                  {t("moveHere")}
                 </button>
               </div>
             ))}
@@ -589,12 +587,13 @@ function MoveGuest({ row, onDone, onError }) {
         </>
       )}
 
-      <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
+      <button className="btn wide" onClick={() => setOpen(false)}>{t("cancel")}</button>
     </div>
   );
 }
 
 function BlockRoom({ row, onDone, onError }) {
+  const t = useTranslations("Board");
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(today());
   const [to, setTo] = useState(addDays(today(), 1));
@@ -602,26 +601,26 @@ function BlockRoom({ row, onDone, onError }) {
   const [busy, setBusy] = useState(false);
 
   if (!open) {
-    return <button className="btn wide danger" onClick={() => setOpen(true)}>تعطيل الغرفة</button>;
+    return <button className="btn wide danger" onClick={() => setOpen(true)}>{t("blockOpen")}</button>;
   }
 
   return (
     <div className="card" style={{ background: "var(--paper)" }}>
-      <h2 style={{ fontSize: 14, marginBottom: 8 }}>تعطيل الغرفة</h2>
+      <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("blockTitle")}</h2>
       <div className="stack">
         <div className="row">
           <div className="field grow">
-            <label>من</label>
+            <label>{t("from")}</label>
             <input type="date" className="mono" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="field grow">
-            <label>لحد</label>
+            <label>{t("to")}</label>
             <input type="date" className="mono" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
         <div className="field">
-          <label>السبب</label>
-          <input value={reason} placeholder="تكييف معطل" onChange={(e) => setReason(e.target.value)} />
+          <label>{t("reason")}</label>
+          <input value={reason} placeholder={t("reasonPlaceholder")} onChange={(e) => setReason(e.target.value)} />
         </div>
         <button
           className="btn danger wide" disabled={busy}
@@ -629,20 +628,20 @@ function BlockRoom({ row, onDone, onError }) {
             setBusy(true);
             const { data, error } = await supabase.rpc("block_room", {
               p_room: row.room_id, p_from: from, p_to: to,
-              p_reason: reason || "صيانة",
+              p_reason: reason || t("maintenance"),
             });
             setBusy(false);
             if (error) return onError(error.message);
             onDone(
               data?.length
-                ? `تم تعطيل الغرفة. ${data.length} حجز يحتاج نقلاً — راجع التنبيه بالأعلى.`
-                : "تم تعطيل الغرفة"
+                ? t("blockedWithMoves", { count: data.length })
+                : t("blocked")
             );
           }}
         >
-          تأكيد التعطيل
+          {t("confirmBlock")}
         </button>
-        <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
+        <button className="btn wide" onClick={() => setOpen(false)}>{t("cancel")}</button>
       </div>
     </div>
   );
