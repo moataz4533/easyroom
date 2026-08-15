@@ -343,5 +343,27 @@
   "Export": {
     "excel": "Export to Excel",
     "note": "Opens in Excel as a formatted table: a row per night, with a total at the end."
+  },
+  "Backup": {
+    "title": "Backup",
+    "never": "No backup has ever been taken. The hotel has no copy right now.",
+    "today": "The last backup was taken today.",
+    "lastTaken": "{days, plural, one {The last backup was taken yesterday.} other {The last backup was taken # days ago.}}",
+    "what": "One file with everything: rooms, types, rates, seasons, guests, bookings, nights, payments, extras, and staff accounts with their roles. It carries no passwords.",
+    "take": "Download a backup",
+    "taking": "Preparing…",
+    "saved": "Downloaded:",
+    "where": "Keep the file in two places — your device and your email, say. A file on one device is not a backup.",
+    "notAReplacement": "This is a copy you take yourself, so it is only as good as your habit. Automatic daily backups come with upgrading Supabase to Pro, and those are what cover the mistakes you find out about late.",
+    "notBackup": "What came back is not a valid backup. Nothing was saved.",
+    "empty": "The backup came back with no rooms in it. It was not saved, so you are not left thinking you are covered.",
+    "rooms": "rooms",
+    "guests": "guests",
+    "bookings": "bookings",
+    "room_allocations": "allocations",
+    "payments": "payments",
+    "booking_charges": "extras",
+    "rates": "rates",
+    "rate_seasons": "seasons"
   }
 }

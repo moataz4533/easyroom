@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast, roleLabel } from "../../components/Shell";
 import PinPrompt from "../../components/PinPrompt";
+import BackupCard from "../../components/BackupCard";
 import { supabase, egp, dayLabel } from "../../lib/supabase";
 import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
@@ -31,6 +32,7 @@ const TABS = [
   ["charges", "الإضافات"],
   ["staff", "الموظفين"],
   ["security", "كلمة مرور المدير"],
+  ["backup", "نسخة احتياطية"],
   ["property", "بيانات الفندق"],
 ];
 
@@ -103,6 +105,7 @@ function Settings() {
       {tab === "charges" && <ChargeItems {...shared} />}
       {tab === "staff" && <Staff {...shared} />}
       {tab === "security" && <Security {...shared} />}
+      {tab === "backup" && <BackupCard property={property} />}
       {tab === "property" && <PropertyInfo {...shared} />}
     </>
   );

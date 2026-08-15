@@ -265,6 +265,7 @@ export const LEGACY_EN = {
   "اختر غرفة واحدة على الأقل": "Choose at least one room",
   "راجع التواريخ": "Check the dates",
   "تعديل الاسم": "Rename",
+  "نسخة احتياطية": "Backup",
   "تم تعديل النوع": "Room type updated",
   "الاسم مطلوب": "A name is required",
   "رسوم مغادرة مبكرة": "Early departure fee",
