@@ -6,7 +6,7 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import GuestRecord from "../../components/GuestRecord";
 import GuestProfile from "../../components/GuestProfile";
 import { supabase, today, addDays, dayLabel } from "../../lib/supabase";
-import { shiftDate } from "../../lib/format";
+import { joinList, shiftDate } from "../../lib/format";
 import {
   buildGuestCsv, csvFilename, describeGuest, implausibleFields, liveRoomNumbers,
   missingFields, needsAttention,
@@ -240,13 +240,13 @@ function StayRow({ stay, locale, t, onOpen }) {
         </div>
         {wrong.length > 0 && (
           <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 2 }}>
-            {wrong.map((issue) => issue.message).join("، ")}
+            {joinList(wrong.map((issue) => issue.message), locale)}
           </div>
         )}
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
           <span className="code">{stay.reference}</span>{" "}
           {dayLabel(stay.check_in, locale)} ← {dayLabel(stay.check_out, locale)}
-          {rooms.length > 0 && ` · ${rooms.join("، ")}`}
+          {rooms.length > 0 && ` · ${joinList(rooms, locale)}`}
         </div>
       </div>
     </button>

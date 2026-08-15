@@ -7,6 +7,7 @@ import { localePath, localizedName } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
+import { joinList } from "../../lib/format";
 import PasteMessage from "../../components/PasteMessage";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
 import {
@@ -43,6 +44,8 @@ function NewBooking() {
   const t = useTranslations("Provisional");
   const tg = useTranslations("Guests");
   const tp = useTranslations("Paste");
+  const tn = useTranslations("NewBooking");
+  const common = useTranslations("Common");
   const { online } = useOffline();
 
   const presetRoom = params.get("room");
@@ -225,7 +228,7 @@ function NewBooking() {
     // number may well belong to somebody who has stayed here five times.
     if (error) {
       setSearching(false);
-      return showToast("تعذّر البحث. جرّب تاني.", true);
+      return showToast(tn("searchFailed"), true);
     }
 
     const found = pickGuest(matches || []);
@@ -245,8 +248,8 @@ function NewBooking() {
 
     setSearching(false);
     setHistory(found && past ? summariseStays(past) : null);
-    if (found) { setGuest(found); setName(found.full_name); showToast(`نزيل سابق: ${found.full_name}`); }
-    else { setGuest(null); showToast("نزيل جديد"); }
+    if (found) { setGuest(found); setName(found.full_name); showToast(tn("previousGuest", { name: found.full_name })); }
+    else { setGuest(null); showToast(tn("newGuest")); }
   }
 
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
@@ -270,9 +273,9 @@ function NewBooking() {
     });
 
     const problems = validateProvisional(record);
-    if (problems.includes("name")) return showToast("أدخل اسم النزيل", true);
-    if (problems.includes("rooms")) return showToast("اختر غرفة واحدة على الأقل", true);
-    if (problems.length) return showToast("راجع التواريخ", true);
+    if (problems.includes("name")) return showToast(tn("needName"), true);
+    if (problems.includes("rooms")) return showToast(tn("needRoom"), true);
+    if (problems.length) return showToast(tn("checkDates"), true);
 
     setBusy(true);
     try {
@@ -288,8 +291,8 @@ function NewBooking() {
 
   async function submit() {
     if (!online) return recordProvisional();
-    if (!name.trim()) return showToast("أدخل اسم النزيل", true);
-    if (!Object.keys(picked).length) return showToast("اختر غرفة واحدة على الأقل", true);
+    if (!name.trim()) return showToast(tn("needName"), true);
+    if (!Object.keys(picked).length) return showToast(tn("needRoom"), true);
     setBusy(true);
 
     let guestId = guest?.id;
@@ -306,7 +309,7 @@ function NewBooking() {
       // the moment the connection is bad enough to matter.
       if (lookupFailed) {
         setBusy(false);
-        return showToast("تعذّر البحث عن النزيل. حاول مرة أخرى قبل تسجيل الحجز.", true);
+        return showToast(tn("lookupFailed"), true);
       }
       guestId = guestToReuse(onFile || [], { name, phone })?.id;
     }
@@ -336,21 +339,21 @@ function NewBooking() {
       // The exclusion constraint fires if someone took the room first.
       return showToast(
         error.message.includes("exclusion") || error.code === "23P01"
-          ? "تم حجز الغرفة منذ لحظات. حدّث الصفحة واختر غرفة أخرى."
+          ? tn("justTaken")
           : error.message,
         true
       );
     }
 
-    showToast(`تم تسجيل الحجز — ${booking.reference}`);
+    showToast(tn("recorded", { reference: booking.reference }));
     setTimeout(() => router.push(localePath("/", locale)), 900);
   }
 
   return (
     <>
       <Toast {...(toast || {})} />
-      <h2 style={{ marginBottom: 4 }}>حجز جديد</h2>
-      <p className="section-note">ابدأ برقم الهاتف — إذا سبق للنزيل الإقامة ستظهر بياناته تلقائياً.</p>
+      <h2 style={{ marginBottom: 4 }}>{tn("title")}</h2>
+      <p className="section-note">{tn("intro")}</p>
 
       {!online && <div className="banner warn">{t("offlineNotice")}</div>}
 
@@ -368,7 +371,7 @@ function NewBooking() {
 
           <div className="row">
             <div className="field grow">
-              <label htmlFor="phone">رقم الهاتف</label>
+              <label htmlFor="phone">{tn("phone")}</label>
               <input
                 id="phone" className="mono" dir="ltr" style={{ textAlign: "left" }}
                 value={phone} placeholder="+2010…"
@@ -378,27 +381,27 @@ function NewBooking() {
             </div>
             <button className="btn" onClick={findGuest} disabled={searching}
               style={{ alignSelf: "flex-end" }}>
-              {searching ? "…" : "بحث"}
+              {searching ? tn("searching") : tn("search")}
             </button>
           </div>
 
           <div className="field">
-            <label htmlFor="name">اسم النزيل</label>
+            <label htmlFor="name">{tn("guestName")}</label>
             <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
           {guest && (
             <div className="banner ok" style={{ margin: 0 }}>
               {history && isReturning(history)
-                ? `نزيل عائد — أقام ${egp(history.stays, locale)} مرات، آخرها ${dayLabel(history.lastVisit, locale)}.`
-                : "نزيل سابق."}
-              {" "}{guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
+                ? tn("returning", { count: history.stays, date: dayLabel(history.lastVisit, locale) })
+                : tn("seenBefore")}
+              {" "}{guest.notes ? tn("guestNotes", { notes: guest.notes }) : tn("noGuestNotes")}
             </div>
           )}
 
           {suspect.length > 0 && (
             <div className="banner warn" style={{ margin: 0 }}>
-              {tg("looksWrong", { issues: suspect.map((issue) => issue.message).join("، ") })}
+              {tg("looksWrong", { issues: joinList(suspect.map((issue) => issue.message), locale) })}
               {" "}{tg("carryOnAnyway")}
             </div>
           )}
@@ -411,13 +414,13 @@ function NewBooking() {
 
           {history && isUnreliable(history) && (
             <div className="banner bad" style={{ margin: 0 }}>
-              هذا النزيل لم يحضر {egp(history.noShows, locale)} مرات سابقاً.
+              {tn("noShows", { count: history.noShows })}
             </div>
           )}
 
           {history && history.outstanding > 0 && (
             <div className="banner warn" style={{ margin: 0 }}>
-              عليه متبقٍ {egp(history.outstanding, locale)} ج من إقامة سابقة.
+              {tn("owes", { amount: egp(history.outstanding, locale), currency: common("currency") })}
             </div>
           )}
         </div>
@@ -427,7 +430,7 @@ function NewBooking() {
         <div className="card">
           <div className="row">
             <div className="field grow">
-              <label htmlFor="ci">الدخول</label>
+              <label htmlFor="ci">{tn("checkInLabel")}</label>
               <input id="ci" type="date" className="mono" value={checkIn}
                 onChange={(e) => {
                   setCheckIn(e.target.value);
@@ -435,22 +438,22 @@ function NewBooking() {
                 }} />
             </div>
             <div className="field grow">
-              <label htmlFor="co">الخروج</label>
+              <label htmlFor="co">{tn("checkOutLabel")}</label>
               <input id="co" type="date" className="mono" value={checkOut}
                 min={addDays(checkIn, 1)}
                 onChange={(e) => setCheckOut(e.target.value)} />
             </div>
           </div>
           <p className="section-note" style={{ margin: "8px 0 0" }}>
-            {n > 0 ? `${n} ليلة` : "تاريخ المغادرة يجب أن يكون بعد الوصول"}
+            {n > 0 ? tn("nightCount", { count: n }) : tn("badDates")}
           </p>
         </div>
       </section>
 
       <section className="section">
-        <h2>الغرف الشاغرة</h2>
+        <h2>{tn("freeRooms")}</h2>
         <p className="section-note">
-          {online ? "اضغط على غرفة لاختيارها، وحدد عدد الأفراد بها." : t("availabilityUnknown")}
+          {online ? tn("pickRooms") : t("availabilityUnknown")}
         </p>
 
         {/* What the message asked for, next to the rooms that are actually
@@ -463,7 +466,7 @@ function NewBooking() {
 
         {choices.length === 0 ? (
           <div className="empty">
-            {online ? "لا توجد غرف شاغرة في هذه التواريخ." : t("noSavedRooms")}
+            {online ? tn("noneFree") : t("noSavedRooms")}
           </div>
         ) : (
           <div className="rack">
@@ -503,7 +506,7 @@ function NewBooking() {
                         }}
                       >
                         {[1, 2, 3, 4, 5, 6].map((o) => (
-                          <option key={o} value={o}>{o} أفراد</option>
+                          <option key={o} value={o}>{tn("paxOption", { count: o })}</option>
                         ))}
                       </select>
                     )}
@@ -518,7 +521,7 @@ function NewBooking() {
       <section className="section">
         <div className="card stack">
           <div className="field">
-            <label htmlFor="plan">جهة الحجز</label>
+            <label htmlFor="plan">{tn("ratePlan")}</label>
             <select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
               {plans.map((p) => <option key={p.id} value={p.id}>{localizedName(p, locale)}</option>)}
             </select>
@@ -526,34 +529,32 @@ function NewBooking() {
 
           {accounts.length > 0 && (
             <div className="field">
-              <label htmlFor="acc">الشركة (اختياري)</label>
+              <label htmlFor="acc">{tn("company")}</label>
               <select id="acc" value={accountId}
                 onChange={(e) => {
                   setAccountId(e.target.value);
                   const a = accounts.find((x) => x.id === e.target.value);
                   if (a?.rate_plan_id) setPlanId(a.rate_plan_id);
                 }}>
-                <option value="">— بدون —</option>
+                <option value="">{tn("none")}</option>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
           )}
 
           <div className="field">
-            <label htmlFor="src">مصدر الحجز</label>
+            <label htmlFor="src">{tn("source")}</label>
             <select id="src" value={source} onChange={(e) => setSource(e.target.value)}>
-              <option value="whatsapp">واتساب</option>
-              <option value="phone">مكالمة</option>
-              <option value="walk_in">حضور مباشر</option>
-              <option value="referral">توصية</option>
-              <option value="other">أخرى</option>
+              {["whatsapp", "phone", "walk_in", "referral", "other"].map((key) => (
+                <option key={key} value={key}>{tn(`source_${key}`)}</option>
+              ))}
             </select>
           </div>
 
           <div className="field">
-            <label htmlFor="notes">ملاحظات</label>
+            <label htmlFor="notes">{tn("notes")}</label>
             <input id="notes" value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="وصول متأخر، سرير زيادة…" />
+              placeholder={tn("notesPlaceholder")} />
           </div>
         </div>
       </section>
@@ -563,21 +564,21 @@ function NewBooking() {
         <div className="spread" style={{ marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 12, opacity: .8 }}>
-              {Object.keys(picked).length} غرفة · {totalHeads} أفراد · {n} ليلة
+              {tn("summary", { rooms: Object.keys(picked).length, heads: totalHeads, nights: n })}
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {typeof quote === "number" ? `${egp(quote, locale)} ج` : "—"}
+              {typeof quote === "number" ? `${egp(quote, locale)} ${common("currency")}` : "—"}
             </div>
           </div>
         </div>
         {quote === UNPRICED && (
           <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
-            تعذّر حساب السعر — راجع الاتصال. لا تؤكد الحجز بسعر غير ظاهر.
+            {tn("unpriced")}
           </div>
         )}
         {online && quote === 0 && Object.keys(picked).length > 0 && (
           <div style={{ fontSize: 12, marginBottom: 8, color: "#F5D08A" }}>
-            السعر صفر — هذه التركيبة ليس لها سعر بعد في الإعدادات.
+            {tn("zeroPrice")}
           </div>
         )}
         {!online && (
@@ -589,8 +590,8 @@ function NewBooking() {
           onClick={submit}
           style={{ background: "#fff", color: "var(--deep)", borderColor: "#fff", fontWeight: 600 }}>
           {busy
-            ? (online ? "جارٍ التسجيل…" : t("recording"))
-            : (online ? "تأكيد الحجز" : t("record"))}
+            ? (online ? tn("recording") : t("recording"))
+            : (online ? tn("confirm") : t("record"))}
         </button>
       </div>
     </>
