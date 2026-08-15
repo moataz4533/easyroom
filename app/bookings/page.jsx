@@ -9,6 +9,7 @@ import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
 import { useLocale, useTranslations } from "next-intl";
 import { MessageCircle, Receipt } from "lucide-react";
+import { joinList } from "../../lib/format";
 
 export default function Page() {
   return (
@@ -18,24 +19,19 @@ export default function Page() {
   );
 }
 
-const STATUS = {
-  inquiry:     { label: "استفسار",  pill: "" },
-  confirmed:   { label: "مؤكد",     pill: "dark" },
-  checked_in:  { label: "ساكن",     pill: "ok" },
-  checked_out: { label: "خرج",      pill: "" },
-  cancelled:   { label: "ملغي",     pill: "bad" },
-  no_show:     { label: "لم يحضر",  pill: "bad" },
+// The words are in the catalogue; only the colour is a code decision.
+const STATUS_PILL = {
+  inquiry: "", confirmed: "dark", checked_in: "ok",
+  checked_out: "", cancelled: "bad", no_show: "bad",
 };
 
-const FILTERS = [
-  ["active", "الحالية والقادمة"],
-  ["today", "اليوم"],
-  ["past", "المنتهية"],
-  ["cancelled", "الملغية"],
-];
+const FILTERS = ["active", "today", "past", "cancelled"];
+
+const METHODS = ["cash", "instapay", "vodafone_cash", "card", "transfer"];
 
 function Bookings() {
   const { property, role } = useProperty();
+  const t = useTranslations("Bookings");
   const { online } = useOffline();
   const [filter, setFilter] = useState("active");
   const [search, setSearch] = useState("");
@@ -94,29 +90,29 @@ function Bookings() {
   return (
     <>
       <Toast {...(toast || {})} />
-      <h2 style={{ marginBottom: 4 }}>الحجوزات</h2>
-      <p className="section-note">ابحث بالاسم أو رقم الهاتف أو رقم الحجز.</p>
+      <h2 style={{ marginBottom: 4 }}>{t("title")}</h2>
+      <p className="section-note">{t("subtitle")}</p>
 
       <input
         value={search}
-        placeholder="ابحث…"
+        placeholder={t("searchPlaceholder")}
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 12 }}
       />
 
       <div className="tabs" role="tablist">
-        {FILTERS.map(([k, label]) => (
-          <button key={k} className="tab" role="tab" aria-selected={filter === k}
-            onClick={() => setFilter(k)}>
-            {label}
+        {FILTERS.map((key) => (
+          <button key={key} className="tab" role="tab" aria-selected={filter === key}
+            onClick={() => setFilter(key)}>
+            {t(`filter_${key}`)}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <div className="empty">{t("loading")}</div>
       ) : shown.length === 0 ? (
-        <div className="empty">لا توجد حجوزات هنا.</div>
+        <div className="empty">{t("none")}</div>
       ) : (
         <div className="stack">
           {shown.map((b) => (
@@ -141,20 +137,12 @@ function Bookings() {
   );
 }
 
-const METHODS = [
-  ["cash", "كاش"],
-  ["instapay", "إنستاباي"],
-  ["vodafone_cash", "فودافون كاش"],
-  ["card", "فيزا"],
-  ["transfer", "تحويل بنكي"],
-];
-
-const METHOD_LABEL = Object.fromEntries(METHODS);
-
 // Money is the part staff get asked about most, so it sits in the
 // booking itself rather than a separate screen.
 function PaymentsSection({ b, owed, online, onDone, onError }) {
   const locale = useLocale();
+  const t = useTranslations("Bookings");
+  const common = useTranslations("Common");
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("cash");
@@ -168,7 +156,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
 
   async function submit() {
     const n = Number(amount);
-    if (!n || n <= 0) return onError("أدخل مبلغاً صحيحاً");
+    if (!n || n <= 0) return onError(t("needAmount"));
 
     setBusy(true);
     const { error } = await supabase.rpc("record_payment", {
@@ -180,19 +168,20 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
     setBusy(false);
     if (error) return onError(error.message);
 
-    onDone(refund ? `تم تسجيل استرداد ${egp(n, locale)} ج` : `تم تسجيل ${egp(n, locale)} ج`);
+    onDone(t(refund ? "recordedRefund" : "recordedPayment",
+      { amount: egp(n, locale), currency: common("currency") }));
   }
 
   return (
     <section className="section">
       <div className="spread" style={{ marginBottom: 8 }}>
-        <h2 style={{ fontSize: 14 }}>الدفعات</h2>
+        <h2 style={{ fontSize: 14 }}>{t("payments")}</h2>
         {owed > 0 ? (
-          <span className="pill warn">متبقي {egp(owed, locale)} ج</span>
+          <span className="pill warn">{t("owed", { amount: egp(owed, locale), currency: common("currency") })}</span>
         ) : owed < 0 ? (
-          <span className="pill bad">زيادة {egp(-owed, locale)} ج</span>
+          <span className="pill bad">{t("overpaid", { amount: egp(-owed, locale), currency: common("currency") })}</span>
         ) : (
-          <span className="pill ok">مدفوع بالكامل</span>
+          <span className="pill ok">{t("paidInFull")}</span>
         )}
       </div>
 
@@ -202,7 +191,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
             <div key={p.id} className="card spread" style={{ padding: "9px 12px" }}>
               <div className="grow">
                 <span style={{ fontSize: 13 }}>
-                  {METHOD_LABEL[p.method] || p.method}
+                  {METHODS.includes(p.method) ? t(`method_${p.method}`) : p.method}
                 </span>
                 <div style={{ fontSize: 11, color: "var(--muted)" }}>
                   {new Date(p.received_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
@@ -213,7 +202,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
               </div>
               <span className="mono" style={{ fontWeight: 600,
                 color: Number(p.amount) < 0 ? "var(--danger)" : "var(--ok)" }}>
-                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount), locale)} ج
+                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount), locale)} {common("currency")}
               </span>
             </div>
           ))}
@@ -222,17 +211,17 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
 
       {!online ? (
         <div className="banner warn" style={{ margin: 0 }}>
-          تسجيل الدفعات يتطلب اتصالاً — حتى لا يتعارض الرصيد إذا سُجّل من جهازين.
+          {t("paymentsNeedConnection")}
         </div>
       ) : !open ? (
         <button className="btn ghost wide" onClick={() => setOpen(true)}>
-          ＋ تسجيل دفعة
+          {t("addPayment")}
         </button>
       ) : (
         <div className="card stack" style={{ background: "var(--paper)" }}>
           <div className="row">
             <div className="field grow">
-              <label>المبلغ</label>
+              <label>{t("amount")}</label>
               <input type="number" min="0" className="mono" value={amount}
                 autoFocus placeholder={owed > 0 ? String(Math.round(owed)) : "0"}
                 onChange={(e) => setAmount(e.target.value)} />
@@ -240,40 +229,40 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
             {owed > 0 && (
               <button className="btn" style={{ alignSelf: "flex-end" }}
                 onClick={() => setAmount(String(Math.round(owed)))}>
-                المتبقي كله
+                {t("allOwed")}
               </button>
             )}
           </div>
 
           <div className="field">
-            <label>طريقة الدفع</label>
+            <label>{t("method")}</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)}>
-              {METHODS.map(([k, label]) => (
-                <option key={k} value={k}>{label}</option>
+              {METHODS.map((key) => (
+                <option key={key} value={key}>{t(`method_${key}`)}</option>
               ))}
             </select>
           </div>
 
           <div className="field">
-            <label>ملاحظة</label>
-            <input value={note} placeholder="عربون، باقي الحساب…"
+            <label>{t("note")}</label>
+            <input value={note} placeholder={t("notePlaceholder")}
               onChange={(e) => setNote(e.target.value)} />
           </div>
 
           <label className="row" style={{ gap: 8, fontSize: 13, cursor: "pointer" }}>
             <input type="checkbox" checked={refund} style={{ width: "auto" }}
               onChange={(e) => setRefund(e.target.checked)} />
-            هذا استرداد للنزيل
+            {t("isRefund")}
           </label>
 
           <button className={`btn wide ${refund ? "danger" : "primary"}`}
             disabled={busy} onClick={submit}>
-            {busy ? "جارٍ التسجيل…" : refund ? "تسجيل الاسترداد" : "تسجيل الدفعة"}
+            {busy ? t("recording") : refund ? t("recordRefund") : t("recordPayment")}
           </button>
-          <button className="btn wide" onClick={() => setOpen(false)}>إلغاء</button>
+          <button className="btn wide" onClick={() => setOpen(false)}>{common("cancel")}</button>
 
           <p className="section-note" style={{ margin: 0 }}>
-            الدفعات لا تُحذف. يُصحَّح الخطأ باسترداد، حتى يبقى السجل كاملاً.
+            {t("paymentsNeverDeleted")}
           </p>
         </div>
       )}
@@ -287,7 +276,9 @@ function liveRooms(b) {
 
 function BookingRow({ b, onOpen }) {
   const locale = useLocale();
-  const s = STATUS[b.status] || STATUS.confirmed;
+  const t = useTranslations("Bookings");
+  const common = useTranslations("Common");
+  const status = STATUS_PILL[b.status] !== undefined ? b.status : "confirmed";
   const live = liveRooms(b);
 
   return (
@@ -297,17 +288,17 @@ function BookingRow({ b, onOpen }) {
       <div className="grow">
         <div className="row" style={{ gap: 8 }}>
           <span style={{ fontWeight: 600 }}>{b.guests?.full_name || "—"}</span>
-          <span className={`pill ${s.pill}`}>{s.label}</span>
-          {b.attention_reason && <span className="pill warn">يحتاج تدخلاً</span>}
+          <span className={`pill ${STATUS_PILL[status]}`}>{t(`status_${status}`)}</span>
+          {b.attention_reason && <span className="pill warn">{t("needsAttention")}</span>}
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
           <span className="code">{b.reference}</span>{" "}
           {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}
-          {live.length > 0 && ` · غرفة ${live.map((a) => a.rooms?.number).join("، ")}`}
+          {live.length > 0 && ` · ${t("roomsLine", { rooms: joinList(live.map((a) => a.rooms?.number), locale) })}`}
         </div>
       </div>
       <div className="mono" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
-        {egp(b.total_amount, locale)} ج
+        {egp(b.total_amount, locale)} {common("currency")}
       </div>
     </button>
   );
@@ -318,6 +309,8 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const { property } = useProperty();
   const t = useTranslations("Confirmation");
   const tb = useTranslations("Bill");
+  const tk = useTranslations("Bookings");
+  const common = useTranslations("Common");
   const [confirmation, setConfirmation] = useState(false);
   const [bill, setBill] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -327,7 +320,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const [newOut, setNewOut] = useState(today());
 
   const canManage = ["owner", "manager", "reception"].includes(role);
-  const s = STATUS[b.status] || STATUS.confirmed;
+  const status = STATUS_PILL[b.status] !== undefined ? b.status : "confirmed";
   const live = liveRooms(b);
   const isOpen = ["confirmed", "checked_in", "inquiry"].includes(b.status);
   const owed = Number(b.total_amount) - Number(b.paid_amount);
@@ -355,7 +348,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
               <span className={`pill ${s.pill}`}>{s.label}</span>
             </div>
           </div>
-          <button className="btn sm" onClick={onClose}>إغلاق</button>
+          <button className="btn sm" onClick={onClose}>{common("close")}</button>
         </div>
 
         <div className="card" style={{ background: "var(--paper)", marginBottom: 12 }}>
@@ -364,24 +357,24 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
               {dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}
             </span>
             <span style={{ fontSize: 13, color: "var(--muted)" }}>
-              {nights(b.check_in, b.check_out)} ليلة · {b.adults} أفراد
+              {tk("stayLine", { nights: nights(b.check_in, b.check_out), pax: b.adults || 0 })}
             </span>
           </div>
           <div className="spread" style={{ marginTop: 8 }}>
             <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
-              {egp(b.total_amount, locale)} ج
+              {egp(b.total_amount, locale)} {common("currency")}
             </span>
             {owed > 0 ? (
-              <span className="pill warn">متبقي {egp(owed, locale)} ج</span>
+              <span className="pill warn">{tk("owed", { amount: egp(owed, locale), currency: common("currency") })}</span>
             ) : (
-              <span className="pill ok">مدفوع</span>
+              <span className="pill ok">{tk("paid")}</span>
             )}
           </div>
           {b.guests?.phone && (
             <div className="row" style={{ marginTop: 10 }}>
-              <a className="btn sm" href={`tel:${b.guests.phone}`}>اتصل</a>
+              <a className="btn sm" href={`tel:${b.guests.phone}`}>{tk("call")}</a>
               <a className="btn sm" target="_blank" rel="noreferrer"
-                href={`https://wa.me/${b.guests.phone.replace(/[^\d]/g, "")}`}>واتساب</a>
+                href={`https://wa.me/${b.guests.phone.replace(/[^\d]/g, "")}`}>{tk("whatsapp")}</a>
             </div>
           )}
         </div>
@@ -425,13 +418,13 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           <div className="banner bad">{b.attention_reason}</div>
         )}
         {b.cancel_reason && (
-          <div className="banner">سبب الإلغاء: {b.cancel_reason}</div>
+          <div className="banner">{tk("cancelReason", { reason: b.cancel_reason })}</div>
         )}
 
         <section className="section">
-          <h2 style={{ fontSize: 14, marginBottom: 8 }}>الغرف</h2>
+          <h2 style={{ fontSize: 14, marginBottom: 8 }}>{tk("rooms")}</h2>
           {live.length === 0 ? (
-            <div className="empty" style={{ padding: 16 }}>لا توجد غرف على هذا الحجز.</div>
+            <div className="empty" style={{ padding: 16 }}>{tk("noRooms")}</div>
           ) : (
             <div className="stack">
               {live.map((a) => (
@@ -441,13 +434,13 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                       {a.rooms?.number}
                     </span>
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                      {a.occupancy} أفراد · {dayLabel(a.starts_on, locale)} ← {dayLabel(a.ends_on, locale)}
+                      {tk("allocationLine", { pax: a.occupancy || 0, from: dayLabel(a.starts_on, locale), to: dayLabel(a.ends_on, locale) })}
                     </div>
                   </div>
                   {canManage && isOpen && live.length > 1 && online && (
                     <button className="btn sm danger" disabled={busy}
                       onClick={() => setRoomToRelease(a)}>
-                      إلغاء الغرفة
+                      {tk("releaseRoom")}
                     </button>
                   )}
                 </div>
@@ -473,103 +466,103 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
 
         {roomToRelease && (
           <PinPrompt
-            title={`إلغاء غرفة ${roomToRelease.rooms?.number}`}
-            note="باقي غرف الحجز تبقى كما هي، ويُعدّل الحساب تلقائياً."
-            confirmLabel="تأكيد إلغاء الغرفة"
+            title={tk("releaseTitle", { room: roomToRelease.rooms?.number })}
+            note={tk("releaseNote")}
+            confirmLabel={tk("releaseConfirm")}
             danger busy={busy}
             onCancel={() => setRoomToRelease(null)}
             onConfirm={(pin) => call("release_booking_room",
-              { p_allocation: roomToRelease.id, p_reason: "إلغاء غرفة", p_pin: pin },
-              "تم إلغاء الغرفة من الحجز")}
+              { p_allocation: roomToRelease.id, p_reason: tk("releaseReason"), p_pin: pin },
+              tk("released"))}
           />
         )}
 
         {!canManage ? null : !isOpen ? (
-          <div className="banner">هذا الحجز مغلق، ولا توجد إجراءات عليه.</div>
+          <div className="banner">{tk("closed")}</div>
         ) : !online ? (
           <div className="banner warn">
-            الإلغاء والتعديل يتطلبان اتصالاً — حتى تعود الغرفة للبيع فوراً.
+            {tk("actionsNeedConnection")}
           </div>
         ) : !mode ? (
           <div className="stack">
             {b.status === "checked_in" ? (
               <button className="btn wide" onClick={() => setMode("early")}>
-                مغادرة مبكرة (تقصير الإقامة)
+                {tk("earlyDeparture")}
               </button>
             ) : (
               <button className="btn wide" onClick={() => setMode("noshow")}>
-                تسجيل عدم حضور
+                {tk("recordNoShow")}
               </button>
             )}
             <button className="btn wide danger" onClick={() => setMode("cancel")}>
-              إلغاء الحجز بالكامل
+              {tk("cancelBooking")}
             </button>
           </div>
         ) : mode === "cancel" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
-            <h2 style={{ fontSize: 14 }}>إلغاء الحجز</h2>
+            <h2 style={{ fontSize: 14 }}>{tk("cancelTitle")}</h2>
             <p className="section-note" style={{ margin: 0 }}>
               {b.status === "checked_in"
-                ? "النزيل مقيم حالياً. الإلغاء سيُخلي الغرفة فوراً — إذا كان سيغادر مبكراً فاستخدم «مغادرة مبكرة» بدلاً من ذلك."
-                : `الغرف (${live.map((a) => a.rooms?.number).join("، ")}) هترجع متاحة للبيع على طول.`}
+                ? tk("cancelInHouse")
+                : tk("cancelFrees", { rooms: joinList(live.map((a) => a.rooms?.number), locale) })}
             </p>
             <div className="field">
-              <label>السبب</label>
-              <input value={reason} placeholder="النزيل ألغى، ظروف طارئة…"
+              <label>{tk("reason")}</label>
+              <input value={reason} placeholder={tk("cancelReasonPlaceholder")}
                 onChange={(e) => setReason(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بكلمة مرور المدير"
-              confirmLabel="تأكيد الإلغاء"
+              title={tk("pinTitle")}
+              confirmLabel={tk("cancelConfirm")}
               danger busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("cancel_booking",
-                { p_booking: b.id, p_reason: reason || "بدون سبب محدد", p_pin: pin },
-                "تم إلغاء الحجز وعادت الغرف متاحة")}
+                { p_booking: b.id, p_reason: reason || tk("noReasonGiven"), p_pin: pin },
+                tk("cancelled"))}
             />
           </div>
         ) : mode === "noshow" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
-            <h2 style={{ fontSize: 14 }}>عدم حضور</h2>
+            <h2 style={{ fontSize: 14 }}>{tk("noShowTitle")}</h2>
             <p className="section-note" style={{ margin: 0 }}>
-              تعود الغرف للبيع فوراً، فما زال من الممكن بيع هذه الليلة.
+              {tk("noShowNote")}
             </p>
             <div className="field">
-              <label>مبلغ يُحتسب عليه (إن وُجد)</label>
+              <label>{tk("noShowFee")}</label>
               <input type="number" min="0" className="mono" value={charge}
                 onChange={(e) => setCharge(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بكلمة مرور المدير"
-              confirmLabel="تأكيد عدم الحضور"
+              title={tk("pinTitle")}
+              confirmLabel={tk("noShowConfirm")}
               danger busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("mark_no_show",
                 { p_booking: b.id, p_charge: Number(charge) || 0, p_pin: pin },
-                "تم تسجيل عدم الحضور")}
+                tk("noShowRecorded"))}
             />
           </div>
         ) : mode === "early" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
-            <h2 style={{ fontSize: 14 }}>مغادرة مبكرة</h2>
+            <h2 style={{ fontSize: 14 }}>{tk("earlyTitle")}</h2>
             <p className="section-note" style={{ margin: 0 }}>
-              تُحذف الليالي التي لن يقيمها من الحساب، وتعود الغرفة للبيع.
+              {tk("earlyNote")}
             </p>
             <div className="field">
-              <label>تاريخ الخروج الجديد</label>
+              <label>{tk("newCheckOut")}</label>
               <input type="date" className="mono" value={newOut}
                 min={b.check_in} max={b.check_out}
                 onChange={(e) => setNewOut(e.target.value)} />
             </div>
             <PinPrompt
-              title="تأكيد بكلمة مرور المدير"
-              note="المغادرة المبكرة تُنقص الحساب، ولذلك تتطلب تأكيداً."
-              confirmLabel="تأكيد المغادرة المبكرة"
+              title={tk("pinTitle")}
+              note={tk("earlyPinNote")}
+              confirmLabel={tk("earlyConfirm")}
               busy={busy}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("shorten_stay",
                 { p_booking: b.id, p_new_check_out: newOut, p_pin: pin },
-                "تم تقصير الإقامة وتعديل الحساب")}
+                tk("shortened"))}
             />
           </div>
         ) : null}
