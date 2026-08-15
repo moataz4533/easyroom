@@ -7,11 +7,13 @@ import { localePath, localizedName } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
+import PasteMessage from "../../components/PasteMessage";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
 import {
   newProvisional, roomsHeldOn, roomsWantedByDrafts, validateProvisional,
 } from "../../lib/provisional";
 import { useLocale, useTranslations } from "next-intl";
+import { MessageSquareText } from "lucide-react";
 
 export default function Page() {
   return (
@@ -36,6 +38,7 @@ function NewBooking() {
   const [toast, showToast] = useToast();
   const t = useTranslations("Provisional");
   const tg = useTranslations("Guests");
+  const tp = useTranslations("Paste");
   const { online } = useOffline();
 
   const presetRoom = params.get("room");
@@ -47,6 +50,11 @@ function NewBooking() {
   const [history, setHistory] = useState(null);
   const [searching, setSearching] = useState(false);
   const [duplicates, setDuplicates] = useState(0);
+  const [pasting, setPasting] = useState(false);
+  // What the message asked for but the form has no box for. Kept as advice
+  // next to the room list rather than acted on: which rooms are free is the
+  // screen's answer, not the message's.
+  const [asked, setAsked] = useState(null);
 
   const [checkIn, setCheckIn] = useState(presetDate || today());
   const [checkOut, setCheckOut] = useState(addDays(presetDate || today(), 1));
@@ -168,6 +176,22 @@ function NewBooking() {
       return Number(data) || 0;
     })).then((v) => setQuote(v.reduce((a, b) => a + b, 0)));
   }, [picked, planId, rooms, property, checkIn, checkOut, n, online]);
+
+  /**
+   * A read message fills the boxes it filled and leaves the rest alone, so
+   * pasting over a form somebody has already started cannot wipe their work.
+   */
+  function useDraft(draft) {
+    if (draft.phone) { setPhone(draft.phone.value); setGuest(null); setHistory(null); }
+    if (draft.name) setName(draft.name.value);
+    if (draft.checkIn) setCheckIn(draft.checkIn.value);
+    if (draft.checkOut) setCheckOut(draft.checkOut.value);
+    setAsked(draft.pax || draft.rooms
+      ? { pax: draft.pax?.value || null, rooms: draft.rooms?.value || null }
+      : null);
+    setPasting(false);
+    showToast(tp("filled"));
+  }
 
   async function findGuest() {
     if (!phone.trim() || !property) return;
@@ -294,8 +318,18 @@ function NewBooking() {
 
       {!online && <div className="banner warn">{t("offlineNotice")}</div>}
 
+      {pasting && (
+        <PasteMessage today={today()} onUse={useDraft} onClose={() => setPasting(false)} />
+      )}
+
       <section className="section">
         <div className="card stack">
+          {/* Nearly every booking arrives as a message. Reading it beats
+              retyping it, and it sits above the first box for that reason. */}
+          <button className="btn ghost wide" onClick={() => setPasting(true)}>
+            <MessageSquareText size={16} />{tp("open")}
+          </button>
+
           <div className="row">
             <div className="field grow">
               <label htmlFor="phone">رقم الهاتف</label>
@@ -382,6 +416,14 @@ function NewBooking() {
         <p className="section-note">
           {online ? "اضغط على غرفة لاختيارها، وحدد عدد الأفراد بها." : t("availabilityUnknown")}
         </p>
+
+        {/* What the message asked for, next to the rooms that are actually
+            free — the screen decides which, this only says what was wanted. */}
+        {asked && (
+          <div className="banner" style={{ marginTop: 0 }}>
+            {tp("asked", { rooms: asked.rooms ?? 0, pax: asked.pax ?? 0 })}
+          </div>
+        )}
 
         {choices.length === 0 ? (
           <div className="empty">

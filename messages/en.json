@@ -379,5 +379,29 @@
     "copied": "Statement copied",
     "copyFailed": "Could not copy — select the text and copy it",
     "copy": "Copy statement"
+  },
+  "Paste": {
+    "open": "Paste a WhatsApp message",
+    "title": "Read a message",
+    "close": "Close",
+    "intro": "Paste the guest's message here and we will read the dates, the name and the number out of it. Check what we read before carrying on.",
+    "placeholder": "Hi, do you have a double room from 20 to 23 August for 2 people?…",
+    "fromClipboard": "Paste from clipboard",
+    "nothingFound": "No date and no number in this message. Fill the form in by hand.",
+    "notInMessage": "not in the message",
+    "checkIt": "Anything marked in yellow is a guess — check it before confirming. What is not in the message you fill in yourself.",
+    "use": "Use these details",
+    "filled": "Filled in what we read from the message",
+    "name": "Name",
+    "phone": "Phone",
+    "checkIn": "Arrival",
+    "checkOut": "Departure",
+    "nights": "Nights",
+    "pax": "Guests",
+    "rooms": "Rooms",
+    "nightCount": "{count, plural, one {one night} other {# nights}}",
+    "paxCount": "{count, plural, one {one guest} other {# guests}}",
+    "roomCount": "{count, plural, one {one room} other {# rooms}}",
+    "asked": "The message asked for {rooms, plural, =0 {} one {one room} other {# rooms}} {pax, plural, =0 {} one {for one guest} other {for # guests}}."
   }
 }
