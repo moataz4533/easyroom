@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  ageOn, buildGuestCsv, csvFilename, describeGuest, isComplete,
-  liveRoomNumbers, missingFields,
+  ageOn, buildGuestCsv, csvFilename, describeGuest, implausibleFields, isComplete,
+  liveRoomNumbers, missingFields, needsAttention, recordIssueCount,
 } from "../lib/guest-record";
 
 const complete = {
@@ -92,5 +92,95 @@ describe("age", () => {
   it("returns nothing rather than a wrong number", () => {
     expect(ageOn(null, "2026-08-14")).toBeNull();
     expect(ageOn("not-a-date", "2026-08-14")).toBeNull();
+  });
+});
+
+describe("a field that is filled in and still wrong", () => {
+  const today = "2026-08-15";
+  const messages = (guest, locale = "ar") =>
+    implausibleFields(guest, locale, { today }).map((f) => f.message);
+  const fields = (guest) =>
+    implausibleFields(guest, "ar", { today }).map((f) => f.field);
+
+  it("passes a real record without a word", () => {
+    expect(implausibleFields(complete, "ar", { today })).toEqual([]);
+  });
+
+  it("says nothing about a field nobody has filled in yet", () => {
+    // That is what missingFields is for; saying it twice is nagging.
+    expect(implausibleFields({ full_name: "أحمد" }, "ar", { today })).toEqual([]);
+    expect(implausibleFields(null, "ar", { today })).toEqual([]);
+  });
+
+  it("catches the two rows the live database actually has", () => {
+    // A guest called hl[v on the phone number 123.
+    expect(fields({ full_name: "hl[v", phone: "123" })).toEqual(["full_name", "phone"]);
+  });
+
+  it("questions a name that could not be a name", () => {
+    expect(messages({ full_name: "x" })).toEqual(["الاسم حرف واحد فقط"]);
+    expect(messages({ full_name: "12345" })).toEqual(["الاسم ليس فيه حروف"]);
+    expect(messages({ full_name: "ahmed@@" })).toEqual(["الاسم فيه رموز غير معتادة"]);
+  });
+
+  it("leaves names that only look unusual to a form alone", () => {
+    for (const full_name of [
+      "محمد عبد الله", "Jean-Luc O'Brien", "Anna-Maria Müller",
+      "N'Diaye", "Robert Downey Jr.", "李 明",
+    ]) {
+      expect(messages({ full_name })).toEqual([]);
+    }
+  });
+
+  it("questions a phone number that could not reach anybody", () => {
+    expect(fields({ phone: "123" })).toEqual(["phone"]);
+    expect(messages({ phone: "0111111111111111111" })).toEqual(["رقم الهاتف طويل جداً"]);
+    expect(messages({ phone: "1111111111" })).toEqual(["رقم الهاتف رقم واحد مكرر"]);
+  });
+
+  it("accepts the shapes real numbers arrive in", () => {
+    for (const phone of [
+      "01118070453", "+201118070453", "0020 111 807 0453",
+      "+49 30 901820", "+7 495 123-45-67", "0111-807-0453",
+    ]) {
+      expect(messages({ phone })).toEqual([]);
+    }
+  });
+
+  it("questions an ID shorter than any real document", () => {
+    expect(messages({ id_number: "111" })).toEqual(["رقم الإثبات قصير جداً"]);
+    expect(messages({ id_number: "00000000000000" })).toEqual(["رقم الإثبات رقم واحد مكرر"]);
+    expect(messages({ id_number: "A123456" })).toEqual([]);
+    // Written with the separators people write them with.
+    expect(messages({ id_number: "298 0304 01234 5" })).toEqual([]);
+  });
+
+  it("questions a birth date that cannot belong to a guest", () => {
+    expect(messages({ date_of_birth: "2027-01-01" })).toEqual(["تاريخ الميلاد في المستقبل"]);
+    expect(messages({ date_of_birth: "1890-01-01" })).toEqual(["تاريخ الميلاد يعني عمراً فوق ١٢٠ سنة"]);
+    expect(messages({ date_of_birth: "not-a-date" })).toEqual(["تاريخ الميلاد غير مقروء"]);
+    expect(messages({ date_of_birth: "1930-01-01" })).toEqual([]);
+    // A baby in the family is a guest and gets a record like anyone else.
+    expect(messages({ date_of_birth: "2026-06-01" })).toEqual([]);
+  });
+
+  it("questions an address that is not one", () => {
+    expect(messages({ email: "sarah" })).toEqual(["البريد الإلكتروني ناقص"]);
+    expect(messages({ email: "sarah@localhost" })).toEqual(["البريد الإلكتروني ناقص"]);
+    expect(messages({ email: "sarah@example.co.uk" })).toEqual([]);
+  });
+
+  it("names the field in the reader's language", () => {
+    const [issue] = implausibleFields({ phone: "123" }, "en", { today });
+    expect(issue).toMatchObject({ field: "phone", label: "Phone" });
+    expect(issue.message).toBe("the phone number is too short to be one");
+  });
+
+  it("counts missing and implausible together, because it is one job", () => {
+    // Three required fields blank, plus a phone number that is not one.
+    expect(recordIssueCount({ full_name: "أحمد", phone: "123" })).toBe(4);
+    expect(recordIssueCount(complete)).toBe(0);
+    expect(needsAttention(complete)).toBe(false);
+    expect(needsAttention({ ...complete, phone: "123" })).toBe(true);
   });
 });

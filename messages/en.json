@@ -136,10 +136,10 @@
     "export": "Export {count} guests (CSV)",
     "exportHint": "The file opens straight in Excel, and exports exactly what the current filters show.",
     "exported": "Exported {count} rows",
-    "incomplete": "{count} guests are missing details in this period.",
+    "incomplete": "{count} guests have details missing or worth checking in this period.",
     "search": "Search by name, reference or ID number…",
     "all": "All",
-    "missingOnly": "Missing only",
+    "missingOnly": "Needs attention",
     "none": "No guests in this period.",
     "record": "Guest record",
     "name": "Full name as written on the ID",
@@ -177,7 +177,10 @@
     "status_checked_out": "Departed",
     "status_cancelled": "Cancelled",
     "status_no_show": "No-show",
-    "status_inquiry": "Enquiry"
+    "status_inquiry": "Enquiry",
+    "looksWrong": "Worth checking: {issues}.",
+    "carryOnAnyway": "You can carry on either way.",
+    "checkCount": "{count} to check"
   },
   "Charges": {
     "title": "Extras",

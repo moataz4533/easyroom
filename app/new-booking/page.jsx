@@ -6,6 +6,7 @@ import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supab
 import { localePath, localizedName } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
+import { implausibleFields } from "../../lib/guest-record";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
 import {
   newProvisional, roomsHeldOn, roomsWantedByDrafts, validateProvisional,
@@ -34,6 +35,7 @@ function NewBooking() {
   const params = useSearchParams();
   const [toast, showToast] = useToast();
   const t = useTranslations("Provisional");
+  const tg = useTranslations("Guests");
   const { online } = useOffline();
 
   const presetRoom = params.get("room");
@@ -68,6 +70,12 @@ function NewBooking() {
   const [quote, setQuote] = useState(null);
 
   const n = nights(checkIn, checkOut);
+
+  // The register is only as good as what is typed here. Said out loud and
+  // never blocked: the desk still takes the booking, and a guest with no
+  // papers at 2am is a real guest. What this stops is the silent version,
+  // where "123" goes in and nobody sees it again until an inspection.
+  const suspect = implausibleFields({ full_name: name, phone }, locale);
 
   useEffect(() => {
     if (!property) return;
@@ -315,6 +323,13 @@ function NewBooking() {
                 ? `نزيل عائد — أقام ${egp(history.stays, locale)} مرات، آخرها ${dayLabel(history.lastVisit, locale)}.`
                 : "نزيل سابق."}
               {" "}{guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
+            </div>
+          )}
+
+          {suspect.length > 0 && (
+            <div className="banner warn" style={{ margin: 0 }}>
+              {tg("looksWrong", { issues: suspect.map((issue) => issue.message).join("، ") })}
+              {" "}{tg("carryOnAnyway")}
             </div>
           )}
 

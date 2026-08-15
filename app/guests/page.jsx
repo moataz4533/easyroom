@@ -8,7 +8,8 @@ import GuestProfile from "../../components/GuestProfile";
 import { supabase, today, addDays, dayLabel } from "../../lib/supabase";
 import { shiftDate } from "../../lib/format";
 import {
-  buildGuestCsv, csvFilename, describeGuest, isComplete, liveRoomNumbers, missingFields,
+  buildGuestCsv, csvFilename, describeGuest, implausibleFields, liveRoomNumbers,
+  missingFields, needsAttention,
 } from "../../lib/guest-record";
 
 export default function Page() {
@@ -73,14 +74,14 @@ function Guests() {
 
   const term = search.trim().toLowerCase();
   const shown = useMemo(() => stays.filter((stay) => {
-    if (onlyMissing && isComplete(stay.guests)) return false;
+    if (onlyMissing && !needsAttention(stay.guests)) return false;
     if (!term) return true;
     return stay.guests?.full_name?.toLowerCase().includes(term)
       || stay.reference?.toLowerCase().includes(term)
       || stay.guests?.id_number?.toLowerCase().includes(term);
   }), [stays, onlyMissing, term]);
 
-  const incomplete = stays.filter((stay) => !isComplete(stay.guests)).length;
+  const incomplete = stays.filter((stay) => needsAttention(stay.guests)).length;
 
   function exportCsv() {
     const csv = buildGuestCsv(shown, locale);
@@ -214,6 +215,7 @@ function Guests() {
 function StayRow({ stay, locale, t, onOpen }) {
   const guest = stay.guests;
   const missing = missingFields(guest, locale);
+  const wrong = implausibleFields(guest, locale);
   const rooms = liveRoomNumbers(stay);
 
   return (
@@ -223,13 +225,24 @@ function StayRow({ stay, locale, t, onOpen }) {
       <div className="grow">
         <div className="row" style={{ gap: 8 }}>
           <span style={{ fontWeight: 600 }}>{guest?.full_name || "—"}</span>
-          {missing.length > 0
-            ? <span className="pill warn">{t("missingCount", { count: missing.length })}</span>
-            : <span className="pill ok">{t("done")}</span>}
+          {missing.length > 0 && (
+            <span className="pill warn">{t("missingCount", { count: missing.length })}</span>
+          )}
+          {wrong.length > 0 && (
+            <span className="pill warn">{t("checkCount", { count: wrong.length })}</span>
+          )}
+          {missing.length === 0 && wrong.length === 0 && (
+            <span className="pill ok">{t("done")}</span>
+          )}
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
           {describeGuest(guest, locale) || t("nothingRecorded")}
         </div>
+        {wrong.length > 0 && (
+          <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 2 }}>
+            {wrong.map((issue) => issue.message).join("، ")}
+          </div>
+        )}
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
           <span className="code">{stay.reference}</span>{" "}
           {dayLabel(stay.check_in, locale)} ← {dayLabel(stay.check_out, locale)}

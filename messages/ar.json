@@ -136,10 +136,10 @@
     "export": "تصدير {count} نزيل (CSV)",
     "exportHint": "يفتح الملف في إكسل مباشرة، ويصدّر ما هو معروض أمامك بالفلاتر الحالية.",
     "exported": "تم تصدير {count} سطر",
-    "incomplete": "{count} نزيل بياناتهم ناقصة في هذه الفترة.",
+    "incomplete": "{count} نزيل بياناتهم ناقصة أو تحتاج مراجعة في هذه الفترة.",
     "search": "ابحث بالاسم أو رقم الحجز أو رقم الإثبات…",
     "all": "الكل",
-    "missingOnly": "الناقص فقط",
+    "missingOnly": "يحتاج مراجعة",
     "none": "لا يوجد نزلاء في هذه الفترة.",
     "record": "بيانات النزيل",
     "name": "الاسم كاملاً كما في الإثبات",
@@ -177,7 +177,10 @@
     "status_checked_out": "غادر",
     "status_cancelled": "ملغى",
     "status_no_show": "لم يحضر",
-    "status_inquiry": "استفسار"
+    "status_inquiry": "استفسار",
+    "looksWrong": "تحقق من: {issues}.",
+    "carryOnAnyway": "يمكنك المتابعة على أي حال.",
+    "checkCount": "راجع {count}"
   },
   "Charges": {
     "title": "الإضافات",

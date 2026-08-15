@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { supabase } from "../lib/supabase";
-import { NATIONALITY_SUGGESTIONS, missingFields } from "../lib/guest-record";
+import { NATIONALITY_SUGGESTIONS, implausibleFields, missingFields } from "../lib/guest-record";
 
 /**
  * The official record of one guest.
@@ -28,6 +28,9 @@ export default function GuestRecord({ guest, onSaved, onError }) {
 
   const set = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   const missing = missingFields(form, locale);
+  // Said, never enforced: whoever is holding the passport can see things
+  // this cannot, and a form that blocks is how "123" got into the register.
+  const wrong = implausibleFields(form, locale);
 
   async function save() {
     if (!form.full_name.trim()) return onError(t("nameRequired"));
@@ -96,6 +99,12 @@ export default function GuestRecord({ guest, onSaved, onError }) {
       {missing.length > 0 && (
         <div className="banner warn" style={{ margin: 0 }}>
           {t("stillMissing", { fields: missing.join("، ") })}
+        </div>
+      )}
+
+      {wrong.length > 0 && (
+        <div className="banner warn" style={{ margin: 0 }}>
+          {t("looksWrong", { issues: wrong.map((issue) => issue.message).join("، ") })}
         </div>
       )}
 
