@@ -250,6 +250,8 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
   const [typeDescriptionEn, setTypeDescriptionEn] = useState("");
   const [typeCode, setTypeCode] = useState("");
   const [typeMax, setTypeMax] = useState(2);
+  const [editing, setEditing] = useState(null);   // the type being renamed
+  const [draftType, setDraftType] = useState({});
 
   async function addType() {
     if (!typeName.trim() || !typeCode.trim()) return showToast("الاسم والكود مطلوبان", true);
@@ -267,6 +269,26 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
     if (error) return showToast(error.message, true);
     setTypeName(""); setTypeNameEn(""); setTypeDescription(""); setTypeDescriptionEn(""); setTypeCode(""); setTypeMax(2);
     showToast("تمت إضافة النوع"); reload();
+  }
+
+  /**
+   * Renaming rather than replacing. A hotel does not have "a standard room
+   * and also a sea-view room" — it has rooms it wants to call what they
+   * actually are. Adding a second type and moving every room across one by
+   * one is the same intent expressed as seven actions instead of one.
+   */
+  async function renameType(id) {
+    const name = String(draftType.name || "").trim();
+    if (!name) return showToast("الاسم مطلوب", true);
+    const { error } = await supabase.from("room_types").update({
+      name,
+      name_en: String(draftType.name_en || "").trim() || null,
+      max_occupancy: Math.max(1, Math.min(6, Number(draftType.max_occupancy) || 2)),
+    }).eq("id", id);
+    if (error) return showToast(error.message, true);
+    setEditing(null);
+    showToast("تم تعديل النوع");
+    reload();
   }
 
   async function addRoom() {
@@ -291,20 +313,47 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
     <>
       <section className="section">
         <h2 style={{ fontSize: 14 }}>أنواع الغرف</h2>
-        <p className="section-note">«أقصى عدد» يحدد صفوف مصفوفة الأسعار.</p>
+        <p className="section-note">لكل نوع سعره الخاص. إذا كانت غرفك كلها بنفس المستوى فنوع واحد يكفي — عدّل اسمه ليصف غرفك بدل إضافة نوع جديد. «أقصى عدد» يحدد صفوف مصفوفة الأسعار.</p>
         <div className="stack">
           {types.map((t, i) => (
-            <div key={t.id} className="card spread">
-              <div className="grow">
-                <div style={{ fontWeight: 600 }}>
-                  <span className="dot" style={{ background: BANDS[i % BANDS.length],
-                    display: "inline-block", marginInlineEnd: 6 }} />
-                  {localizedName(t, locale)} <span className="code">{t.code}</span>
+            <div key={t.id} className="card">
+              {editing === t.id ? (
+                <div className="stack">
+                  <div className="row">
+                    <div className="field grow"><label>الاسم</label>
+                      <input autoFocus value={draftType.name || ""} placeholder="غرفة بحرية"
+                        onChange={(e) => setDraftType({ ...draftType, name: e.target.value })} /></div>
+                    <div className="field grow"><label>الاسم بالإنجليزية</label>
+                      <input value={draftType.name_en || ""} dir="ltr" placeholder="Sea View Room"
+                        onChange={(e) => setDraftType({ ...draftType, name_en: e.target.value })} /></div>
+                    <div className="field" style={{ width: 90 }}><label>أقصى عدد</label>
+                      <input className="mono" type="number" min="1" max="6"
+                        value={draftType.max_occupancy || 2}
+                        onChange={(e) => setDraftType({ ...draftType, max_occupancy: e.target.value })} /></div>
+                  </div>
+                  <div className="row">
+                    <button className="btn primary" onClick={() => renameType(t.id)}>حفظ</button>
+                    <button className="btn" onClick={() => setEditing(null)}>إلغاء</button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                  {rooms.filter((r) => r.room_type_id === t.id).length} غرفة · لحد {t.max_occupancy} أفراد
+              ) : (
+                <div className="spread">
+                  <div className="grow">
+                    <div style={{ fontWeight: 600 }}>
+                      <span className="dot" style={{ background: BANDS[i % BANDS.length],
+                        display: "inline-block", marginInlineEnd: 6 }} />
+                      {localizedName(t, locale)} <span className="code">{t.code}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                      {rooms.filter((r) => r.room_type_id === t.id).length} غرفة · لحد {t.max_occupancy} أفراد
+                    </div>
+                  </div>
+                  <button className="btn sm" onClick={() => {
+                    setEditing(t.id);
+                    setDraftType({ name: t.name, name_en: t.name_en || "", max_occupancy: t.max_occupancy });
+                  }}>تعديل الاسم</button>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
