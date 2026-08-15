@@ -90,6 +90,26 @@ describe("bilingual routing and messages", () => {
     for (const source of ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"]) {
       expect(typeof ar.Board[`source_${source}`], source).toBe("string");
     }
+    for (const source of ["whatsapp", "phone", "walk_in", "referral", "other"]) {
+      expect(typeof ar.NewBooking[`source_${source}`], source).toBe("string");
+    }
+    for (const status of ["dirty", "clean", "inspected", "out_of_order"]) {
+      expect(typeof ar.Housekeeping[`status_${status}`], status).toBe("string");
+      expect(typeof ar.Activity[`status_${status}`], status).toBe("string");
+    }
+    // Every action the log writes, so a new one cannot reach the screen
+    // as a raw database word.
+    for (const action of [
+      "created", "checked_in", "checked_out", "housekeeping_status_changed",
+      "received", "refunded", "extended", "shortened", "room_moved", "cancelled",
+      "no_show", "room_blocked", "room_unblocked", "pin_changed", "updated",
+      "restored", "guests_cleaned",
+    ]) {
+      expect(typeof ar.Activity[`action_${action}`], action).toBe("string");
+    }
+    for (const type of ["all", "booking", "housekeeping", "money", "admin"]) {
+      expect(typeof ar.Activity[`type_${type}`], type).toBe("string");
+    }
   });
 
   it("preserves the current page while changing locale", () => {
