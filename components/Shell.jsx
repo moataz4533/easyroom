@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import {
   BarChart3, BedDouble, BookOpenCheck, CalendarPlus, CalendarRange,
   ChevronLeft, ChevronRight, CircleUserRound, ClipboardCheck, CloudOff,

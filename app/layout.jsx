@@ -51,7 +51,15 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body className={`${arabic.variable} ${latin.variable} ${mono.variable}`}>
-        <NextIntlClientProvider locale={locale} messages={messages} timeZone="Africa/Cairo">
+        {/* next-intl formats the numbers inside messages with the locale it
+            is given, and plain "ar" renders them 1 2 3 — next to ١ ٢ ٣ from
+            formatNumber everywhere else on the same screen. The Unicode
+            extension picks the numbering system; the app itself never sees
+            this tag, because it reads the locale through lib/locale. */}
+        <NextIntlClientProvider
+          locale={locale === "ar" ? "ar-u-nu-arab" : "en-GB"}
+          messages={messages} timeZone="Africa/Cairo"
+        >
           <ServiceWorkerManager />
           {children}
         </NextIntlClientProvider>

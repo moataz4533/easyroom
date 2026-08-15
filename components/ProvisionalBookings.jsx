@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { CheckCircle2, CircleAlert, CloudOff, Phone, RefreshCw, Trash2 } from "lucide-react";
 import {
   provisionalList, provisionalRemove, provisionalRetry, useOffline,

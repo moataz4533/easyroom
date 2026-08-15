@@ -6,10 +6,11 @@ import SetupChecklist from "../components/SetupChecklist";
 import ProvisionalBookings from "../components/ProvisionalBookings";
 import StuckActions from "../components/StuckActions";
 import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
-import { joinList } from "../lib/format";
+import { formatNumber, joinList } from "../lib/format";
 import { earlyDepartureAmounts, isLeavingEarly } from "../lib/checkout";
 import { loadCached, queueAdd, useOffline } from "../lib/offline";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import {
   Ban, BedDouble, Brush, CalendarDays, DoorOpen, LogIn,
   LogOut, RefreshCw, UserRound,
@@ -115,18 +116,18 @@ function Board() {
 
       <div className="dashboard-stats">
         <Stat icon={BedDouble} label={t("occupied")}
-          value={occupied} suffix={t("ofRooms", { count: rows.length })} tone="sea" />
+          value={formatNumber(occupied, locale)} suffix={t("ofRooms", { count: rows.length })} tone="sea" />
         <Stat icon={LogOut} label={t("departures")}
-          value={departing} tone="sand" />
+          value={formatNumber(departing, locale)} tone="sand" />
         <Stat icon={Brush} label={t("needsCleaning")}
-          value={dirty} tone="danger" />
+          value={formatNumber(dirty, locale)} tone="danger" />
       </div>
 
       <section className="section dashboard-section">
         <div className="dashboard-section-title">
           <CalendarDays size={22} />
           <h2>{t("arrivals")}</h2>
-          <span className="pill">{arrivals.length}</span>
+          <span className="pill">{formatNumber(arrivals.length, locale)}</span>
         </div>
         {arrivals.length > 0 ? (
           <div className="arrivals-table">

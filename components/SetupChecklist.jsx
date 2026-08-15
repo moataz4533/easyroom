@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Info } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { localePath } from "../lib/locale";

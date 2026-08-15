@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { CircleAlert, ClipboardPaste, X } from "lucide-react";
 import { formatDate } from "../lib/format";
 import { isWorthReviewing, parseMessage } from "../lib/whatsapp-parse";

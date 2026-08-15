@@ -2,7 +2,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, dayLabel } from "../../lib/supabase";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import { FileSpreadsheet } from "lucide-react";
 import { buildRevenueWorkbook, exportFileName } from "../../lib/report-export";
 import { localizedName } from "../../lib/locale";

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { Plus } from "lucide-react";
 import { supabase, egp } from "../lib/supabase";
 import { localizedName } from "../lib/locale";

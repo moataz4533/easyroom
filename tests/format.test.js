@@ -20,3 +20,19 @@ describe("localized hotel formatting", () => {
     expect(addDays("2026-08-01", -1)).toBe("2026-07-31");
   });
 });
+
+describe("dates that are not plain days", () => {
+  it("reads the day off a full timestamp", () => {
+    // A payment's received_at is a timestamptz. Appending T00:00:00 to it
+    // gave "Invalid Date", which printed on the guest's statement next to
+    // every payment they had made.
+    expect(formatDate("2026-08-15T22:04:11.123+00:00", "en")).toBe("15 Aug");
+    expect(formatDate("2026-08-15", "en")).toBe("15 Aug");
+  });
+
+  it("returns nothing rather than Invalid Date", () => {
+    expect(formatDate("not-a-date")).toBe("");
+    expect(formatDate("")).toBe("");
+    expect(formatDate(null)).toBe("");
+  });
+});

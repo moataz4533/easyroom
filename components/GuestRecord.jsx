@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { supabase } from "../lib/supabase";
 import { NATIONALITY_SUGGESTIONS, implausibleFields, missingFields } from "../lib/guest-record";
 import { joinList } from "../lib/format";

@@ -1,12 +1,14 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import {
   Building2, KeyRound, Power, RefreshCw, ShieldAlert, UserPlus,
 } from "lucide-react";
 import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
+import { formatNumber } from "../../lib/format";
 import { Toast, useToast } from "../../components/Shell";
 import {
   membersOf, isDormant, neverSignedIn, newHotelProblems, normaliseCode,
@@ -107,8 +109,8 @@ function Console() {
       </div>
 
       <div className="platform-totals">
-        <Total label={t("totalHotels")} value={totals.hotels} sub={`${totals.liveHotels} ${t("liveHotels")}`} />
-        <Total label={t("totalAccounts")} value={totals.accounts} sub={`${totals.activeAccounts} ${t("activeAccounts")}`} />
+        <Total label={t("totalHotels")} value={totals.hotels} sub={`${formatNumber(totals.liveHotels, locale)} ${t("liveHotels")}`} />
+        <Total label={t("totalAccounts")} value={totals.accounts} sub={`${formatNumber(totals.activeAccounts, locale)} ${t("activeAccounts")}`} />
         <Total label={t("neverUsed")} value={totals.neverUsed} tone={totals.neverUsed > 0 ? "warn" : null} />
         <Total label={t("totalRooms")} value={totals.rooms} />
         <Total label={t("totalBookings")} value={totals.bookings} />
@@ -149,10 +151,11 @@ function Console() {
 }
 
 function Total({ label, value, sub, tone }) {
+  const locale = useLocale();
   return (
     <div className="platform-total card" data-tone={tone}>
       <span>{label}</span>
-      <strong className="mono">{value}</strong>
+      <strong className="mono">{formatNumber(value, locale)}</strong>
       {sub && <small>{sub}</small>}
     </div>
   );
@@ -223,7 +226,7 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
       <div>
         <div className="spread" style={{ marginBottom: 6 }}>
           <strong style={{ fontSize: 13 }}>{t("accounts")}</strong>
-          <span className="pill">{summary.activeMembers}/{summary.members}</span>
+          <span className="pill">{formatNumber(summary.activeMembers, locale)}/{formatNumber(summary.members, locale)}</span>
         </div>
         {members.length === 0 ? (
           <div className="empty compact-empty">{t("noAccounts")}</div>

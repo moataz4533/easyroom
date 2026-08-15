@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase } from "../../lib/supabase";
 import { loadCached, queueAdd } from "../../lib/offline";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 
 export default function Page() {
   return (

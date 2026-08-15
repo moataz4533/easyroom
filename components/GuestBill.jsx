@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { Copy, MessageCircle, Printer, X } from "lucide-react";
 import { buildBillText } from "../lib/bill";
 import { whatsappLink } from "../lib/confirmation";

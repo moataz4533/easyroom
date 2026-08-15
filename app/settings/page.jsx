@@ -7,7 +7,8 @@ import BackupCard from "../../components/BackupCard";
 import { supabase, egp, dayLabel } from "../../lib/supabase";
 import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import { ImagePlus, Trash2, Upload } from "lucide-react";
 import { isStaffUsername, normalizeStaffUsername } from "../../lib/auth-login";
 

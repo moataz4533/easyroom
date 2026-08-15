@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  billTotals, billableRooms, buildBillText, extraLines, paymentLines, roomLines,
+  BILL_ALLOCATION_FIELDS, billTotals, billableRooms, buildBillText, extraLines,
+  paymentLines, roomLines,
 } from "../lib/bill";
 
 const allocations = [
@@ -122,5 +123,31 @@ describe("the bill as the guest reads it", () => {
     const bare = buildBillText({ property, booking, allocations: [], charges: [], payments: [], locale: "ar" });
     expect(bare).toContain("GR26-0011");
     expect(bare).toContain("الحساب مسدد بالكامل");
+  });
+});
+
+/**
+ * The statement is built from rows another screen loaded, so it is only as
+ * good as that screen's select list. It shipped pricing every room at zero
+ * because the bookings query did not ask for rate_per_night, and the bill
+ * read `undefined` as nothing rather than as a mistake.
+ */
+describe("what the bill needs from whoever loaded the rows", () => {
+  const FIELDS = ["starts_on", "ends_on", "rate_per_night", "release_reason"];
+
+  it("names the allocation columns it reads, so a query can be checked against them", () => {
+    expect(BILL_ALLOCATION_FIELDS).toEqual(FIELDS);
+  });
+
+  it("refuses to price a room whose rate was never loaded", () => {
+    const withoutRate = [{ rooms: { number: "101" }, starts_on: "2026-08-17",
+      ends_on: "2026-08-20", occupancy: 2, release_reason: null }];
+    expect(() => billTotals({ allocations: withoutRate })).toThrow(/rate_per_night/);
+  });
+
+  it("still prices a genuinely free night at zero", () => {
+    const free = [{ rooms: { number: "101" }, starts_on: "2026-08-17",
+      ends_on: "2026-08-20", occupancy: 2, rate_per_night: 0, release_reason: null }];
+    expect(billTotals({ allocations: free }).rooms).toBe(0);
   });
 });

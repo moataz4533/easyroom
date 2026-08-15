@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import {
   CalendarRange, ChevronLeft, ChevronRight, RefreshCw, Wrench,
 } from "lucide-react";

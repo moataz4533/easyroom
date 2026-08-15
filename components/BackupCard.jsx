@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { CircleAlert, Download, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { formatNumber, joinList } from "../lib/format";

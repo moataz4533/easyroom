@@ -7,7 +7,8 @@ import PinPrompt from "../../components/PinPrompt";
 import ConfirmationMessage from "../../components/ConfirmationMessage";
 import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
 import { joinList } from "../../lib/format";
 
@@ -50,7 +51,7 @@ function Bookings() {
         id, property_id, reference, status, source, check_in, check_out, adults, children,
         total_amount, paid_amount, notes, attention_reason, cancel_reason,
         guests(id, full_name, phone),
-        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, rooms(number)),
+        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, rooms(number)),
         payments(id, amount, method, notes, received_at),
         booking_charges(id, charge_item_id, description, quantity, unit_amount, amount, notes, voided_at)
       `)

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarClock, ListChecks, RefreshCw, Search } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import Shell, { Toast, useProperty, useToast } from "../../components/Shell";
 import { supabase } from "../../lib/supabase";
 import { joinList } from "../../lib/format";

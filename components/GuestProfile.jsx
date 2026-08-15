@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../lib/locale";
 import { CalendarCheck, RotateCcw, TriangleAlert } from "lucide-react";
 import { supabase, egp, dayLabel } from "../lib/supabase";
 import { countNights, joinList } from "../lib/format";

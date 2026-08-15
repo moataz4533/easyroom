@@ -3,7 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
-import { localePath, localizedName } from "../../lib/locale";
+import { localePath, localizedName, useLocale } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
@@ -13,7 +13,7 @@ import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../l
 import {
   newProvisional, roomsHeldOn, roomsWantedByDrafts, validateProvisional,
 } from "../../lib/provisional";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { MessageSquareText } from "lucide-react";
 
 export default function Page() {

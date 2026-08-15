@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocale } from "../../lib/locale";
 import { Download, RefreshCw, X } from "lucide-react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import GuestRecord from "../../components/GuestRecord";
