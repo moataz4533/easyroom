@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
-import LegacyTranslator from "../components/LegacyTranslator";
 import ServiceWorkerManager from "../components/ServiceWorkerManager";
 import "./globals.css";
 
@@ -53,7 +52,6 @@ export default async function RootLayout({ children }) {
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body className={`${arabic.variable} ${latin.variable} ${mono.variable}`}>
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="Africa/Cairo">
-          <LegacyTranslator />
           <ServiceWorkerManager />
           {children}
         </NextIntlClientProvider>

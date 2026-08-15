@@ -8,7 +8,7 @@ import {
 import { useProperty } from "./Shell";
 import { FAILED, SENT, countByState, headCount, roomNumbers } from "../lib/provisional";
 import { dayLabel } from "../lib/supabase";
-import { countNights } from "../lib/format";
+import { countNights, joinList } from "../lib/format";
 
 const REASON = {
   taken: "reasonTaken",
@@ -90,7 +90,7 @@ function Row({ record, locale, t }) {
             {t("stay", {
               nights,
               heads: headCount(record),
-              rooms: roomNumbers(record).join(locale === "ar" ? "، " : ", "),
+              rooms: joinList(roomNumbers(record), locale),
             })}
           </span>
           {record.state === SENT && record.reference && (

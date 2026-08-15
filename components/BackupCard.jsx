@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CircleAlert, Download, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { formatNumber } from "../lib/format";
+import { formatNumber, joinList } from "../lib/format";
 import {
   BACKUP_TABLES, LAST_BACKUP_KEY, backupFileName, daysSince, isStale, problemWith, summarise,
 } from "../lib/backup";
@@ -81,9 +81,11 @@ export default function BackupCard({ property }) {
       {result && (
         <div className="banner ok">
           {t("saved")}{" "}
-          {BACKUP_TABLES.filter((table) => result[table] > 0)
-            .map((table) => `${t(table)} ${formatNumber(result[table], locale)}`)
-            .join(locale === "ar" ? "، " : ", ")}
+          {joinList(
+            BACKUP_TABLES.filter((table) => result[table] > 0)
+              .map((table) => `${t(table)} ${formatNumber(result[table], locale)}`),
+            locale
+          )}
         </div>
       )}
 

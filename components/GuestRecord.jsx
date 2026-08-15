@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { supabase } from "../lib/supabase";
 import { NATIONALITY_SUGGESTIONS, implausibleFields, missingFields } from "../lib/guest-record";
+import { joinList } from "../lib/format";
 
 /**
  * The official record of one guest.
@@ -98,13 +99,13 @@ export default function GuestRecord({ guest, onSaved, onError }) {
 
       {missing.length > 0 && (
         <div className="banner warn" style={{ margin: 0 }}>
-          {t("stillMissing", { fields: missing.join("، ") })}
+          {t("stillMissing", { fields: joinList(missing, locale) })}
         </div>
       )}
 
       {wrong.length > 0 && (
         <div className="banner warn" style={{ margin: 0 }}>
-          {t("looksWrong", { issues: wrong.map((issue) => issue.message).join("، ") })}
+          {t("looksWrong", { issues: joinList(wrong.map((issue) => issue.message), locale) })}
         </div>
       )}
 

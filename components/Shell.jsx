@@ -75,6 +75,7 @@ export default function Shell({ children }) {
   const currentPath = barePath(pathname);
   const t = useTranslations("Shell");
   const common = useTranslations("Common");
+  const roles = useTranslations("Roles");
   const [state, setState] = useState({ loading: true });
 
   useEffect(() => {
@@ -135,7 +136,7 @@ export default function Shell({ children }) {
   const allowed = ALLOWED[state.role] || [];
   const content = allowed.includes(currentPath) ? children : (
     <div className="card access-card">
-      <div className="banner warn">{t("forbidden", { role: roleLabel(state.role, locale) })}</div>
+      <div className="banner warn">{t("forbidden", { role: roles(state.role || "unknown") })}</div>
       <Link className="btn primary" href={localePath(allowed[0] || "/", locale)}>{t("goHome")}</Link>
     </div>
   );
@@ -201,6 +202,7 @@ function PropertySwitcher({ state, locale }) {
 function Sidebar({ state, path, allowed }) {
   const locale = useLocale();
   const t = useTranslations("Nav");
+  const roles = useTranslations("Roles");
   return (
     <aside className="sidebar">
       <Brand property={state.property} locale={locale} />
@@ -215,7 +217,7 @@ function Sidebar({ state, path, allowed }) {
       </nav>
       <div className="sidebar-user">
         <CircleUserRound size={20} />
-        <div><strong>{state.profile?.full_name || state.session?.user?.email?.split("@")[0]}</strong><span>{roleLabel(state.role, locale)}</span></div>
+        <div><strong>{state.profile?.full_name || state.session?.user?.email?.split("@")[0]}</strong><span>{roles(state.role || "unknown")}</span></div>
       </div>
     </aside>
   );
@@ -281,6 +283,7 @@ function MobileNav({ path, allowed }) {
   const locale = useLocale();
   const t = useTranslations("Nav");
   const common = useTranslations("Common");
+  const roles = useTranslations("Roles");
   let items = NAV.filter((item) => allowed.includes(item.href));
   if (items.length > 5) {
     const settings = items.find((item) => item.href === "/settings") || items.at(-1);
@@ -297,13 +300,6 @@ function MobileNav({ path, allowed }) {
   );
 }
 
-export function roleLabel(role, locale = "ar") {
-  const labels = {
-    ar: { owner: "المالك", manager: "مدير", reception: "استقبال", housekeeping: "نظافة" },
-    en: { owner: "Owner", manager: "Manager", reception: "Reception", housekeeping: "Housekeeping" },
-  };
-  return labels[locale]?.[role] || "—";
-}
 
 export function Toast({ msg, bad }) {
   if (!msg) return null;

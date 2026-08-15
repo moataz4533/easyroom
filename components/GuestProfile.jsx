@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarCheck, RotateCcw, TriangleAlert } from "lucide-react";
 import { supabase, egp, dayLabel } from "../lib/supabase";
-import { countNights } from "../lib/format";
+import { countNights, joinList } from "../lib/format";
 import {
   averageStayLength, isReturning, isUnreliable, sortStays, summariseStays,
 } from "../lib/guest-history";
@@ -106,7 +106,7 @@ function StayLine({ stay, locale, t }) {
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
           {dayLabel(stay.check_in, locale)} ← {dayLabel(stay.check_out, locale)}
           {" · "}{t("nights", { count: egp(countNights(stay.check_in, stay.check_out), locale) })}
-          {rooms.length > 0 && ` · ${rooms.join("، ")}`}
+          {rooms.length > 0 && ` · ${joinList(rooms, locale)}`}
         </div>
       </div>
       <div style={{ textAlign: "end" }}>
