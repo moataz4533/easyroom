@@ -308,6 +308,16 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .read-value { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; text-align: end; overflow-wrap: anywhere; }
 .read-row[data-unsure="true"] .read-value { color: #8a5c00; }
 .read-value.empty { color: var(--muted); font-weight: 400; }
+
+/* The platform console. Not part of the product's chrome — it has no
+   sidebar and no tab bar, because it is not about one hotel. */
+.platform-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.platform-total { display: flex; flex-direction: column; gap: 2px; padding: 13px 15px; }
+.platform-total > span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.platform-total > strong { font-size: 26px; line-height: 1.1; }
+.platform-total > small { color: var(--muted); font-size: 11px; }
+.platform-total[data-tone="warn"] > strong { color: #8a5c00; }
+.card[data-suspended="true"] { border-inline-start: 4px solid var(--danger); }
 .provisional-reason { margin: 9px 0 0; color: var(--danger); font-size: 12px; line-height: 1.6; }
 .provisional-actions:not(:empty) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
 
