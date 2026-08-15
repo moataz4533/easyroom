@@ -2,7 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, dayLabel } from "../../lib/supabase";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { FileSpreadsheet } from "lucide-react";
+import { buildRevenueWorkbook, exportFileName } from "../../lib/report-export";
+import { localizedName } from "../../lib/locale";
 
 export default function Page() {
   return (
@@ -49,6 +52,7 @@ function Reports() {
   const [methods, setMethods] = useState([]);
   const [extras, setExtras] = useState([]);
   const [loading, setLoading] = useState(true);
+  const tx = useTranslations("Export");
   const [toast, showToast] = useToast();
 
   useEffect(() => {
@@ -84,6 +88,29 @@ function Reports() {
 
   useEffect(() => { load(); }, [load]);
 
+  /**
+   * The period on screen, as a sheet. Built on the device from what is
+   * already loaded — nothing goes back to the server, so it works on the
+   * same bad connection everything else here is built for.
+   */
+  function downloadExcel() {
+    const bytes = buildRevenueWorkbook({
+      hotel: localizedName(property, locale),
+      from, to, daily, summary, locale,
+    });
+    const url = URL.createObjectURL(
+      new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = exportFileName(localizedName(property, locale), from, to);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // Freed on the next tick: revoking before the click is handled cancels it.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   const empty = summary && Number(summary.nights_sold) === 0;
 
   return (
@@ -94,13 +121,19 @@ function Reports() {
         الإيراد محسوب بالليلة — الإقامة الممتدة على شهرين تُقسَّم بينهما.
       </p>
 
-      <div className="tabs" role="tablist">
-        {RANGES.map(([k, label]) => (
-          <button key={k} className="tab" role="tab" aria-selected={range === k}
-            onClick={() => setRange(k)}>
-            {label}
-          </button>
-        ))}
+      <div className="report-controls">
+        <div className="tabs" role="tablist">
+          {RANGES.map(([k, label]) => (
+            <button key={k} className="tab" role="tab" aria-selected={range === k}
+              onClick={() => setRange(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button className="btn" onClick={downloadExcel}
+          disabled={loading || !summary || (daily || []).length === 0}>
+          <FileSpreadsheet size={16} />{tx("excel")}
+        </button>
       </div>
 
       {range === "custom" && (

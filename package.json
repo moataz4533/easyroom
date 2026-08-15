@@ -26,6 +26,7 @@
     "@playwright/test": "1.62.1",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.0",
+    "fflate": "0.8.3",
     "intl-messageformat": "11.2.13",
     "vitest": "4.1.10"
   }

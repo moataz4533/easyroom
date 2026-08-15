@@ -339,5 +339,9 @@
     "linkExpired": "This link has expired or has already been used. Ask for a new one from the sign-in screen.",
     "backToLogin": "Back to sign in",
     "staffNote": "This page is for the owner's account. Staff passwords are reset from Settings → Staff."
+  },
+  "Export": {
+    "excel": "Export to Excel",
+    "note": "Opens in Excel as a formatted table: a row per night, with a total at the end."
   }
 }

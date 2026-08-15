@@ -382,6 +382,11 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
 .link-button { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--sea); font: inherit; font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .link-button:hover { color: var(--deep); }
 
+/* The period picker and the way out of the app, on one line. */
+.report-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.report-controls .tabs { margin-bottom: 0; }
+.report-controls .btn { flex: none; }
+
 .property-switcher { position: relative; display: flex; align-items: center; gap: 7px; min-height: 38px; margin: 12px 0 4px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); }
 .property-switcher svg { flex: none; }
 .property-switcher select { flex: 1; min-width: 0; border: 0; padding: 6px 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
