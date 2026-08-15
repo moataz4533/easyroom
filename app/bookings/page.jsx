@@ -5,9 +5,10 @@ import { supabase, egp, today, dayLabel, nights } from "../../lib/supabase";
 import { useOffline } from "../../lib/offline";
 import PinPrompt from "../../components/PinPrompt";
 import ConfirmationMessage from "../../components/ConfirmationMessage";
+import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
 import { useLocale, useTranslations } from "next-intl";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Receipt } from "lucide-react";
 
 export default function Page() {
   return (
@@ -316,7 +317,9 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const locale = useLocale();
   const { property } = useProperty();
   const t = useTranslations("Confirmation");
+  const tb = useTranslations("Bill");
   const [confirmation, setConfirmation] = useState(false);
+  const [bill, setBill] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
@@ -388,6 +391,24 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             onClick={() => setConfirmation(true)}>
             <MessageCircle size={16} />{t("open")}
           </button>
+        )}
+
+        {/* Every guest asks for this on the way out, and reception had
+            nothing to hand them. */}
+        <button className="btn wide" style={{ marginBottom: 12 }} onClick={() => setBill(true)}>
+          <Receipt size={16} />{tb("open")}
+        </button>
+
+        {bill && (
+          <GuestBill
+            property={property} booking={b}
+            allocations={b.room_allocations || []}
+            charges={b.booking_charges || []}
+            payments={b.payments || []}
+            onClose={() => setBill(false)}
+            onCopied={() => onNotify(tb("copied"))}
+            onCopyFailed={() => onError(tb("copyFailed"))}
+          />
         )}
 
         {confirmation && (

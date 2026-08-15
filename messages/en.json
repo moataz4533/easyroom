@@ -366,5 +366,15 @@
     "booking_charges": "extras",
     "rates": "rates",
     "rate_seasons": "seasons"
+  },
+  "Bill": {
+    "title": "Statement of account",
+    "open": "Statement of account",
+    "language": "Statement language",
+    "print": "Print",
+    "send": "Send to guest",
+    "copied": "Statement copied",
+    "copyFailed": "Could not copy — select the text and copy it",
+    "copy": "Copy statement"
   }
 }
