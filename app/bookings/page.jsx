@@ -345,7 +345,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             <h2 style={{ fontSize: 18 }}>{b.guests?.full_name}</h2>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
               <span className="code">{b.reference}</span>{" "}
-              <span className={`pill ${s.pill}`}>{s.label}</span>
+              <span className={`pill ${STATUS_PILL[status]}`}>{tk(`status_${status}`)}</span>
             </div>
           </div>
           <button className="btn sm" onClick={onClose}>{common("close")}</button>

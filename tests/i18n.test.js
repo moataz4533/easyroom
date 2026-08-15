@@ -83,6 +83,71 @@ describe("bilingual routing and messages", () => {
     expect(missing).toEqual([]);
   });
 
+  /**
+   * A message asking for `{count}` that is handed `{n}` renders the
+   * placeholder to the guest, or throws — and nothing else notices, because
+   * the key exists, the code compiles and no test renders the screen.
+   */
+  it("hands every message the arguments it asks for", () => {
+    const files = [];
+    (function walk(dir) {
+      for (const entry of readdirSync(dir)) {
+        if (["node_modules", ".next", ".git", "tests"].includes(entry)) continue;
+        const path = join(dir, entry);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.jsx$/.test(path)) files.push(path);
+      }
+    })(".");
+
+    const placeholders = (text) =>
+      new Set([...text.matchAll(/\{\s*(\w+)\s*[,}]/g)].map((m) => m[1]));
+
+    // Only the top level of the argument object: a nested options object —
+    // toLocaleString's, say — is not a set of message arguments.
+    const topLevel = (body) => {
+      let depth = 0;
+      let flat = "";
+      for (const ch of body) {
+        if (ch === "{") depth += 1;
+        else if (ch === "}") depth -= 1;
+        else if (depth === 0) flat += ch;
+      }
+      return new Set([
+        ...[...flat.matchAll(/(\w+)\s*:/g)].map((m) => m[1]),
+        // shorthand: t("stay", { nights, heads })
+        ...flat.split(",").map((part) => part.trim()).filter((part) => /^\w+$/.test(part)),
+      ]);
+    };
+
+    const wrong = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      const namespaces = {};
+      for (const m of source.matchAll(/const\s+(\w+)\s*=\s*useTranslations\("([\w.]+)"\)/g)) {
+        (namespaces[m[1]] ||= []).push(m[2]);
+      }
+      for (const [name, spaces] of Object.entries(namespaces)) {
+        const calls = new RegExp(
+          `\\b${name}\\("([\\w.]+)"\\s*,\\s*\\{([^{}]*(?:\\{[^{}]*\\}[^{}]*)*)\\}\\s*\\)`, "g");
+        for (const use of source.matchAll(calls)) {
+          const passed = topLevel(use[2]);
+          // One name may read from several catalogues in one file, so the
+          // call is right if any of them wants exactly these arguments.
+          const matches = spaces.some((space) => {
+            const text = `${space}.${use[1]}`.split(".").reduce((node, key) => (node ?? {})[key], ar);
+            if (typeof text !== "string") return false;
+            const want = placeholders(text);
+            return want.size === passed.size && [...want].every((w) => passed.has(w));
+          });
+          const known = spaces.some((space) =>
+            typeof `${space}.${use[1]}`.split(".").reduce((node, key) => (node ?? {})[key], ar) === "string");
+          if (known && !matches) wrong.push(`${file}: ${use[1]} got [${[...passed].sort()}]`);
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
   it("has every member of the key families built from a variable", () => {
     for (const state of ["free", "occupied", "dirty", "ooo"]) {
       expect(typeof ar.Board[`state_${state}`], state).toBe("string");
@@ -125,6 +190,37 @@ describe("bilingual routing and messages", () => {
     }
     for (const source of ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"]) {
       expect(typeof ar.Reports[`source_${source}`], source).toBe("string");
+    }
+    for (const key of ["1", "2", "3", "4", "5", "6"]) {
+      expect(typeof ar.Settings[`occ_${key}`], key).toBe("string");
+    }
+    for (const role of ["owner", "manager", "reception", "housekeeping"]) {
+      expect(typeof ar.Settings[`role_${role}`], role).toBe("string");
+      expect(typeof ar.Roles[role], role).toBe("string");
+    }
+    for (const role of ["reception", "housekeeping", "manager"]) {
+      expect(typeof ar.Settings[`roleOption_${role}`], role).toBe("string");
+    }
+    for (const tab of ["rates", "seasons", "rooms", "charges", "staff", "security", "backup", "property"]) {
+      expect(typeof ar.Settings[`tab_${tab}`], tab).toBe("string");
+    }
+    for (const group of ["types", "plans"]) {
+      expect(typeof ar.Settings[`englishGroup_${group}`], group).toBe("string");
+    }
+    for (const status of ["confirmed", "checked_in", "checked_out", "cancelled", "no_show", "inquiry"]) {
+      expect(typeof ar.Guests[`status_${status}`], status).toBe("string");
+    }
+    // Every problem newHotelProblems can report has to have a sentence.
+    for (const problem of [
+      "name", "code:empty", "code:short", "code:long", "code:reserved",
+      "code:taken", "ownerName", "ownerEmail", "password", "mismatch",
+    ]) {
+      expect(typeof ar.Platform[`problem_${problem}`], problem).toBe("string");
+    }
+    // The setup checklist asks for `${id}.title` and `${id}.why`.
+    for (const id of ["rates", "roomTypes", "managerPassword", "whatsapp", "policy", "staff"]) {
+      expect(typeof ar.Setup[id]?.title, id).toBe("string");
+      expect(typeof ar.Setup[id]?.why, id).toBe("string");
     }
   });
 
