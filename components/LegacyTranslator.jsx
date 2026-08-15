@@ -3,9 +3,25 @@
 import { useEffect } from "react";
 import { useLocale } from "next-intl";
 
-// Temporary compatibility dictionary for feature screens while their text is
-// progressively moved to namespaced next-intl messages. Exact phrases win;
-// the ordered phrase list also handles counters and interpolated values.
+/**
+ * Temporary compatibility dictionary for feature screens while their text is
+ * progressively moved to namespaced next-intl messages.
+ *
+ * The rule this file lives by: **only ever rewrite text the app itself
+ * wrote.** It used to also run a list of single-word substitutions over any
+ * Arabic it found in the page, which quietly corrupted the data the hotel
+ * had typed in — a guest called "نور اليوم" was displayed as "نور today", a
+ * room type the manager named "غرفة العروسين" became "room العروسين", and a
+ * note reading "حجز مبكر" became "booking مبكر". A guest register that shows
+ * a different name from the one recorded is worse than one left in Arabic,
+ * and this register exists precisely to be handed to an inspector.
+ *
+ * So a text node is rewritten only when it matches something the app wrote:
+ * either exactly, from the dictionary below, or one of the few anchored
+ * shapes the app builds around a number. Anything else is left alone. That
+ * makes untranslated Arabic possible in English mode and mistranslated data
+ * impossible, which is the right way round.
+ */
 export const LEGACY_EN = {
   "التقارير": "Reports",
   "الإعدادات": "Settings",
@@ -383,29 +399,60 @@ export const LEGACY_EN = {
   "كل موظف يرى ما يخصه فقط. موظف النظافة لا يرى المبالغ ولا بيانات النزلاء.": "Each staff member sees only their own work. Housekeeping sees no money and no guest details.",
   "كلمة مرور تُطلب قبل الإلغاء وعدم الحضور والمغادرة المبكرة وتغيير الأسعار.": "A password asked for before cancelling, no-shows, early check-out and rate changes.",
   "سعر الليلة للغرفة كاملة. الخانة الفارغة تعني أن هذه التركيبة غير معروضة للبيع.": "The nightly price for the whole room. An empty box means that combination is not for sale.",
+
+  // JSX splits `{amount} ج` and `فلوس متبقية ({n})` across text nodes, so
+  // these fragments are what actually reaches the page.
+  "ج": "EGP",
+  "جنيه": "EGP",
+  "· بواسطة": "· by",
+  "آخر تحديث:": "Last updated:",
+  "فلوس متبقية (": "Outstanding balances (",
+  "هذه بيانات محفوظة، وليست لحظية.": "This is saved data, not live data.",
 };
 
-const REPLACEMENTS = [
-  ["، ", ", "],
-  ["جنيه", "EGP"], [" ج", " EGP"], ["ليلة", "night"], ["ليالي", "nights"],
-  ["غرفة", "room"], ["غرف", "rooms"], ["أفراد", "guests"], ["فرد", "guest"],
-  ["حجز", "booking"], ["عملية", "transaction"], ["بواسطة", "by"],
-  ["آخر تحديث:", "Last updated:"], ["هذه بيانات محفوظة، وليست لحظية.", "This is saved data, not live data."],
-  ["إجراء مستني الإرسال.", "action waiting to be sent."], ["إجراء بانتظار الإرسال.", "action waiting to be sent."],
-  ["غرفة تحتاج إجراءً.", "room needs attention."], ["الحساب", "account"],
-  ["فلوس متبقية", "Outstanding balances"], ["بالليلة", "per night"],
-  ["السعر", "rate"], ["تاريخ", "date"], ["جديد", "new"], ["اليوم", "today"]
+/**
+ * The handful of strings the app builds around a number, anchored end to end.
+ *
+ * Anchoring is the point. A substring rule for "غرفة" rewrites the middle of a
+ * room type somebody named; a rule matching only a number followed by "غرفة"
+ * and nothing else cannot touch anything but a counter. The number is carried
+ * through exactly as the app formatted it, Arabic-Indic digits and thousands
+ * marks included.
+ */
+const COUNT = String.raw`[\d٠-٩][\d٠-٩.,٫٬’]*`;
+const anchored = (body) => new RegExp(`^${body}$`);
+
+export const PATTERNS = [
+  [anchored(`(${COUNT}) ليلة`), "$1 nights"],
+  [anchored(`(${COUNT}) ليالي`), "$1 nights"],
+  [anchored(`(${COUNT}) من (${COUNT}) ليلة`), "$1 of $2 nights"],
+  [anchored(`(${COUNT}) غرفة`), "$1 rooms"],
+  [anchored(`(${COUNT}) غرف`), "$1 rooms"],
+  [anchored(`(${COUNT}) (?:فرد|أفراد)`), "$1 guests"],
+  [anchored(`(${COUNT}) عملية`), "$1 transactions"],
+  [anchored(`(${COUNT}) نزيل`), "$1 guests"],
+  [anchored(`(${COUNT}) غرفة تحتاج إجراءً\\.`), "$1 rooms need attention."],
+  [anchored(`(${COUNT}) سعر تم الحفظ`), "$1 rates saved"],
 ];
 
+/**
+ * Returns the value untouched unless the app is known to have written it, and
+ * never returns a partial rewrite — half-translated text is how guest data
+ * used to come out wrong.
+ */
 export function translateLegacyText(value) {
   if (!value || !/[\u0600-\u06FF]/.test(value)) return value;
   const leading = value.match(/^\s*/)?.[0] || "";
   const trailing = value.match(/\s*$/)?.[0] || "";
   const core = value.trim();
+
   if (LEGACY_EN[core]) return `${leading}${LEGACY_EN[core]}${trailing}`;
-  let out = core;
-  for (const [ar, en] of REPLACEMENTS) out = out.split(ar).join(en);
-  return `${leading}${out}${trailing}`;
+
+  for (const [pattern, replacement] of PATTERNS) {
+    if (pattern.test(core)) return `${leading}${core.replace(pattern, replacement)}${trailing}`;
+  }
+
+  return value;
 }
 
 function translateTree(root) {
