@@ -7,6 +7,7 @@ import PinPrompt from "../../components/PinPrompt";
 import ConfirmationMessage from "../../components/ConfirmationMessage";
 import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
+import RoomDiscount from "../../components/RoomDiscount";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
@@ -51,7 +52,7 @@ function Bookings() {
         id, property_id, reference, status, source, check_in, check_out, adults, children,
         total_amount, paid_amount, notes, attention_reason, cancel_reason,
         guests(id, full_name, phone),
-        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, rooms(number)),
+        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, discount_kind, discount_value, discount_note, discount_amount, rooms(number)),
         payments(id, amount, method, notes, received_at),
         booking_charges(id, charge_item_id, description, quantity, unit_amount, amount, notes, voided_at)
       `)
@@ -311,6 +312,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const t = useTranslations("Confirmation");
   const tb = useTranslations("Bill");
   const tk = useTranslations("Bookings");
+  const td = useTranslations("Discount");
   const common = useTranslations("Common");
   const [confirmation, setConfirmation] = useState(false);
   const [bill, setBill] = useState(false);
@@ -429,21 +431,35 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           ) : (
             <div className="stack">
               {live.map((a) => (
-                <div key={a.id} className="card spread">
-                  <div className="grow">
-                    <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
-                      {a.rooms?.number}
-                    </span>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                      {tk("allocationLine", { pax: a.occupancy || 0, from: dayLabel(a.starts_on, locale), to: dayLabel(a.ends_on, locale) })}
+                <div key={a.id} className="card">
+                  <div className="spread" style={{ flexWrap: "wrap", rowGap: 8 }}>
+                    <div className="grow">
+                      <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
+                        {a.rooms?.number}
+                      </span>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                        {tk("allocationLine", { pax: a.occupancy || 0, from: dayLabel(a.starts_on, locale), to: dayLabel(a.ends_on, locale) })}
+                      </div>
+                      {/* A discount is a decision somebody made about this
+                          room, so it is stated on the room and not only in
+                          the total at the bottom. */}
+                      {Number(a.discount_amount) > 0 && (
+                        <div style={{ fontSize: 12, color: "var(--sea)" }}>
+                          {td("onRoom", { amount: egp(a.discount_amount, locale), currency: common("currency") })}
+                          {a.discount_note ? ` · ${a.discount_note}` : ""}
+                        </div>
+                      )}
                     </div>
+                    {canManage && isOpen && live.length > 1 && online && (
+                      <button className="btn sm danger" disabled={busy}
+                        onClick={() => setRoomToRelease(a)}>
+                        {tk("releaseRoom")}
+                      </button>
+                    )}
+                    {canManage && isOpen && online && (
+                      <RoomDiscount allocation={a} onDone={onDone} onError={onError} />
+                    )}
                   </div>
-                  {canManage && isOpen && live.length > 1 && online && (
-                    <button className="btn sm danger" disabled={busy}
-                      onClick={() => setRoomToRelease(a)}>
-                      {tk("releaseRoom")}
-                    </button>
-                  )}
                 </div>
               ))}
             </div>

@@ -7,6 +7,7 @@ import { localePath, localizedName, useLocale } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
+import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
 import { joinList } from "../../lib/format";
 import PasteMessage from "../../components/PasteMessage";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
@@ -45,6 +46,7 @@ function NewBooking() {
   const tg = useTranslations("Guests");
   const tp = useTranslations("Paste");
   const tn = useTranslations("NewBooking");
+  const td = useTranslations("Discount");
   const common = useTranslations("Common");
   const { online } = useOffline();
 
@@ -83,6 +85,11 @@ function NewBooking() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [quote, setQuote] = useState(null);
+  // One discount for the booking, applied to every room on it. Reception
+  // quotes the discounted price on the phone, so it has to be settable
+  // before the booking exists rather than corrected afterwards. A room that
+  // needs its own figure gets it on the booking screen, per room.
+  const [discount, setDiscount] = useState({ kind: "", value: "", note: "" });
 
   const n = nights(checkIn, checkOut);
 
@@ -255,6 +262,19 @@ function NewBooking() {
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
 
   /**
+   * What the guest will actually pay, discount included.
+   *
+   * Spread over every room-night of the selection: the quote is one number
+   * and the nights behind it are not on this screen. Exact for a percentage
+   * and for a named rate; a fixed sum against a night cheaper than the sum
+   * is settled by the database when the booking is taken, which is why the
+   * screen calls this a quote.
+   */
+  const priced = typeof quote === "number"
+    ? previewStay(quote, n * Object.keys(picked).length, discount.kind || null, discount.value)
+    : null;
+
+  /**
    * With no connection nothing can be held: the room is only reserved when
    * the request reaches the database. So this writes the booking down as
    * provisional and says so — it does not pretend to have confirmed it.
@@ -293,6 +313,8 @@ function NewBooking() {
     if (!online) return recordProvisional();
     if (!name.trim()) return showToast(tn("needName"), true);
     if (!Object.keys(picked).length) return showToast(tn("needRoom"), true);
+    const badDiscount = discountProblem(discount.kind || null, discount.value);
+    if (badDiscount) return showToast(td(badDiscount), true);
     setBusy(true);
 
     let guestId = guest?.id;
@@ -326,7 +348,12 @@ function NewBooking() {
       p_guest_id: guestId,
       p_check_in: checkIn,
       p_check_out: checkOut,
-      p_rooms: Object.entries(picked).map(([room_id, occupancy]) => ({ room_id, occupancy })),
+      p_rooms: Object.entries(picked).map(([room_id, occupancy]) => ({
+        room_id, occupancy,
+        discount_kind: discount.kind || null,
+        discount_value: discount.kind ? Number(discount.value) : null,
+        discount_note: discount.kind ? discount.note.trim() || null : null,
+      })),
       p_rate_plan: planId || null,
       p_account_id: accountId || null,
       p_source: source,
@@ -559,6 +586,45 @@ function NewBooking() {
         </div>
       </section>
 
+      {/* Offline there is no price to discount — the booking is written down
+          as provisional and priced when it reaches the database. */}
+      {online && (
+        <section className="section">
+          <div className="card stack">
+            <div className="field">
+              <label htmlFor="discount-kind">{td("bookingTitle")}</label>
+              <select id="discount-kind" value={discount.kind}
+                onChange={(e) => setDiscount((d) => ({ ...d, kind: e.target.value }))}>
+                <option value="">{td("kind_none")}</option>
+                {DISCOUNT_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>{td(`kind_${kind}`)}</option>
+                ))}
+              </select>
+            </div>
+
+            {discount.kind && (
+              <>
+                <div className="row">
+                  <div className="field grow">
+                    <label htmlFor="discount-value">{td(`value_${discount.kind}`)}</label>
+                    <input id="discount-value" type="number" min="0" className="mono"
+                      max={discount.kind === "percent" ? 100 : undefined}
+                      value={discount.value}
+                      onChange={(e) => setDiscount((d) => ({ ...d, value: e.target.value }))} />
+                  </div>
+                  <div className="field grow">
+                    <label htmlFor="discount-note">{td("note")}</label>
+                    <input id="discount-note" value={discount.note} placeholder={td("noteHint")}
+                      onChange={(e) => setDiscount((d) => ({ ...d, note: e.target.value }))} />
+                  </div>
+                </div>
+                <p className="section-note" style={{ margin: 0 }}>{td("appliesToAll")}</p>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
       <div className="card" style={{ position: "sticky", bottom: 84, background: "var(--deep)",
         color: "#fff", borderColor: "var(--deep)" }}>
         <div className="spread" style={{ marginBottom: 10 }}>
@@ -567,8 +633,19 @@ function NewBooking() {
               {tn("summary", { rooms: Object.keys(picked).length, heads: totalHeads, nights: n })}
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {typeof quote === "number" ? `${egp(quote, locale)} ${common("currency")}` : "—"}
+              {priced ? `${egp(priced.net, locale)} ${common("currency")}` : "—"}
             </div>
+            {/* The price before the discount stays visible: reception says
+                both numbers out loud on the phone. */}
+            {priced && priced.discount > 0 && (
+              <div style={{ fontSize: 12, opacity: .8 }}>
+                <span style={{ textDecoration: "line-through" }}>
+                  {egp(priced.list, locale)} {common("currency")}
+                </span>
+                {" · "}
+                {td("saved", { amount: egp(priced.discount, locale), currency: common("currency") })}
+              </div>
+            )}
           </div>
         </div>
         {quote === UNPRICED && (

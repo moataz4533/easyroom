@@ -217,6 +217,15 @@ describe("bilingual routing and messages", () => {
     ]) {
       expect(typeof ar.Platform[`problem_${problem}`], problem).toBe("string");
     }
+    // Every shape of discount, the label for its value, and every problem
+    // discountProblem can report.
+    for (const kind of ["percent", "amount", "rate"]) {
+      expect(typeof ar.Discount[`kind_${kind}`], kind).toBe("string");
+      expect(typeof ar.Discount[`value_${kind}`], kind).toBe("string");
+    }
+    for (const problem of ["unknownKind", "needValue", "negative", "overHundred", "noDiscount"]) {
+      expect(typeof ar.Discount[problem], problem).toBe("string");
+    }
     // The setup checklist asks for `${id}.title` and `${id}.why`.
     for (const id of ["rates", "roomTypes", "managerPassword", "whatsapp", "policy", "staff"]) {
       expect(typeof ar.Setup[id]?.title, id).toBe("string");

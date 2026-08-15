@@ -729,7 +729,9 @@
     "reason": "Reason: {reason}",
     "dailyOccupancy": "Daily occupancy",
     "chartLabel": "Daily occupancy chart",
-    "chartBar": "{day}: {rooms, plural, one {one room} other {# rooms}} ({percent}%)"
+    "chartBar": "{day}: {rooms, plural, one {one room} other {# rooms}} ({percent}%)",
+    "discounts": "Discounts given",
+    "discountsNote": "Room revenue above is already net of this"
   },
   "Settings": {
     "title": "Settings",
@@ -937,5 +939,38 @@
     "accountDeactivated": "Account suspended",
     "hotelResumed": "The hotel is live",
     "hotelSuspended": "The hotel is suspended"
+  },
+  "Discount": {
+    "add": "Discount",
+    "change": "Change discount",
+    "title": "Discount on room {room}",
+    "bookingTitle": "Discount on this booking",
+    "kind": "Kind of discount",
+    "kind_none": "No discount",
+    "kind_percent": "Percentage",
+    "kind_amount": "Amount off each night",
+    "kind_rate": "Set nightly price",
+    "value_percent": "Percentage %",
+    "value_amount": "Amount off each night",
+    "value_rate": "Price per night",
+    "note": "Reason",
+    "noteHint": "Friend of the owner, long stay…",
+    "appliesToAll": "The discount applies to every room selected. You can change it for one room from the booking screen afterwards.",
+    "pricedPerNight": "The discount is worked out on each night at that night's own price, so a stay crossing a season is discounted correctly.",
+    "currently": "This room currently has {amount} {currency} off",
+    "onRoom": "{amount} {currency} off",
+    "saved": "saved {amount} {currency}",
+    "pinTitle": "Confirm the discount",
+    "clearTitle": "Remove the discount",
+    "pinNote": "A discount lowers the guest's bill, so it asks for the manager password like every other action that touches money.",
+    "confirm": "Apply the discount",
+    "clearConfirm": "Remove the discount",
+    "applied": "Discount recorded",
+    "cleared": "Discount removed, the price is back as it was",
+    "unknownKind": "That kind of discount is not recognised",
+    "needValue": "Enter the discount",
+    "negative": "A discount cannot be negative",
+    "overHundred": "A percentage cannot be over 100%",
+    "noDiscount": "Zero is no discount — choose “No discount” if that is what you meant"
   }
 }

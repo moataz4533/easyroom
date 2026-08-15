@@ -105,6 +105,21 @@ describe("the file itself", () => {
     // The room total is untouched by the 450.
     expect(sheet).toContain("<v>6300</v>");
   });
+
+  it("says what was discounted, without subtracting it a second time", () => {
+    const text = strFromU8(unzipSync(buildRevenueWorkbook({
+      hotel: "النادي اليوناني", from: "2026-08-01", to: "2026-08-04",
+      daily, summary: { ...summary, discounts: "700" }, locale: "ar",
+    }))["xl/worksheets/sheet1.xml"]);
+    expect(text).toContain("الخصومات");
+    expect(text).toContain("<v>700</v>");
+    // Revenue is already net of the discount, so the totals row is unmoved.
+    expect(sheet).toContain("<v>6300</v>");
+  });
+
+  it("leaves the discount row off a month with no discounts", () => {
+    expect(sheet).not.toContain("الخصومات");
+  });
 });
 
 describe("the mechanics underneath", () => {

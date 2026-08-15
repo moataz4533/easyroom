@@ -55,7 +55,7 @@ describe("the sums", () => {
 
   it("adds the rooms and the extras, and subtracts what was paid", () => {
     expect(totals).toEqual({
-      rooms: 2800, extras: 390, total: 3190, paid: 1300, balance: 1890,
+      rooms: 2800, discount: 0, extras: 390, total: 3190, paid: 1300, balance: 1890,
     });
   });
 
@@ -67,7 +67,9 @@ describe("the sums", () => {
   });
 
   it("copes with a booking that has nothing on it yet", () => {
-    expect(billTotals({})).toEqual({ rooms: 0, extras: 0, total: 0, paid: 0, balance: 0 });
+    expect(billTotals({})).toEqual({
+      rooms: 0, discount: 0, extras: 0, total: 0, paid: 0, balance: 0,
+    });
   });
 });
 
@@ -127,13 +129,74 @@ describe("the bill as the guest reads it", () => {
 });
 
 /**
+ * A discount is the one thing on a bill the guest is pleased to see, and the
+ * one a hotel most wants a record of. So the line carries the price the room
+ * is sold at, the money taken off, and the net — and the three have to agree
+ * however the discount was expressed.
+ */
+describe("a room that was discounted", () => {
+  // 3 nights, 500 a night before the discount, 10% off.
+  const discounted = [{
+    rooms: { number: "201" }, starts_on: "2026-08-15", ends_on: "2026-08-18",
+    occupancy: 2, rate_per_night: "450", release_reason: null,
+    discount_kind: "percent", discount_value: "10", discount_amount: "150",
+  }];
+
+  it("shows the price it was sold at, and what came off it", () => {
+    const [line] = roomLines(discounted);
+    expect(line).toMatchObject({
+      nights: 3, rate: 450, total: 1350, discount: 150, grossRate: 500, grossTotal: 1500,
+    });
+  });
+
+  it("bills the net, never the price before the discount", () => {
+    expect(billTotals({ allocations: discounted, charges: [], payments: [] }))
+      .toMatchObject({ rooms: 1350, discount: 150, total: 1350 });
+  });
+
+  it("puts both numbers on the paper the guest is handed", () => {
+    const text = buildBillText({
+      property: { name: "النادي اليوناني" },
+      booking: { reference: "GR26-0012", check_in: "2026-08-15", check_out: "2026-08-18" },
+      allocations: discounted, charges: [], payments: [], locale: "ar",
+    });
+    expect(text).toMatch(/٣ ليلة × ٥٠٠ ج = ١٬٥٠٠ ج/);
+    expect(text).toMatch(/خصم ١٠٪ − ١٥٠ ج/);
+    expect(text).toContain("الإجمالي: ١٬٣٥٠ ج");
+    expect(text).toContain("وفّرت: ١٥٠ ج");
+  });
+
+  it("says nothing about discounts when there were none", () => {
+    const text = buildBillText({
+      property: { name: "x" }, booking: { reference: "y" },
+      allocations, charges, payments, locale: "ar",
+    });
+    expect(text).not.toContain("خصم");
+    expect(text).not.toContain("وفّرت");
+  });
+
+  it("names a fixed sum off without inventing a percentage", () => {
+    const flat = [{ ...discounted[0], discount_kind: "amount", discount_value: "50" }];
+    const text = buildBillText({
+      property: { name: "x" }, booking: { reference: "y" },
+      allocations: flat, charges: [], payments: [], locale: "en",
+    });
+    expect(text).toContain("Discount − 150 EGP");
+    expect(text).not.toContain("%");
+  });
+});
+
+/**
  * The statement is built from rows another screen loaded, so it is only as
  * good as that screen's select list. It shipped pricing every room at zero
  * because the bookings query did not ask for rate_per_night, and the bill
  * read `undefined` as nothing rather than as a mistake.
  */
 describe("what the bill needs from whoever loaded the rows", () => {
-  const FIELDS = ["starts_on", "ends_on", "rate_per_night", "release_reason"];
+  const FIELDS = [
+    "starts_on", "ends_on", "rate_per_night", "release_reason",
+    "discount_kind", "discount_value", "discount_amount",
+  ];
 
   it("names the allocation columns it reads, so a query can be checked against them", () => {
     expect(BILL_ALLOCATION_FIELDS).toEqual(FIELDS);

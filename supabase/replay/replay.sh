@@ -63,6 +63,9 @@ if [ "$1" = "--check" ]; then
   echo
   echo "--- suspension: a suspended hotel stops, and comes back ---"
   psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/suspension.sql" 2>&1 | grep "="
+  echo
+  echo "--- discounts: a night is sold at its own price, less the discount ---"
+  psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/discounts.sql" 2>&1 | grep "="
 fi
 
 echo

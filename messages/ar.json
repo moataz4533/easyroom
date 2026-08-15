@@ -729,7 +729,9 @@
     "reason": "السبب: {reason}",
     "dailyOccupancy": "الإشغال يوم بيوم",
     "chartLabel": "رسم بياني للإشغال اليومي",
-    "chartBar": "{day}: {rooms, plural, one {غرفة واحدة} two {غرفتان} few {# غرف} other {# غرفة}} ({percent}%)"
+    "chartBar": "{day}: {rooms, plural, one {غرفة واحدة} two {غرفتان} few {# غرف} other {# غرفة}} ({percent}%)",
+    "discounts": "الخصومات",
+    "discountsNote": "إيراد الغرف فوق محسوب بعد الخصم"
   },
   "Settings": {
     "title": "الإعدادات",
@@ -937,5 +939,38 @@
     "accountDeactivated": "تم إيقاف الحساب",
     "hotelResumed": "الفندق شغّال",
     "hotelSuspended": "الفندق موقوف"
+  },
+  "Discount": {
+    "add": "خصم",
+    "change": "تعديل الخصم",
+    "title": "خصم على غرفة {room}",
+    "bookingTitle": "خصم على الحجز",
+    "kind": "نوع الخصم",
+    "kind_none": "بدون خصم",
+    "kind_percent": "نسبة مئوية",
+    "kind_amount": "مبلغ على الليلة",
+    "kind_rate": "سعر خاص للّيلة",
+    "value_percent": "النسبة ٪",
+    "value_amount": "المبلغ المخصوم من كل ليلة",
+    "value_rate": "سعر الليلة",
+    "note": "السبب",
+    "noteHint": "صاحب المالك، إقامة طويلة…",
+    "appliesToAll": "الخصم ينطبق على كل الغرف المختارة. تقدر تغيّره لغرفة بعينها من شاشة الحجز بعد الحفظ.",
+    "pricedPerNight": "الخصم بيتحسب على كل ليلة بسعرها، فلو الإقامة على حدّ موسمين كل ليلة تاخد خصمها الصح.",
+    "currently": "الخصم الحالي على الغرفة دي {amount} {currency}",
+    "onRoom": "خصم {amount} {currency}",
+    "saved": "وفّرت {amount} {currency}",
+    "pinTitle": "تأكيد الخصم",
+    "clearTitle": "شيل الخصم",
+    "pinNote": "الخصم بيقلّل حساب النزيل، فبيتطلب كلمة مرور المدير زي أي إجراء بيمس الفلوس.",
+    "confirm": "طبّق الخصم",
+    "clearConfirm": "شيل الخصم",
+    "applied": "اتسجّل الخصم",
+    "cleared": "الخصم اتشال، والسعر رجع زي ما كان",
+    "unknownKind": "نوع الخصم غير معروف",
+    "needValue": "أدخل قيمة الخصم",
+    "negative": "قيمة الخصم لا تصح أن تكون بالسالب",
+    "overHundred": "النسبة لا تزيد عن ١٠٠٪",
+    "noDiscount": "القيمة صفر، يعني مفيش خصم — اختر «بدون خصم» لو ده المقصود"
   }
 }

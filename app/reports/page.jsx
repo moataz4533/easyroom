@@ -177,6 +177,13 @@ function Reports() {
               <Kpi label={t("collected")} value={money(summary.collected)} tone="ok" />
               <Kpi label={t("outstanding")} value={money(summary.outstanding)}
                 tone={Number(summary.outstanding) > 0 ? "warn" : null} />
+              {/* Room revenue above is already net of this. Shown so the gap
+                  between the rate card and the till is a number somebody
+                  looks at once a month, rather than a habit nobody counted. */}
+              {Number(summary.discounts) > 0 && (
+                <Kpi label={t("discounts")} value={money(summary.discounts)}
+                  sub={t("discountsNote")} />
+              )}
             </div>
           </section>
 
