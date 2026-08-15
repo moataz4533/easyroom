@@ -301,7 +301,8 @@
     "sendNow": "Send now",
     "stay": "{nights, plural, one {# night} other {# nights}} · {rooms} · {heads, plural, one {# guest} other {# guests}}",
     "reference": "Booking {reference}",
-    "noSavedRooms": "There is no saved copy of the rooms on this device. Open the app once with a connection, and after that bookings can be recorded offline."
+    "noSavedRooms": "There is no saved copy of the rooms on this device. Open the app once with a connection, and after that bookings can be recorded offline.",
+    "duplicates": "{count, plural, one {There is one other record on this number} other {There are # other records on this number}}. The one with the longest history was chosen, and new bookings will stop adding more."
   },
   "Queue": {
     "title": "An action is stuck",

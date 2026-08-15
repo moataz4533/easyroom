@@ -1,0 +1,73 @@
+import { describe, expect, it } from "vitest";
+import {
+  duplicateCount, guestToReuse, normalisePhone, pickGuest, samePhone,
+} from "../lib/guest-match";
+
+describe("the same phone written differently", () => {
+  it("treats the ways an Egyptian number is written as one number", () => {
+    for (const written of ["01118070453", "+201118070453", "00201118070453", "01118070453 ", "011 1807 0453"]) {
+      expect(normalisePhone(written)).toBe("01118070453");
+    }
+    expect(samePhone("+201118070453", "01118070453")).toBe(true);
+  });
+
+  it("does not match two different numbers, or nothing at all", () => {
+    expect(samePhone("01118070453", "01118070454")).toBe(false);
+    expect(samePhone("", "")).toBe(false);
+    expect(samePhone(null, "01118070453")).toBe(false);
+    expect(normalisePhone(null)).toBe("");
+  });
+});
+
+describe("choosing between rows on one number", () => {
+  const bare = { id: "a", full_name: "معتز", created_at: "2026-08-01" };
+  const recent = { id: "b", full_name: "معتز", created_at: "2026-08-10" };
+  const detailed = { id: "c", full_name: "معتز", created_at: "2026-08-02", id_number: "123", nationality: "مصري" };
+
+  it("prefers the one with a history, because the stays hang off it", () => {
+    expect(pickGuest([bare, recent, detailed], { a: 5, b: 0, c: 1 }).id).toBe("a");
+  });
+
+  it("falls back to the one somebody actually filled in", () => {
+    expect(pickGuest([bare, recent, detailed], {}).id).toBe("c");
+  });
+
+  it("then to the one seen most recently", () => {
+    expect(pickGuest([bare, recent], {}).id).toBe("b");
+  });
+
+  it("copes with one row, or none", () => {
+    expect(pickGuest([bare]).id).toBe("a");
+    expect(pickGuest([])).toBeNull();
+    expect(pickGuest(null)).toBeNull();
+  });
+
+  it("says how many extra rows there are, so the screen can mention it", () => {
+    expect(duplicateCount([bare, recent, detailed])).toBe(2);
+    expect(duplicateCount([bare])).toBe(0);
+    expect(duplicateCount([])).toBe(0);
+  });
+});
+
+describe("not making a thirteenth row for the same person", () => {
+  const existing = [
+    { id: "a", full_name: "معتز", phone: "01118070453", created_at: "2026-08-01" },
+    { id: "b", full_name: "بولس", phone: "+201118070453", created_at: "2026-08-05" },
+    { id: "c", full_name: "منى", phone: "01000000000", created_at: "2026-08-06" },
+  ];
+
+  it("reuses the guest with that number and that name", () => {
+    expect(guestToReuse(existing, { name: "بولس", phone: "01118070453" }).id).toBe("b");
+  });
+
+  it("reuses somebody on the number even when the name is new", () => {
+    // A family on one mobile is a real thing; the number is still the link.
+    expect(guestToReuse(existing, { name: "أحمد", phone: "01118070453" })).toBeTruthy();
+  });
+
+  it("makes a new guest when the number is new, or when there is no number", () => {
+    expect(guestToReuse(existing, { name: "أحمد", phone: "01234567890" })).toBeNull();
+    expect(guestToReuse(existing, { name: "أحمد", phone: "" })).toBeNull();
+    expect(guestToReuse([], { name: "أحمد", phone: "01118070453" })).toBeNull();
+  });
+});

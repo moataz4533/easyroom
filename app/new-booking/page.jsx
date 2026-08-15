@@ -5,6 +5,7 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
+import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
 import {
   newProvisional, roomsHeldOn, roomsWantedByDrafts, validateProvisional,
@@ -43,6 +44,7 @@ function NewBooking() {
   const [guest, setGuest] = useState(null);
   const [history, setHistory] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [duplicates, setDuplicates] = useState(0);
 
   const [checkIn, setCheckIn] = useState(presetDate || today());
   const [checkOut, setCheckOut] = useState(addDays(presetDate || today(), 1));
@@ -162,22 +164,29 @@ function NewBooking() {
   async function findGuest() {
     if (!phone.trim() || !property) return;
     setSearching(true);
-    const { data } = await supabase.from("guests").select("*")
-      .eq("property_id", property.id).eq("phone", phone.trim()).maybeSingle();
+
+    // Several rows can carry one number — every booking taken without
+    // searching first makes another. Asking for exactly one used to fail
+    // outright on those numbers, which is the opposite of helpful.
+    const { data: matches } = await supabase.from("guests").select("*")
+      .eq("property_id", property.id).eq("phone", phone.trim());
+
+    const found = pickGuest(matches || []);
+    setDuplicates(duplicateCount(matches || []));
 
     // How often they have stayed, and whether they have failed to turn up,
     // is worth knowing before promising the last room on a busy night.
     let past = [];
-    if (data) {
+    if (found) {
       const { data: bookings } = await supabase.from("bookings")
         .select("status, check_in, check_out, total_amount, paid_amount")
-        .eq("guest_id", data.id).limit(100);
+        .eq("guest_id", found.id).limit(100);
       past = bookings || [];
     }
 
     setSearching(false);
-    setHistory(data ? summariseStays(past) : null);
-    if (data) { setGuest(data); setName(data.full_name); showToast(`نزيل سابق: ${data.full_name}`); }
+    setHistory(found ? summariseStays(past) : null);
+    if (found) { setGuest(found); setName(found.full_name); showToast(`نزيل سابق: ${found.full_name}`); }
     else { setGuest(null); showToast("نزيل جديد"); }
   }
 
@@ -225,6 +234,14 @@ function NewBooking() {
     setBusy(true);
 
     let guestId = guest?.id;
+    if (!guestId && normalisePhone(phone)) {
+      // Reception who types the number and goes straight to the rooms without
+      // pressing search should still land on the guest already on file. This
+      // is why one number ended up with twelve rows behind it.
+      const { data: onFile } = await supabase.from("guests").select("*")
+        .eq("property_id", property.id).eq("phone", phone.trim());
+      guestId = guestToReuse(onFile || [], { name, phone })?.id;
+    }
     if (!guestId) {
       const { data, error } = await supabase.from("guests").insert({
         property_id: property.id, full_name: name.trim(), phone: phone.trim() || null,
@@ -298,6 +315,12 @@ function NewBooking() {
                 ? `نزيل عائد — أقام ${egp(history.stays, locale)} مرات، آخرها ${dayLabel(history.lastVisit, locale)}.`
                 : "نزيل سابق."}
               {" "}{guest.notes ? `ملاحظات: ${guest.notes}` : "لا توجد ملاحظات."}
+            </div>
+          )}
+
+          {duplicates > 0 && (
+            <div className="banner warn" style={{ margin: 0 }}>
+              {t("duplicates", { count: duplicates })}
             </div>
           )}
 
