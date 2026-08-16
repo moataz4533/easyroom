@@ -255,7 +255,7 @@
     "disappears": "This list disappears on its own once every item is done.",
     "rates": {
       "title": "Real rates",
-      "why": "Every box is empty, so a new booking prices at zero."
+      "why": "Not one rate is above zero, so a new booking prices at nothing. A box saved as zero is not a box filled in."
     },
     "roomTypes": {
       "title": "Real room types",

@@ -25,7 +25,11 @@ export default function SetupChecklist({ property, role }) {
   const load = useCallback(async () => {
     if (!propertyId) return;
     const [rates, types, staff, pin] = await Promise.all([
-      supabase.from("rates").select("id", { count: "exact", head: true }).eq("property_id", propertyId),
+      // Only rates with money on them. The matrix is created empty, and a
+      // row left at zero counts as configured while pricing every booking
+      // at nothing.
+      supabase.from("rates").select("id", { count: "exact", head: true })
+        .eq("property_id", propertyId).gt("amount", 0),
       supabase.from("room_types").select("name").eq("property_id", propertyId),
       supabase.from("property_members").select("id", { count: "exact", head: true })
         .eq("property_id", propertyId).eq("is_active", true),
@@ -33,7 +37,7 @@ export default function SetupChecklist({ property, role }) {
     ]);
 
     setState({
-      rateCount: rates.count || 0,
+      pricedRates: rates.count || 0,
       types: types.data || [],
       staffCount: staff.count || 0,
       hasPin: pin.data === true,

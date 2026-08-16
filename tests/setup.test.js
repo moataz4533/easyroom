@@ -4,7 +4,7 @@ import {
 } from "../lib/setup";
 
 const ready = {
-  rateCount: 12,
+  pricedRates: 12,
   types: [{ name: "غرفة بحرية" }, { name: "شاليه" }],
   hasPin: true,
   staffCount: 3,
@@ -20,9 +20,20 @@ describe("what still blocks real use", () => {
   });
 
   it("flags missing rates first — every booking would price at zero", () => {
-    expect(outstandingSetup({ ...ready, rateCount: 0 })[0]).toMatchObject({
+    expect(outstandingSetup({ ...ready, pricedRates: 0 })[0]).toMatchObject({
       id: "rates", level: BLOCKING, tab: "rates",
     });
+  });
+
+  /**
+   * The real failure, not a hypothetical one: the hotel had eight rate rows
+   * and every one of them was 0.00. Counting rows said "priced", the
+   * checklist went quiet, and every booking it would have taken was free.
+   */
+  it("flags a full rate matrix that is priced entirely at zero", () => {
+    expect(ids({ ...ready, pricedRates: 0 })).toContain("rates");
+    // One priced row means somebody has started, and the desk can quote.
+    expect(ids({ ...ready, pricedRates: 1 })).not.toContain("rates");
   });
 
   it("flags rooms still on the seeded default type", () => {
@@ -60,7 +71,7 @@ describe("what is merely incomplete", () => {
   });
 
   it("counts the two kinds separately", () => {
-    const items = outstandingSetup({ rateCount: 0, types: [], hasPin: false, staffCount: 1, settings: {} });
+    const items = outstandingSetup({ pricedRates: 0, types: [], hasPin: false, staffCount: 1, settings: {} });
     expect(countByLevel(items)).toEqual({ blocking: 2, advisory: 3 });
   });
 });
