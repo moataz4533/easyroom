@@ -105,7 +105,7 @@
     "continuesBefore": "Started before this range",
     "continuesAfter": "Continues past this range",
     "nights": "{count} nights",
-    "guests": "{count} guests",
+    "guests": "{count, number} guests",
     "stay": "Stay",
     "openBooking": "Open in bookings",
     "newBookingHere": "Book this room from this date",
@@ -403,7 +403,7 @@
     "nightCount": "{count, plural, one {one night} other {# nights}}",
     "paxCount": "{count, plural, one {one guest} other {# guests}}",
     "roomCount": "{count, plural, one {one room} other {# rooms}}",
-    "asked": "The message asked for {rooms, plural, =0 {} one {one room} other {# rooms}} {pax, plural, =0 {} one {for one guest} other {for # guests}}."
+    "asked": "The message asked{rooms, plural, =0 {} one { for one room} other { for # rooms}}{pax, plural, =0 {} one { for one guest} other { for # guests}}."
   },
   "Board": {
     "eyebrow": "DAILY OPERATIONS",

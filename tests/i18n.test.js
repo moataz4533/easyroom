@@ -39,6 +39,44 @@ describe("bilingual routing and messages", () => {
   });
 
   /**
+   * Guest counts are deliberately NOT declined — "١ فرد ٢ فرد ٣ فرد", never
+   * "فرد واحد" and "فردان". The owner asked for it: at the desk these are
+   * quantities being scanned down a list, not sentences being read, and the
+   * dual form makes two rows in the same column look like different things.
+   * Nights and rooms keep their grammar; only people are flattened.
+   */
+  it("counts people as a plain number, not in declined Arabic", () => {
+    const flat = [
+      ["NewBooking", "paxOption", "count"],
+      ["Paste", "paxCount", "count"],
+      ["Settings", "occFallback", "count"],
+      ["Calendar", "guests", "count"],
+    ];
+    for (const [namespace, key, arg] of flat) {
+      const message = new IntlMessageFormat(ar[namespace][key], "ar-u-nu-arab");
+      expect(message.format({ [arg]: 1 }), `${namespace}.${key}`).toBe("١ فرد");
+      expect(message.format({ [arg]: 2 }), `${namespace}.${key}`).toBe("٢ فرد");
+      expect(message.format({ [arg]: 3 }), `${namespace}.${key}`).toBe("٣ فرد");
+    }
+    // The lines that carry a people count beside something else keep the
+    // grammar of that something else.
+    const line = new IntlMessageFormat(ar.Bookings.stayLine, "ar-u-nu-arab");
+    expect(line.format({ nights: 2, pax: 2 })).toBe("ليلتان · ٢ فرد");
+  });
+
+  /** An empty branch used to leave a space stranded before the full stop. */
+  it("reads cleanly when the message asked for only one of the two", () => {
+    for (const [locale, messages] of [["ar", ar], ["en", en]]) {
+      const asked = new IntlMessageFormat(messages.Paste.asked, locale);
+      for (const args of [{ rooms: 2, pax: 2 }, { rooms: 1, pax: 0 }, { rooms: 0, pax: 3 }]) {
+        const text = asked.format(args);
+        expect(text, `${locale} ${JSON.stringify(args)}`).not.toMatch(/\s\.$/);
+        expect(text, `${locale} ${JSON.stringify(args)}`).not.toMatch(/\s{2}/);
+      }
+    }
+  });
+
+  /**
    * A key used in a screen but missing from the catalogue throws where it is
    * rendered — which is on a phone at the desk, not here. So every literal
    * key a screen asks for is checked against the catalogue.
