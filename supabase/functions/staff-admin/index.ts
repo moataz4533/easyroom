@@ -148,6 +148,50 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, is_active: isActive });
   }
 
+  /**
+   * Fixing a staff member's name or number.
+   *
+   * Not the username: it is half the address they sign in with, so changing
+   * it would lock them out of the login saved on their phone. The card in
+   * the app says so rather than offering a box that quietly breaks things.
+   */
+  if (action === "update_profile") {
+    if (!member_id) return json({ error: "ناقص بيانات" }, 400);
+    const name = (full_name || "").trim();
+    if (!name) return json({ error: "اكتب اسم الموظف" }, 400);
+
+    const { data: target } = await admin.from("property_members")
+      .select("user_id, role").eq("id", member_id).eq("property_id", property_id).maybeSingle();
+    if (!target) return json({ error: "الموظف مش موجود" }, 404);
+    if (target.role === "owner" && caller.role !== "owner" && target.user_id !== user.id) {
+      return json({ error: "المالك بس اللي يقدر يعدل بيانات المالك" }, 403);
+    }
+
+    const number = (phone || "").trim() || null;
+    const { error } = await admin.from("profiles")
+      .update({ full_name: name, phone: number, updated_at: new Date().toISOString() })
+      .eq("id", target.user_id);
+    if (error) return json({ error: error.message }, 400);
+
+    // The same two fields live on the auth user as metadata, written when
+    // the account was created. Leaving them behind means two answers to
+    // "what is this person called" — and the stale one is the one that
+    // reappears the next time anything reads the auth record.
+    await admin.auth.admin.updateUserById(target.user_id, {
+      user_metadata: { full_name: name, phone: number },
+    });
+
+    await admin.from("activity_log").insert({
+      property_id,
+      actor_id: user.id,
+      entity_type: "staff",
+      entity_id: target.user_id,
+      action: "updated",
+      payload: { full_name: name, phone: number },
+    });
+    return json({ ok: true, full_name: name, phone: number });
+  }
+
   if (action === "reset_password") {
     if (!member_id || !password) return json({ error: "ناقص بيانات" }, 400);
     if (password.length < 8) return json({ error: "الباسورد لازم 8 حروف على الأقل" }, 400);

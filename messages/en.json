@@ -866,7 +866,13 @@
     "logoAlt": "Hotel logo preview",
     "invalidType": "Choose a PNG, JPG or WebP image.",
     "tooLarge": "The image must be 5MB or smaller.",
-    "uploading": "Uploading and saving…"
+    "uploading": "Uploading and saving…",
+    "editStaff": "Edit details",
+    "staffUpdated": "Staff details saved",
+    "needStaffName": "Enter the staff member's name",
+    "phoneTooShort": "That phone number is too short — check it or leave it empty",
+    "usernameFixed": "The username “{username}” cannot be changed — it is half of this member's sign-in address, and changing it would lock them out. To change it, create a new account and deactivate this one.",
+    "usernameFixedOwner": "The owner signs in with their email address, not a username."
   },
   "Platform": {
     "title": "Platform console",

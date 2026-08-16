@@ -10,7 +10,7 @@ import { localizedName } from "../../lib/locale";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { ImagePlus, Trash2, Upload } from "lucide-react";
-import { isStaffUsername, normalizeStaffUsername } from "../../lib/auth-login";
+import { isStaffUsername, normalizeStaffUsername, staffProfileProblem } from "../../lib/auth-login";
 
 export default function Page() {
   return (
@@ -713,6 +713,9 @@ function Staff({ property, staff, reload, showToast }) {
   const [resetMember, setResetMember] = useState(null);
   const [resetValue, setResetValue] = useState("");
   const [resetAgain, setResetAgain] = useState("");
+  // Which member's card is open for editing, and what is being typed into it.
+  const [editing, setEditing] = useState(null);
+  const [edit, setEdit] = useState({ full_name: "", phone: "" });
   const [form, setForm] = useState({
     full_name: "", username: "", phone: "", password: "", password_again: "", role: "reception",
   });
@@ -774,6 +777,29 @@ function Staff({ property, staff, reload, showToast }) {
     reload();
   }
 
+  function startEdit(m) {
+    setEditing(m.id);
+    setEdit({ full_name: m.profiles?.full_name || "", phone: m.profiles?.phone || "" });
+  }
+
+  async function saveProfile(m) {
+    const problem = staffProfileProblem(edit);
+    if (problem) return showToast(t(problem), true);
+
+    setBusy(true);
+    const out = await call({
+      action: "update_profile",
+      member_id: m.id,
+      full_name: edit.full_name,
+      phone: edit.phone,
+    });
+    setBusy(false);
+    if (out.error) return showToast(out.error, true);
+    setEditing(null);
+    showToast(t("staffUpdated"));
+    reload();
+  }
+
   async function resetPassword() {
     if (resetValue.length < 8) return showToast(t("passwordTooShort"), true);
     if (resetValue !== resetAgain) return showToast(t("passwordsDiffer"), true);
@@ -820,11 +846,35 @@ function Staff({ property, staff, reload, showToast }) {
               </select>
             </div>
             <div className="row" style={{ marginTop: 10 }}>
+              <button className="btn sm" onClick={() => startEdit(m)}>{t("editStaff")}</button>
               <button className="btn sm" onClick={() => { setResetMember(m); setResetValue(""); setResetAgain(""); }}>{t("changePassword")}</button>
               <button className="btn sm danger" onClick={() => toggle(m)}>
                 {m.is_active ? t("deactivate") : t("activate")}
               </button>
             </div>
+
+            {editing === m.id && (
+              <div className="stack" style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+                <div className="field"><label htmlFor={`name-${m.id}`}>{t("name")}</label>
+                  <input id={`name-${m.id}`} value={edit.full_name}
+                    onChange={(e) => setEdit((c) => ({ ...c, full_name: e.target.value }))} /></div>
+                <div className="field"><label htmlFor={`tel-${m.id}`}>{t("phone")}</label>
+                  <input id={`tel-${m.id}`} className="mono" dir="ltr" style={{ textAlign: "left" }}
+                    value={edit.phone}
+                    onChange={(e) => setEdit((c) => ({ ...c, phone: e.target.value }))} /></div>
+                {/* Said, not offered as a box that quietly locks somebody
+                    out: the username is half the address they sign in with. */}
+                <p className="field-hint">
+                  {m.login_username
+                    ? t("usernameFixed", { username: m.login_username })
+                    : t("usernameFixedOwner")}
+                </p>
+                <button className="btn primary wide" disabled={busy} onClick={() => saveProfile(m)}>
+                  {busy ? t("saving") : t("save")}
+                </button>
+                <button className="btn wide" onClick={() => setEditing(null)}>{t("cancel")}</button>
+              </div>
+            )}
           </div>
         ))}
       </div>

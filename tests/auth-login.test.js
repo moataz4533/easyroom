@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  isHotelSlug, isStaffUsername, normalizeHotelSlug, normalizeStaffUsername, staffLoginEmail,
+  isHotelSlug, isStaffUsername, normalizeHotelSlug, normalizeStaffUsername,
+  staffLoginEmail, staffProfileProblem,
 } from "../lib/auth-login.js";
 
 describe("staff login identity", () => {
@@ -36,5 +37,33 @@ describe("staff login identity", () => {
     expect(isHotelSlug("-greek")).toBe(false);
     expect(isHotelSlug("greek.club")).toBe(false);
     expect(isHotelSlug("")).toBe(false);
+  });
+});
+
+/**
+ * The card a manager edits when somebody's name is spelled wrong or their
+ * number changed. The username is not in it on purpose — see the note on
+ * staffProfileProblem.
+ */
+describe("editing a staff member's details", () => {
+  it("accepts a name with no number, which is most of them", () => {
+    expect(staffProfileProblem({ full_name: "أحمد صابر", phone: "" })).toBeNull();
+    expect(staffProfileProblem({ full_name: "أحمد صابر" })).toBeNull();
+  });
+
+  it("insists on a name", () => {
+    expect(staffProfileProblem({ full_name: "", phone: "01000000000" })).toBe("needStaffName");
+    expect(staffProfileProblem({ full_name: "   " })).toBe("needStaffName");
+    expect(staffProfileProblem({})).toBe("needStaffName");
+    expect(staffProfileProblem()).toBe("needStaffName");
+  });
+
+  it("catches a number too short to dial", () => {
+    expect(staffProfileProblem({ full_name: "أحمد", phone: "0100" })).toBe("phoneTooShort");
+  });
+
+  it("counts the digits, not the punctuation", () => {
+    expect(staffProfileProblem({ full_name: "أحمد", phone: "+20 100 123 4567" })).toBeNull();
+    expect(staffProfileProblem({ full_name: "أحمد", phone: "+20-10" })).toBe("phoneTooShort");
   });
 });
