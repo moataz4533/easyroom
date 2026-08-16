@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دليل الاستقبال — Easyroom</title>
+<style>
+  @font-face { font-family: Plex; src: url(plex-arabic-400.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: Plex; src: url(plex-arabic-600.woff2) format("woff2"); font-weight: 600; }
+  @font-face { font-family: Plex; src: url(plex-arabic-700.woff2) format("woff2"); font-weight: 700; }
+
+  :root {
+    --deep: #0B3A46;
+    --sea: #1E5F74;
+    --sand: #F5B841;
+    --ink: #10262E;
+    --muted: #5C7079;
+    --line: #DCE5E8;
+    --paper: #F6F9FA;
+    --bad: #B23A32;
+    --ok: #1F7A55;
+  }
+
+  * { box-sizing: border-box; }
+
+  @page { size: A4; margin: 14mm 0 16mm; }
+
+  body {
+    font-family: Plex, sans-serif;
+    color: var(--ink);
+    font-size: 11.5pt;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  /* Nothing may be split down the middle by a page break: a step that
+     starts on one page and finishes on the next is a step nobody follows. */
+  section, .step, .card, .rowbox, table { break-inside: avoid; }
+  h2 { break-after: avoid; }
+
+  /* ---------- cover ---------- */
+  .cover {
+    background: var(--deep);
+    color: #fff;
+    padding: 24mm 16mm 16mm;
+    border-radius: 12px;
+    min-height: 254mm;
+    display: flex;
+    flex-direction: column;
+    break-after: page;
+  }
+  .cover .spacer { flex: 1; }
+
+  /* Everything that is not the cover. Side padding on a block that spans
+     pages is applied on each of them, which is what a margin cannot do. */
+  .body-pad { padding: 0 13mm; }
+  .cover .eyebrow {
+    font-size: 10pt; letter-spacing: .18em; opacity: .72; margin: 0 0 6mm;
+  }
+  .cover h1 { font-size: 30pt; margin: 0 0 4mm; font-weight: 700; line-height: 1.3; }
+  .cover p { font-size: 13pt; opacity: .9; margin: 0 0 14mm; max-width: 130mm; }
+  .cover .rule { height: 3px; width: 34mm; background: var(--sand); margin-bottom: 10mm; }
+  .cover .who {
+    border-top: 1px solid rgba(255,255,255,.25); padding-top: 6mm;
+    font-size: 11pt; opacity: .85;
+  }
+
+  /* ---------- contents ---------- */
+  .toc { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 6mm 8mm; margin-bottom: 10mm; }
+  .toc h2 { margin: 0 0 3mm; font-size: 13pt; }
+  .toc ol { margin: 0; padding-inline-start: 6mm; columns: 2; column-gap: 10mm;
+    list-style-type: arabic-indic; }
+  .toc li { margin-bottom: 1.5mm; }
+
+  /* ---------- headings ---------- */
+  h2 {
+    font-size: 16pt; color: var(--deep); margin: 10mm 0 3mm;
+    padding-bottom: 2mm; border-bottom: 2px solid var(--sand);
+  }
+  h2 .n {
+    display: inline-block; background: var(--deep); color: #fff;
+    width: 9mm; height: 9mm; line-height: 9mm; text-align: center;
+    border-radius: 50%; font-size: 11pt; margin-inline-end: 3mm;
+  }
+  h3 { font-size: 12.5pt; color: var(--sea); margin: 6mm 0 2mm; }
+  p { margin: 0 0 3mm; }
+  .lead { color: var(--muted); margin-bottom: 5mm; }
+
+  /* ---------- steps ---------- */
+  .step {
+    display: flex; gap: 4mm; align-items: flex-start;
+    padding: 3mm 0; border-bottom: 1px dashed var(--line);
+  }
+  .step:last-child { border-bottom: 0; }
+  .step .num {
+    flex: 0 0 8mm; height: 8mm; line-height: 8mm; text-align: center;
+    background: var(--sea); color: #fff; border-radius: 50%;
+    font-size: 10.5pt; font-weight: 600; margin-top: 1mm;
+  }
+  .step .body { flex: 1; }
+  .step b { color: var(--deep); }
+  .step .note { color: var(--muted); font-size: 10.5pt; display: block; }
+
+  /* ---------- button chips ---------- */
+  .btn {
+    display: inline-block; background: var(--deep); color: #fff;
+    padding: 0.5mm 2.5mm; border-radius: 4px; font-size: 10.5pt;
+    font-weight: 600; white-space: nowrap;
+  }
+  .btn.ghost { background: #fff; color: var(--deep); border: 1.5px solid var(--deep); }
+  .btn.danger { background: var(--bad); }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 11pt; }
+  th, td { text-align: start; padding: 2.5mm 3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--paper); color: var(--deep); font-weight: 600; }
+  td:first-child { white-space: nowrap; }
+
+  .swatch {
+    display: inline-block; width: 4mm; height: 4mm; border-radius: 2px;
+    margin-inline-end: 2mm; vertical-align: -0.5mm; border: 1px solid rgba(0,0,0,.15);
+  }
+
+  /* ---------- callouts ---------- */
+  .card {
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 4mm 5mm; margin: 4mm 0; background: var(--paper);
+  }
+  .card.warn { background: #FFF7E6; border-color: #E8C979; }
+  .card.stop { background: #FDF0EE; border-color: #E5B3AE; }
+  .card.ok   { background: #EFF7F2; border-color: #B9DCC9; }
+  .card h4 { margin: 0 0 2mm; font-size: 11.5pt; color: var(--deep); }
+  .card.stop h4 { color: var(--bad); }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  ul { margin: 0 0 3mm; padding-inline-start: 6mm; }
+  li { margin-bottom: 1.5mm; }
+
+  .final { break-before: page; }
+  .final h2 { margin-top: 0; }
+
+  .quick {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 4mm;
+  }
+  .quick .rowbox {
+    border: 1px solid var(--line); border-radius: 8px; padding: 3mm 4mm;
+    background: #fff;
+  }
+  .quick .rowbox b { display: block; color: var(--deep); margin-bottom: 1mm; }
+  .quick .rowbox span { font-size: 10.5pt; color: var(--muted); }
+
+  .foot {
+    margin-top: 10mm; padding-top: 4mm; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 10pt;
+  }
+</style>
+</head>
+<body>
+
+<div class="body-pad">
+
+<div class="cover">
+  <p class="eyebrow">EASYROOM</p>
+  <div class="rule"></div>
+  <h1>دليل الاستقبال<br>تسجيل الغرف خطوة بخطوة</h1>
+  <p>كل اللي تحتاج تعرفه عشان تسجّل حجز، وتسكّن نزيل، وتسجّل خروجه — من الموبايل أو الكمبيوتر.</p>
+  <p style="font-size:11pt;opacity:.75;margin:0">النادي اليوناني — دهب</p>
+  <div class="spacer"></div>
+  <div class="who">
+    اقرأه مرة واحدة، وبعدها الصفحة الأخيرة تكفيك.<br>
+    الوقت المطلوب: ربع ساعة.
+  </div>
+</div>
+
+<div class="toc">
+  <h2>المحتويات</h2>
+  <ol>
+    <li>الدخول للتطبيق</li>
+    <li>الشاشات الست</li>
+    <li>شاشة اليوم — قلب الشغل</li>
+    <li>حجز جديد</li>
+    <li>تسجيل وصول النزيل</li>
+    <li>تسجيل الخروج</li>
+    <li>النظافة</li>
+    <li>البحث عن حجز وتعديله</li>
+    <li>مشاكل شائعة وحلها</li>
+    <li>كارت أول يوم</li>
+  </ol>
+</div>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">١</span>الدخول للتطبيق</h2>
+
+<p class="lead">التطبيق بيفتح من المتصفح، مفيش حاجة تتحمّل. تقدر تحطه على الشاشة الرئيسية للموبايل زي أي تطبيق.</p>
+
+<div class="step">
+  <div class="num">١</div>
+  <div class="body">
+    افتح الرابط اللي وصلك من المدير في المتصفح.
+    <span class="note">من الموبايل: من قائمة المتصفح اختر «إضافة إلى الشاشة الرئيسية» عشان يفتح بضغطة واحدة بعد كده.</span>
+  </div>
+</div>
+<div class="step">
+  <div class="num">٢</div>
+  <div class="body">
+    في شاشة <b>تسجيل الدخول</b> اضغط على <span class="btn ghost">دخول الموظفين</span> — مش «دخول المالك».
+  </div>
+</div>
+<div class="step">
+  <div class="num">٣</div>
+  <div class="body">
+    اكتب <b>اسم المستخدم</b> و<b>كلمة المرور</b> اللي المدير إداهملك، واضغط <span class="btn">دخول</span>.
+    <span class="note">لو ظهرت خانة «رمز الفندق»، اكتب الرمز اللي إداهولك المدير. بيتحفظ على الجهاز فمش هتكتبه تاني.</span>
+  </div>
+</div>
+
+<div class="card ok">
+  <h4>هتفضل داخل</h4>
+  <p>الجهاز بيفضل مسجّل دخول حتى لو قفلت المتصفح. مش هتكتب كلمة المرور كل مرة. لو الجهاز مشترك مع حد تاني، اضغط <b>تسجيل الخروج</b> لما تخلص وردية.</p>
+</div>
+
+<div class="card stop">
+  <h4>لو الدخول مش راضي يفتح</h4>
+  <p>مفيش قفل على الدخول، بس لو الرسالة بتقول «اسم المستخدم أو كلمة المرور غير صحيحة» أكتر من مرتين — كلّم المدير بدل ما تخمّن. هو يقدر يغيّر لك كلمة المرور في ثانية.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٢</span>الشاشات الست</h2>
+
+<p class="lead">في الموبايل الشريط تحت خالص، وفي الكمبيوتر على الجنب. دي كل الشاشات اللي هتحتاجها:</p>
+
+<table>
+  <tr><th>الشاشة</th><th>بتستخدمها إمتى</th></tr>
+  <tr><td><b>اليوم</b></td><td>أول ما تفتح التطبيق. فيها كل غرفة وحالتها، ووصول ومغادرة النهاردة.</td></tr>
+  <tr><td><b>التقويم</b></td><td>لما حد يسأل «عندكم فاضي يوم كذا؟» — بتشوف الشهر كله قدامك.</td></tr>
+  <tr><td><b>حجز جديد</b></td><td>لما حد يحجز — بالتليفون أو واتساب أو واقف قدامك.</td></tr>
+  <tr><td><b>الحجوزات</b></td><td>لما تدوّر على حجز موجود عشان تعدّله أو تلغيه.</td></tr>
+  <tr><td><b>النزلاء</b></td><td>بيانات النزلاء الرسمية (الاسم والجنسية ورقم الإثبات).</td></tr>
+  <tr><td><b>النظافة</b></td><td>الغرف اللي محتاجة تنضيف، وتعليمها إنها خلصت.</td></tr>
+</table>
+
+<p class="lead">في «المزيد» هتلاقي كمان <b>التقارير</b> و<b>سجل العمليات</b> و<b>الإعدادات</b> — دول للمدير، مش هتحتاجهم.</p>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٣</span>شاشة اليوم — قلب الشغل</h2>
+
+<p class="lead">دي الشاشة اللي هتفضل مفتوحة قدامك طول الوردية. فيها ٣ حاجات:</p>
+
+<h3>أ. الأرقام فوق</h3>
+<p>الغرف المشغولة، مغادرة النهاردة، وصول النهاردة. نظرة سريعة على اليوم.</p>
+
+<h3>ب. رفّ الغرف</h3>
+<p>كل غرفة كارت بلونها. اضغط على أي غرفة تفتح تفاصيلها والإجراءات اللي عليها.</p>
+
+<table>
+  <tr><th>اللون</th><th>معناه</th><th>تعمل إيه</th></tr>
+  <tr>
+    <td><span class="swatch" style="background:#EFF7F2"></span><b>متاحة</b></td>
+    <td>فاضية ونضيفة، جاهزة لنزيل.</td>
+    <td>تقدر تحجزها فوراً.</td>
+  </tr>
+  <tr>
+    <td><span class="swatch" style="background:#1E5F74"></span><b>مشغولة</b></td>
+    <td>فيها نزيل ساكن دلوقتي.</td>
+    <td>اضغط عليها لتسجيل خروجه أو تمديد إقامته.</td>
+  </tr>
+  <tr>
+    <td><span class="swatch" style="background:#F5B841"></span><b>تحتاج تنظيف</b></td>
+    <td>النزيل خرج والغرفة لسه متنضفتش.</td>
+    <td>لا تسكّن فيها حد قبل ما تتعلّم «نظيفة».</td>
+  </tr>
+  <tr>
+    <td><span class="swatch" style="background:#B23A32"></span><b>خارج الخدمة</b></td>
+    <td>معطلة بسبب صيانة.</td>
+    <td>مش هتظهر في الغرف الشاغرة أصلاً.</td>
+  </tr>
+</table>
+
+<div class="card warn">
+  <h4>«مشغولة» و«تحتاج تنظيف» حاجتين مختلفتين</h4>
+  <p>الغرفة ممكن تكون فاضية ومتسخة، وممكن تكون مشغولة ونضيفة. التطبيق بيفرّق بينهم عن قصد — عشان متسكّنش نزيل في غرفة لسه ما اتنضفتش.</p>
+</div>
+
+<h3>ج. وصول ومغادرة النهاردة</h3>
+<p>جدولين تحت الرفّ: مين جاي النهاردة ومين ماشي. جنب كل واصل زرار <span class="btn">تسجيل الوصول</span>.</p>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٤</span>حجز جديد</h2>
+
+<p class="lead">الترتيب مرتّب زي المكالمة بالظبط: مين بيكلمك، إمتى، أنهي غرفة، خلاص.</p>
+
+<div class="step">
+  <div class="num">١</div>
+  <div class="body">
+    <b>ابدأ برقم التليفون</b> واضغط <span class="btn ghost">بحث</span>.
+    <span class="note">لو النزيل ساكن عندنا قبل كده، اسمه هيتملّى لوحده وهتشوف كام مرة جه. ده بيمنع إننا نعمل صفّين لنفس الشخص.</span>
+  </div>
+</div>
+<div class="step">
+  <div class="num">٢</div>
+  <div class="body">
+    اكتب <b>اسم النزيل</b> لو مطلعش لوحده.
+  </div>
+</div>
+<div class="step">
+  <div class="num">٣</div>
+  <div class="body">
+    حدّد <b>الدخول</b> و<b>الخروج</b>.
+    <span class="note">تحتهم بيظهر عدد الليالي — راجعه. «ليلتان» يعني داخل يوم وخارج بعده بيومين.</span>
+  </div>
+</div>
+<div class="step">
+  <div class="num">٤</div>
+  <div class="body">
+    من <b>الغرف الشاغرة</b> اضغط على الغرفة عشان تختارها — الكارت بيتلوّن. بعدها اختار <b>عدد الأفراد</b> من القايمة اللي بتظهر جواه.
+    <span class="note">تقدر تختار أكتر من غرفة لنفس الحجز — اضغط عليهم واحدة واحدة.</span>
+  </div>
+</div>
+<div class="step">
+  <div class="num">٥</div>
+  <div class="body">
+    اختار <b>مصدر الحجز</b> (واتساب، مكالمة، حضور مباشر…) واكتب أي <b>ملاحظات</b> مهمة.
+    <span class="note">زي «وصول متأخر» أو «سرير زيادة». الملاحظة دي هتفضل على الحجز وأي حد يفتحه هيشوفها.</span>
+  </div>
+</div>
+<div class="step">
+  <div class="num">٦</div>
+  <div class="body">
+    اضغط <span class="btn">تأكيد الحجز</span> تحت.
+    <span class="note">هيظهرلك رقم الحجز (زي GR26-0001). ده الرقم اللي تدوّر بيه بعد كده.</span>
+  </div>
+</div>
+
+<div class="card ok">
+  <h4>حيلة توفّر عليك الكتابة: الصق رسالة الواتساب</h4>
+  <p>فوق خالص في شاشة حجز جديد فيه زرار <span class="btn ghost">الصق رسالة واتساب</span>. انسخ رسالة النزيل من واتساب والصقها هناك — التطبيق هيقرأ منها التواريخ والاسم والرقم وعدد الأفراد لوحده.</p>
+  <p><b>اللي بلون أصفر معناه إن التطبيق مش متأكد منه — راجعه بنفسك قبل ما تكمّل.</b></p>
+</div>
+
+<div class="card stop">
+  <h4>غرفة واحدة مستحيل تتحجز مرتين</h4>
+  <p>لو حد تاني حجز نفس الغرفة في نفس اللحظة، التطبيق هيرفض ويقولك «تم حجز الغرفة منذ لحظات». مش هتلاقي نفسك مسكّن اتنين في غرفة واحدة أبداً — التطبيق بيمنعها من الأساس.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٥</span>تسجيل وصول النزيل (التسكين)</h2>
+
+<p class="lead">لما النزيل يوصل فعلاً ويستلم المفتاح:</p>
+
+<div class="step">
+  <div class="num">١</div>
+  <div class="body">من شاشة <b>اليوم</b>، في جدول <b>وصول اليوم</b>، دوّر على اسمه.</div>
+</div>
+<div class="step">
+  <div class="num">٢</div>
+  <div class="body">اضغط <span class="btn">تسجيل الوصول</span> جنب اسمه. خلاص.</div>
+</div>
+<div class="step">
+  <div class="num">٣</div>
+  <div class="body">
+    الغرفة هتبقى <b>مشغولة</b> على طول في رفّ الغرف.
+    <span class="note">لو حصل ده، يبقى تم. مش محتاج تعمل حاجة تانية.</span>
+  </div>
+</div>
+
+<div class="card warn">
+  <h4>ولازم تسجّل بياناته الرسمية</h4>
+  <p>من شاشة <b>النزلاء</b> افتح اسمه واملأ: <b>الاسم كامل زي الإثبات</b>، <b>الجنسية</b>، <b>رقم الإثبات</b> (جواز أو رقم قومي)، و<b>تاريخ الميلاد</b>.</p>
+  <p>ده مطلوب رسمياً من الفنادق في مصر. اعملها والإثبات في إيدك — مش بعدين.</p>
+  <p class="note" style="color:var(--muted)">التطبيق مش هيمنعك لو البيانات ناقصة، بس هيفضل يعلّم عليها «يحتاج مراجعة» لحد ما تكمّلها.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٦</span>تسجيل الخروج</h2>
+
+<div class="step">
+  <div class="num">١</div>
+  <div class="body">من رفّ الغرف في شاشة <b>اليوم</b>، اضغط على غرفة النزيل.</div>
+</div>
+<div class="step">
+  <div class="num">٢</div>
+  <div class="body">اضغط <span class="btn">تسجيل خروج</span>.</div>
+</div>
+<div class="step">
+  <div class="num">٣</div>
+  <div class="body">
+    الغرفة هتتحوّل <b>تحتاج تنظيف</b> وهتتضاف لشاشة النظافة لوحدها.
+    <span class="note">وهترجع متاحة للبيع فوراً — يعني تقدر تحجزها لنزيل جديد من دلوقتي.</span>
+  </div>
+</div>
+
+<h3>لو النزيل هيمشي قبل ميعاده</h3>
+<p>مش تسجيل خروج عادي. روح <b>الحجوزات</b> ← افتح حجزه ← <span class="btn ghost">مغادرة مبكرة</span> واكتب تاريخ الخروج الجديد. ده بيصلّح الحساب والليالي مع بعض.</p>
+
+<h3>لو النزيل عايز يقعد أكتر</h3>
+<p>من رفّ الغرف اضغط غرفته ← <span class="btn ghost">تمديد الإقامة</span> ← اكتب التاريخ الجديد ← <b>تحقق</b>. التطبيق هيقولك الغرفة شاغرة ولا لأ قبل ما تأكد للنزيل.</p>
+
+<div class="card stop">
+  <h4>متقولش للنزيل «تمام» قبل ما تضغط «تحقق»</h4>
+  <p>ممكن الغرفة تكون محجوزة من بكره لحد تاني. لو طلعت محجوزة، التطبيق هيقولك ويقترح تنقله لغرفة تانية — من زرار <b>نقل إلى غرفة أخرى</b>.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٧</span>النظافة</h2>
+
+<p class="lead">شاشة واحدة، زرار واحد لكل غرفة. معمولة للموبايل عشان تتفتح وإنت واقف في الدور.</p>
+
+<div class="step">
+  <div class="num">١</div>
+  <div class="body">افتح شاشة <b>النظافة</b>. فوق هتلاقي <b>تحتاج تنظيف</b> — دي الأولوية.</div>
+</div>
+<div class="step">
+  <div class="num">٢</div>
+  <div class="body">أول ما الغرفة تخلص، اضغط <span class="btn">خلصت</span> جنبها.</div>
+</div>
+<div class="step">
+  <div class="num">٣</div>
+  <div class="body">
+    الغرفة بتترجع <b>متاحة</b> في رفّ الغرف على طول.
+    <span class="note">يعني الاستقبال يعرف من غير ما يسأل حد إن الغرفة بقت جاهزة.</span>
+  </div>
+</div>
+
+<p><b>«معطلة»</b> مش من صلاحيتك — دي للمدير لما تكون فيه صيانة.</p>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٨</span>البحث عن حجز وتعديله</h2>
+
+<p class="lead">شاشة <b>الحجوزات</b>: اكتب في خانة البحث الاسم، أو رقم التليفون، أو رقم الحجز.</p>
+
+<table>
+  <tr><th>الفلتر</th><th>بيوريك</th></tr>
+  <tr><td><b>الحالية والقادمة</b></td><td>اللي ساكنين دلوقتي واللي جايين. ده اللي هتستخدمه ٩٠٪ من الوقت.</td></tr>
+  <tr><td><b>اليوم</b></td><td>حجوزات النهاردة بس.</td></tr>
+  <tr><td><b>المنتهية</b></td><td>اللي خرجوا خلاص.</td></tr>
+  <tr><td><b>الملغية</b></td><td>الملغي واللي محضروش.</td></tr>
+</table>
+
+<p>اضغط على أي حجز يفتحلك ورقة فيها كل حاجة: الغرف، الإقامة، الحالة، والإجراءات.</p>
+
+<h3>الإجراءات اللي على الحجز</h3>
+<table>
+  <tr><th>الزرار</th><th>يستخدم إمتى</th></tr>
+  <tr><td><b>مغادرة مبكرة</b></td><td>النزيل ساكن وهيمشي قبل ميعاده.</td></tr>
+  <tr><td><b>تسجيل عدم حضور</b></td><td>حجز مؤكد والنزيل مجاش خالص. الغرفة بترجع للبيع فوراً.</td></tr>
+  <tr><td><b>إلغاء الحجز بالكامل</b></td><td>النزيل ألغى قبل ما يوصل.</td></tr>
+  <tr><td><b>إلغاء الغرفة</b></td><td>حجز فيه أكتر من غرفة وعايز تشيل واحدة بس.</td></tr>
+</table>
+
+<div class="card warn">
+  <h4>الإجراءات دي بتطلب كلمة مرور المدير</h4>
+  <p>الإلغاء وعدم الحضور والمغادرة المبكرة كلهم بيطلبوا كلمة مرور المدير. ده مقصود — دي قرارات بتغيّر فلوس. لو محتاج تعمل واحدة منهم، نادي المدير.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٩</span>مشاكل شائعة وحلها</h2>
+
+<table>
+  <tr><th>اللي بيحصل</th><th>اعمل إيه</th></tr>
+  <tr>
+    <td><b>النت قطع</b></td>
+    <td>التطبيق هيفضل شغال. تقدر تشوف الغرف وتسكّن وتسجّل خروج وتعلّم النظافة. اللي بس مش هيشتغل: تأكيد حجز جديد وتسجيل الدفعات. هيظهرلك شريط أصفر بيقولك.</td>
+  </tr>
+  <tr>
+    <td><b>عايز تحجز والنت مقطوع</b></td>
+    <td>اكتب الحجز عادي وهيتسجّل <b>«مبدئي»</b>. ده <u>مش</u> حجز مؤكد — الغرفة لسه ممكن تروح لحد تاني. أول ما النت يرجع، افتح شاشة حجز جديد وأكّده.</td>
+  </tr>
+  <tr>
+    <td><b>«تم حجز الغرفة منذ لحظات»</b></td>
+    <td>حد سبقك بثواني. حدّث الصفحة واختار غرفة تانية.</td>
+  </tr>
+  <tr>
+    <td><b>غرفة مش ظاهرة في الشاغرة</b></td>
+    <td>يا إما محجوزة في التواريخ دي، يا إما معطّلة. شوفها في رفّ الغرف تعرف السبب.</td>
+  </tr>
+  <tr>
+    <td><b>نفس النزيل اتسجّل مرتين</b></td>
+    <td>عشان كده ابدأ دايماً بـ<b>بحث برقم التليفون</b> قبل ما تكتب الاسم.</td>
+  </tr>
+  <tr>
+    <td><b>سجّلت حاجة غلط</b></td>
+    <td>مفيش حاجة بتتمسح في التطبيق ده — بتتصحّح. كلّم المدير، هو يقدر يصلّحها والسجل بيفضل كامل.</td>
+  </tr>
+</table>
+
+<div class="card stop">
+  <h4>ملاحظة للأسبوع الأول: الأسعار لسه ما اتحطتش</h4>
+  <p>هتلاقي كل الحجوزات مكتوب عندها <b>٠ ج</b> — يعني صفر جنيه. ده طبيعي ومقصود — الأسعار هتتحط بعدين، والفلوس دلوقتي بتتسجّل في السيستم التاني زي ما هي.</p>
+  <p><b>عشان كده الأسبوع ده: متبعتش للنزيل «رسالة تأكيد واتساب» ولا «بيان الحساب» من التطبيق</b> — هيطلعوا بإجمالي صفر. باقي الشاشات كلها اشتغل عليها عادي.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section class="final">
+<h2>كارت أول يوم</h2>
+<p class="lead">لو مش فاكر حاجة من الدليل كله، ده اللي محتاجه:</p>
+
+<div class="quick">
+  <div class="rowbox">
+    <b>افتح على «اليوم»</b>
+    <span>الرفّ بيقولك حالة كل غرفة بلون واحد.</span>
+  </div>
+  <div class="rowbox">
+    <b>حجز؟ ابدأ بالتليفون</b>
+    <span>حجز جديد ← بحث برقم التليفون ← كمّل.</span>
+  </div>
+  <div class="rowbox">
+    <b>النزيل وصل؟</b>
+    <span>اليوم ← وصول اليوم ← تسجيل الوصول.</span>
+  </div>
+  <div class="rowbox">
+    <b>النزيل ماشي؟</b>
+    <span>اليوم ← اضغط غرفته ← تسجيل خروج.</span>
+  </div>
+  <div class="rowbox">
+    <b>الغرفة اتنضفت؟</b>
+    <span>النظافة ← خلصت.</span>
+  </div>
+  <div class="rowbox">
+    <b>بتدوّر على حجز؟</b>
+    <span>الحجوزات ← اكتب الاسم أو الرقم.</span>
+  </div>
+  <div class="rowbox">
+    <b>إلغاء أو تعديل؟</b>
+    <span>محتاج كلمة مرور المدير. نادي المدير.</span>
+  </div>
+  <div class="rowbox">
+    <b>النت قطع؟</b>
+    <span>كمّل شغل. الحجز الجديد بس هيبقى «مبدئي».</span>
+  </div>
+</div>
+
+<div class="card ok">
+  <h4>أهم ٣ عادات</h4>
+  <ul>
+    <li><b>ابدأ أي حجز ببحث برقم التليفون</b> — بيمنع تكرار النزلاء.</li>
+    <li><b>سجّل بيانات الإثبات والنزيل قدامك</b> — مش بعدين.</li>
+    <li><b>سجّل الخروج أول ما النزيل يمشي</b> — عشان النظافة تعرف، والغرفة ترجع للبيع.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  Easyroom — دليل الاستقبال · لأي حاجة مش واضحة، كلّم المدير.
+</div>
+</section>
+
+</div>
+
+</body>
+</html>
