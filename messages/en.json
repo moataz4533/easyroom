@@ -978,5 +978,22 @@
     "negative": "A discount cannot be negative",
     "overHundred": "A percentage cannot be over 100%",
     "noDiscount": "Zero is no discount — choose “No discount” if that is what you meant"
+  },
+  "BookingEdit": {
+    "open": "Edit booking details",
+    "title": "Edit booking",
+    "note": "For correcting what was written down: the name, the number, the head count, the notes.",
+    "guestName": "Guest name",
+    "phone": "Phone number",
+    "paxPerRoom": "Guests in each room",
+    "paxOption": "{count, number} guests",
+    "notes": "Notes",
+    "notesHint": "Late arrival, extra bed…",
+    "datesElsewhere": "Dates are not edited here: to extend, tap the room on the Today screen; to leave earlier, use “Early departure” below.",
+    "needGuestName": "Enter the guest's name",
+    "needPax": "Every room needs at least one guest",
+    "tooManyPax": "That is more guests than the room takes",
+    "nothingChanged": "Nothing changed",
+    "saved": "Booking updated"
   }
 }

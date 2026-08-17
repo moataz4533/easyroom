@@ -146,3 +146,54 @@ end $$;
 select 'booked with discount (want 600.00)        = ' || total_amount
 from bookings order by created_at desc limit 1;
 reset role;
+
+-- A room cannot hold more people than it holds. create_booking always
+-- checked; the trigger covers the edit path reception now has.
+do $$
+begin
+  update room_allocations set occupancy = 9
+   where kind = 'booking' and room_id = 'dddddddd-0000-0000-0000-000000000001';
+  raise notice '9 in a 3-bed room (want refused)             = stored';
+exception when others then
+  raise notice '9 in a 3-bed room (want refused)             = refused';
+end $$;
+do $$
+begin
+  update room_allocations set occupancy = 0
+   where kind = 'booking' and room_id = 'dddddddd-0000-0000-0000-000000000001';
+  raise notice 'nobody in the room (want refused)            = stored';
+exception when others then
+  raise notice 'nobody in the room (want refused)            = refused';
+end $$;
+do $$
+begin
+  update room_allocations set occupancy = 3
+   where kind = 'booking' and room_id = 'dddddddd-0000-0000-0000-000000000001';
+  raise notice '3 in a 3-bed room (want accepted)            = accepted';
+exception when others then
+  raise notice '3 in a 3-bed room (want accepted)            = refused';
+end $$;
+
+-- Changing a head count has to move the bill with it, not just the nights.
+-- The last booking is 2 nights for 2 people at 400, less 100 a night = 600.
+-- At 3 people the standing rate is 650, so 2 x (650 - 100) = 1100.
+-- Inserted as the superuser, like the other rates at the top of this file.
+-- Direct writes to `rates` are closed to `authenticated` on purpose, and an
+-- insert that a policy refuses reports no error — it just does nothing, and
+-- resolve_rate then quietly falls back to the room type's base_rate.
+insert into rates (property_id, room_type_id, rate_plan_id, occupancy, amount)
+values ('aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001',
+        'eeeeeeee-0000-0000-0000-000000000001', 3, 650)
+on conflict do nothing;
+
+-- Back to two first: an earlier step in this file already moved this room
+-- to three, and the trigger only fires when the number actually changes.
+update room_allocations set occupancy = 2
+ where booking_id = (select id from bookings order by created_at desc limit 1);
+update room_allocations set occupancy = 3
+ where booking_id = (select id from bookings order by created_at desc limit 1);
+
+select 'head count 2 to 3 · booking total (want 1100.00) = ' || total_amount
+from bookings order by created_at desc limit 1;
+select 'head count 2 to 3 · adults follow (want 3)       = ' || adults
+from bookings order by created_at desc limit 1;

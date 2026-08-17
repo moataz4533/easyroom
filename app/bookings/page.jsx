@@ -8,6 +8,8 @@ import ConfirmationMessage from "../../components/ConfirmationMessage";
 import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
 import RoomDiscount from "../../components/RoomDiscount";
+import BookingEdit from "../../components/BookingEdit";
+import { stayStarted } from "../../lib/booking-edit";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
@@ -52,7 +54,7 @@ function Bookings() {
         id, property_id, reference, status, source, check_in, check_out, adults, children,
         total_amount, paid_amount, notes, attention_reason, cancel_reason,
         guests(id, full_name, phone),
-        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, discount_kind, discount_value, discount_note, discount_amount, rooms(number)),
+        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, discount_kind, discount_value, discount_note, discount_amount, rooms(number, room_types(max_occupancy))),
         payments(id, amount, method, notes, received_at),
         booking_charges(id, charge_item_id, description, quantity, unit_amount, amount, notes, voided_at)
       `)
@@ -326,6 +328,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const status = STATUS_PILL[b.status] !== undefined ? b.status : "confirmed";
   const live = liveRooms(b);
   const isOpen = ["confirmed", "checked_in", "inquiry"].includes(b.status);
+  const started = stayStarted(b, today());
   const owed = Number(b.total_amount) - Number(b.paid_amount);
 
   async function call(fn, args, msg) {
@@ -466,6 +469,13 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           )}
         </section>
 
+        {canManage && isOpen && online && (
+          <BookingEdit
+            booking={b} allocations={live}
+            onDone={onDone} onError={onError}
+          />
+        )}
+
         {canManage && (
           <BookingCharges
             booking={b} online={online}
@@ -502,7 +512,11 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           </div>
         ) : !mode ? (
           <div className="stack">
-            {b.status === "checked_in" ? (
+            {/* Which of the two is offered follows the calendar, not the
+                status: a booking entered after the guest arrived never gets
+                marked checked-in, and reception was left with "cancel the
+                whole booking" for a guest asking to leave a day early. */}
+            {started ? (
               <button className="btn wide" onClick={() => setMode("early")}>
                 {tk("earlyDeparture")}
               </button>
