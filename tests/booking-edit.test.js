@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  awaitingCheckIn, editChanges, editForm, editProblem, maxOccupancy, stayStarted,
+  awaitingCheckIn, earlyOutBounds, editChanges, editForm, editProblem,
+  maxOccupancy, stayStarted,
 } from "../lib/booking-edit";
 
 const booking = {
@@ -135,5 +136,47 @@ describe("bookings the arrivals list misses", () => {
   it("leaves alone a stay that has not started or has finished", () => {
     expect(awaitingCheckIn(booking, "2026-08-13")).toBe(false);
     expect(awaitingCheckIn(booking, "2026-08-18")).toBe(false);
+  });
+});
+
+/**
+ * The defect this fixes, on real data: on 17 August four of the five live
+ * bookings started in the future, and the early-departure field opened on
+ * today — below its own minimum. Reception read that as "I can't choose the
+ * date", and submitting it was refused by the database.
+ */
+describe("which departure dates an early departure may take", () => {
+  const stay = { check_in: "2026-08-14", check_out: "2026-08-18" };
+
+  it("keeps at least one night, and stops short of the booked day", () => {
+    expect(earlyOutBounds(stay, "2026-08-16")).toEqual({
+      min: "2026-08-15", max: "2026-08-17", initial: "2026-08-16",
+    });
+  });
+
+  it("opens on the earliest allowed day for a stay that has not started", () => {
+    // The bug: today is before the guest even arrives.
+    expect(earlyOutBounds({ check_in: "2026-08-21", check_out: "2026-08-24" }, "2026-08-17"))
+      .toMatchObject({ min: "2026-08-22", initial: "2026-08-22" });
+  });
+
+  it("opens on the latest allowed day for a stay already past it", () => {
+    expect(earlyOutBounds(stay, "2026-08-30")).toMatchObject({ initial: "2026-08-17" });
+  });
+
+  it("has no answer for a one-night stay, and says so", () => {
+    // Floor lands above ceiling: leaving early would leave no night at all.
+    expect(earlyOutBounds({ check_in: "2026-08-14", check_out: "2026-08-15" }, "2026-08-14"))
+      .toBeNull();
+  });
+
+  it("crosses a month end without arithmetic of its own", () => {
+    expect(earlyOutBounds({ check_in: "2026-08-31", check_out: "2026-09-04" }, "2026-09-02"))
+      .toEqual({ min: "2026-09-01", max: "2026-09-03", initial: "2026-09-02" });
+  });
+
+  it("does not guess when it has no booking", () => {
+    expect(earlyOutBounds(null, "2026-08-16")).toBeNull();
+    expect(earlyOutBounds({ check_in: "2026-08-14" }, "2026-08-16")).toBeNull();
   });
 });

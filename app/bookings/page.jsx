@@ -9,11 +9,11 @@ import GuestBill from "../../components/GuestBill";
 import BookingCharges from "../../components/BookingCharges";
 import RoomDiscount from "../../components/RoomDiscount";
 import BookingEdit from "../../components/BookingEdit";
-import { stayStarted } from "../../lib/booking-edit";
+import { earlyOutBounds, stayStarted } from "../../lib/booking-edit";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
-import { joinList } from "../../lib/format";
+import { fullDate, joinList } from "../../lib/format";
 
 export default function Page() {
   return (
@@ -322,7 +322,8 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
   const [charge, setCharge] = useState(0);
-  const [newOut, setNewOut] = useState(today());
+  const early = earlyOutBounds(b, today());
+  const [newOut, setNewOut] = useState(() => early?.initial || today());
 
   const canManage = ["owner", "manager", "reception"].includes(role);
   const status = STATUS_PILL[b.status] !== undefined ? b.status : "confirmed";
@@ -512,15 +513,18 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           </div>
         ) : !mode ? (
           <div className="stack">
-            {/* Which of the two is offered follows the calendar, not the
-                status: a booking entered after the guest arrived never gets
-                marked checked-in, and reception was left with "cancel the
-                whole booking" for a guest asking to leave a day early. */}
-            {started ? (
+            {/* Both, where both make sense. Shortening a stay does not
+                require the guest to have arrived — somebody who booked four
+                nights and rings to say they will leave after two is
+                shortening a booking, and the only alternative was cancelling
+                it and taking it again. A no-show, on the other hand, is only
+                possible before the arrival day. */}
+            {early && (
               <button className="btn wide" onClick={() => setMode("early")}>
                 {tk("earlyDeparture")}
               </button>
-            ) : (
+            )}
+            {!started && (
               <button className="btn wide" onClick={() => setMode("noshow")}>
                 {tk("recordNoShow")}
               </button>
@@ -579,12 +583,41 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             <p className="section-note" style={{ margin: 0 }}>
               {tk("earlyNote")}
             </p>
+
             <div className="field">
-              <label>{tk("newCheckOut")}</label>
-              <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={newOut}
-                min={b.check_in} max={b.check_out}
+              <label htmlFor="early-out">{tk("newCheckOut")}</label>
+              <input id="early-out" type="date" className="mono" dir="ltr"
+                style={{ textAlign: "left" }} value={newOut}
+                min={early.min} max={early.max}
                 onChange={(e) => setNewOut(e.target.value)} />
             </div>
+
+            {/* Almost every early departure is "he is leaving today", and the
+                rest are a day or two out. Offered as buttons so the date does
+                not have to be worked out at all. */}
+            <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+              {[...new Set([today(), early.min, early.max])]
+                .filter((day) => day >= early.min && day <= early.max)
+                .sort()
+                .map((day) => (
+                  <button key={day} type="button"
+                    className={`btn sm${newOut === day ? " primary" : ""}`}
+                    onClick={() => setNewOut(day)}>
+                    {day === today() ? tk("leavingToday") : dayLabel(day, locale)}
+                  </button>
+                ))}
+            </div>
+
+            {/* The same rule as the booking screen: the chosen day said back
+                in words with its weekday, and what it costs the stay. */}
+            <div className="banner ok" style={{ margin: 0 }}>
+              {tk("earlyReads", {
+                date: fullDate(newOut, locale),
+                nights: nights(b.check_in, newOut),
+                dropped: nights(newOut, b.check_out),
+              })}
+            </div>
+
             <PinPrompt
               title={tk("pinTitle")}
               note={tk("earlyPinNote")}

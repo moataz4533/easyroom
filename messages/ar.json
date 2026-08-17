@@ -673,7 +673,9 @@
     "earlyConfirm": "تأكيد المغادرة المبكرة",
     "shortened": "تم تقصير الإقامة وتعديل الحساب",
     "call": "اتصل",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "leavingToday": "ماشي النهاردة",
+    "earlyReads": "الخروج يبقى {date} — الإقامة تصبح {nights, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}، ويتشيل من الحساب {dropped, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}."
   },
   "Reports": {
     "title": "التقارير",

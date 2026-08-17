@@ -673,7 +673,9 @@
     "earlyConfirm": "Confirm the early departure",
     "shortened": "Stay shortened and the bill adjusted",
     "call": "Call",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "leavingToday": "Leaving today",
+    "earlyReads": "Departure becomes {date} — the stay becomes {nights, plural, one {one night} other {# nights}}, and {dropped, plural, one {one night} other {# nights}} come off the bill."
   },
   "Reports": {
     "title": "Reports",
