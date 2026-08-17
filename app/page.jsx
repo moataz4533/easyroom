@@ -324,7 +324,7 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
                   <h2 style={{ fontSize: 14, marginBottom: 8 }}>{t("extendTitle")}</h2>
                   <div className="row">
                     <input
-                      type="date" className="mono grow" value={extendTo}
+                      type="date" className="mono grow" dir="ltr" style={{ textAlign: "left" }} value={extendTo}
                       min={addDays(row.ends_on, 1)}
                       onChange={(e) => { setExtendTo(e.target.value); setCheck(null); }}
                     />
@@ -542,7 +542,7 @@ function MoveGuest({ row, onDone, onError }) {
       <div className="field">
         <label>{t("moveFrom")}</label>
         <input
-          type="date" className="mono" value={from}
+          type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={from}
           min={row.starts_on} max={addDays(row.ends_on, -1)}
           onChange={(e) => { setFrom(e.target.value); setOptions(null); }}
         />
@@ -612,11 +612,11 @@ function BlockRoom({ row, onDone, onError }) {
         <div className="row">
           <div className="field grow">
             <label>{t("from")}</label>
-            <input type="date" className="mono" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="field grow">
             <label>{t("to")}</label>
-            <input type="date" className="mono" value={to} onChange={(e) => setTo(e.target.value)} />
+            <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
         <div className="field">

@@ -138,12 +138,12 @@ function Reports() {
         <div className="card row" style={{ marginBottom: 14 }}>
           <div className="field grow">
             <label>{t("from")}</label>
-            <input type="date" className="mono" value={from}
+            <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={from}
               onChange={(e) => setDates([e.target.value, to])} />
           </div>
           <div className="field grow">
             <label>{t("to")}</label>
-            <input type="date" className="mono" value={to}
+            <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={to}
               onChange={(e) => setDates([from, e.target.value])} />
           </div>
         </div>

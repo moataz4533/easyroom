@@ -69,7 +69,7 @@ export default function GuestRecord({ guest, onSaved, onError }) {
         </div>
         <div className="field grow">
           <label htmlFor="guest-dob">{t("dateOfBirth")}</label>
-          <input id="guest-dob" type="date" className="mono"
+          <input id="guest-dob" type="date" className="mono" dir="ltr" style={{ textAlign: "left" }}
             value={form.date_of_birth} onChange={set("date_of_birth")} />
         </div>
       </div>

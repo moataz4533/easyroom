@@ -549,7 +549,9 @@
     "recording": "Recording…",
     "confirm": "Confirm the booking",
     "recorded": "Booking recorded — {reference}",
-    "justTaken": "The room was booked moments ago. Refresh and choose another."
+    "justTaken": "The room was booked moments ago. Refresh and choose another.",
+    "nightsQuick": "How many nights?",
+    "stayReads": "From {from} to {to}"
   },
   "Activity": {
     "title": "Activity log",

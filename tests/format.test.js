@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countNights, formatCurrency, formatDate, totalQuote } from "../lib/format";
+import { countNights, formatCurrency, formatDate, fullDate, totalQuote } from "../lib/format";
 import { addDays } from "../lib/supabase";
 
 describe("localized hotel formatting", () => {
@@ -34,5 +34,34 @@ describe("dates that are not plain days", () => {
     expect(formatDate("not-a-date")).toBe("");
     expect(formatDate("")).toBe("");
     expect(formatDate(null)).toBe("");
+  });
+});
+
+/**
+ * Reception said the date fields "don't work properly". A native date input
+ * shows whatever the phone's locale says — often the year first, in
+ * Arabic-Indic digits — so the screen now says the chosen day back in words.
+ * The weekday is the part that catches a wrong pick.
+ */
+describe("a date written out in full", () => {
+  it("names the weekday, so a wrong pick is visible", () => {
+    expect(fullDate("2026-08-20", "ar")).toContain("الخميس");
+    expect(fullDate("2026-08-20", "en")).toContain("Thursday");
+  });
+
+  it("writes the month as a word, never as a number", () => {
+    expect(fullDate("2026-08-20", "ar")).toContain("أغسطس");
+    expect(fullDate("2026-08-20", "en")).toContain("August");
+    expect(fullDate("2026-08-20", "ar")).not.toMatch(/\b08\b/);
+  });
+
+  it("carries the year, because a stay can cross into January", () => {
+    expect(fullDate("2027-01-02", "en")).toContain("2027");
+  });
+
+  it("says nothing rather than Invalid Date", () => {
+    expect(fullDate("")).toBe("");
+    expect(fullDate("nope")).toBe("");
+    expect(fullDate(null)).toBe("");
   });
 });

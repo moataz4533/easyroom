@@ -581,7 +581,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             </p>
             <div className="field">
               <label>{tk("newCheckOut")}</label>
-              <input type="date" className="mono" value={newOut}
+              <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={newOut}
                 min={b.check_in} max={b.check_out}
                 onChange={(e) => setNewOut(e.target.value)} />
             </div>

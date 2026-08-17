@@ -561,10 +561,10 @@ function Seasons({ property, types, plans, showToast, locale }) {
           </div>
           <div className="row">
             <div className="field grow"><label>{t("from")}</label>
-              <input type="date" className="mono" value={form.from}
+              <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={form.from}
                 onChange={(e) => setForm((c) => ({ ...c, from: e.target.value }))} /></div>
             <div className="field grow"><label>{t("to")}</label>
-              <input type="date" className="mono" value={form.to} min={form.from}
+              <input type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={form.to} min={form.from}
                 onChange={(e) => setForm((c) => ({ ...c, to: e.target.value }))} /></div>
           </div>
           <button className="btn" onClick={createSeason}>{t("addConfirm")}</button>

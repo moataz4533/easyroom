@@ -116,12 +116,12 @@ function Guests() {
         <div className="row">
           <div className="field grow">
             <label htmlFor="from">{t("from")}</label>
-            <input id="from" type="date" className="mono" value={from}
+            <input id="from" type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={from}
               onChange={(event) => setFrom(event.target.value)} />
           </div>
           <div className="field grow">
             <label htmlFor="to">{t("to")}</label>
-            <input id="to" type="date" className="mono" value={to} min={from}
+            <input id="to" type="date" className="mono" dir="ltr" style={{ textAlign: "left" }} value={to} min={from}
               onChange={(event) => setTo(event.target.value)} />
           </div>
         </div>

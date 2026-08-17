@@ -8,7 +8,7 @@ import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-histo
 import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
 import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
-import { joinList } from "../../lib/format";
+import { fullDate, joinList } from "../../lib/format";
 import PasteMessage from "../../components/PasteMessage";
 import { loadCached, provisionalAdd, provisionalList, useOffline } from "../../lib/offline";
 import {
@@ -458,7 +458,11 @@ function NewBooking() {
           <div className="row">
             <div className="field grow">
               <label htmlFor="ci">{tn("checkInLabel")}</label>
-              <input id="ci" type="date" className="mono" value={checkIn}
+              {/* dir="ltr" like every other structured field in this app.
+                  Left in the page direction, a date input lays its segments
+                  out right to left and the day reads as the year. */}
+              <input id="ci" type="date" className="mono" dir="ltr"
+                style={{ textAlign: "left" }} value={checkIn}
                 onChange={(e) => {
                   setCheckIn(e.target.value);
                   if (e.target.value >= checkOut) setCheckOut(addDays(e.target.value, 1));
@@ -466,14 +470,43 @@ function NewBooking() {
             </div>
             <div className="field grow">
               <label htmlFor="co">{tn("checkOutLabel")}</label>
-              <input id="co" type="date" className="mono" value={checkOut}
+              <input id="co" type="date" className="mono" dir="ltr"
+                style={{ textAlign: "left" }} value={checkOut}
                 min={addDays(checkIn, 1)}
                 onChange={(e) => setCheckOut(e.target.value)} />
             </div>
           </div>
-          <p className="section-note" style={{ margin: "8px 0 0" }}>
-            {n > 0 ? tn("nightCount", { count: n }) : tn("badDates")}
-          </p>
+
+          {/* Said back in words, weekday included. The native picker shows
+              whatever the phone's locale says — often the year first — and a
+              wrong pick is caught by the day name, not by the digits. */}
+          {n > 0 ? (
+            <div className="banner ok" style={{ margin: "10px 0 0" }}>
+              {tn("stayReads", {
+                from: fullDate(checkIn, locale),
+                to: fullDate(checkOut, locale),
+              })}
+              {" · "}{tn("nightCount", { count: n })}
+            </div>
+          ) : (
+            <div className="banner warn" style={{ margin: "10px 0 0" }}>{tn("badDates")}</div>
+          )}
+
+          {/* How long, not which date — the way it is said on the phone.
+              Sets the departure from the arrival, so the second date never
+              has to be worked out in anybody's head. */}
+          <div className="row" style={{ gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+            <span className="section-note" style={{ margin: 0, alignSelf: "center" }}>
+              {tn("nightsQuick")}
+            </span>
+            {[1, 2, 3, 7].map((count) => (
+              <button key={count} type="button"
+                className={`btn sm${n === count ? " primary" : ""}`}
+                onClick={() => setCheckOut(addDays(checkIn, count))}>
+                {tn("nightCount", { count })}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
