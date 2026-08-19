@@ -551,7 +551,9 @@
     "recorded": "Booking recorded — {reference}",
     "justTaken": "The room was booked moments ago. Refresh and choose another.",
     "nightsQuick": "How many nights?",
-    "stayReads": "From {from} to {to}"
+    "stayReads": "From {from} to {to}",
+    "phoneHasOthers": "This number is already on {count, plural, one {one other guest} other {# other guests}} ({names}).",
+    "willBeNewGuest": "The booking will be recorded under “{name}” on the same number."
   },
   "Activity": {
     "title": "Activity log",

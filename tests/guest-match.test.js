@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  duplicateCount, guestToReuse, normalisePhone, pickGuest, samePhone,
+  duplicateCount, guestToReuse, namesOnPhone, normalisePhone, pickGuest,
+  sameName, samePhone,
 } from "../lib/guest-match";
 
 describe("the same phone written differently", () => {
@@ -60,14 +61,62 @@ describe("not making a thirteenth row for the same person", () => {
     expect(guestToReuse(existing, { name: "بولس", phone: "01118070453" }).id).toBe("b");
   });
 
-  it("reuses somebody on the number even when the name is new", () => {
-    // A family on one mobile is a real thing; the number is still the link.
-    expect(guestToReuse(existing, { name: "أحمد", phone: "01118070453" })).toBeTruthy();
+  /**
+   * The rule that changed, and why. Reception at this hotel types the
+   * company's number and tells guests apart by name, so one number belongs
+   * to dozens of people. Reusing any row on the number filed four September
+   * bookings under a guest none of them were, and silently discarded the
+   * name that had been typed.
+   */
+  it("makes a new guest when the name on the number is somebody else", () => {
+    expect(guestToReuse(existing, { name: "أحمد", phone: "01118070453" })).toBeNull();
+  });
+
+  it("still reuses the same person spelled slightly differently", () => {
+    expect(guestToReuse(existing, { name: " بولس ", phone: "01118070453" }).id).toBe("b");
   });
 
   it("makes a new guest when the number is new, or when there is no number", () => {
     expect(guestToReuse(existing, { name: "أحمد", phone: "01234567890" })).toBeNull();
     expect(guestToReuse(existing, { name: "أحمد", phone: "" })).toBeNull();
     expect(guestToReuse([], { name: "أحمد", phone: "01118070453" })).toBeNull();
+  });
+});
+
+describe("two spellings of one name", () => {
+  it("folds the Arabic that is orthography rather than identity", () => {
+    expect(sameName("أحمد", "احمد")).toBe(true);
+    expect(sameName("دعاء محمد", "دعاءمحمد")).toBe(true);
+    expect(sameName("منى", "مني")).toBe(true);
+    expect(sameName("فاطمة", "فاطمه")).toBe(true);
+  });
+
+  it("keeps different people apart", () => {
+    expect(sameName("أحمد", "محمود")).toBe(false);
+    expect(sameName("أحمد محمد", "أحمد")).toBe(false);
+  });
+
+  it("treats a missing name as nobody, never as everybody", () => {
+    expect(sameName("", "")).toBe(false);
+    expect(sameName(null, undefined)).toBe(false);
+    expect(sameName("  ", "أحمد")).toBe(false);
+  });
+});
+
+describe("who is already on a number", () => {
+  const rows = [
+    { id: "a", full_name: "دعاءمحمد", phone: "01220732569" },
+    { id: "b", full_name: "دعاء محمد", phone: "01220732569" },
+    { id: "c", full_name: "عمار الغواص", phone: "01220732569" },
+    { id: "d", full_name: "زياد", phone: "01000000000" },
+  ];
+
+  it("lists the distinct names, so the screen can say who else is on it", () => {
+    expect(namesOnPhone(rows, "01220732569")).toEqual(["دعاءمحمد", "عمار الغواص"]);
+  });
+
+  it("says nobody for a number with no history", () => {
+    expect(namesOnPhone(rows, "01999999999")).toEqual([]);
+    expect(namesOnPhone([], "01220732569")).toEqual([]);
   });
 });

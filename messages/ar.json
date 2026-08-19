@@ -551,7 +551,9 @@
     "recorded": "تم تسجيل الحجز — {reference}",
     "justTaken": "تم حجز الغرفة منذ لحظات. حدّث الصفحة واختر غرفة أخرى.",
     "nightsQuick": "كام ليلة؟",
-    "stayReads": "من {from} إلى {to}"
+    "stayReads": "من {from} إلى {to}",
+    "phoneHasOthers": "الرقم ده مسجّل على {count, plural, one {نزيل تاني} two {نزيلين تانيين} few {# نزلاء تانيين} other {# نزيلاً تانياً}} ({names}).",
+    "willBeNewGuest": "الحجز هيتسجّل باسم «{name}» على نفس الرقم."
   },
   "Activity": {
     "title": "سجل العمليات",

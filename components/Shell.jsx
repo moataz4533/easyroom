@@ -8,8 +8,8 @@ import { useLocale } from "../lib/locale";
 import {
   BarChart3, BedDouble, BookOpenCheck, CalendarPlus, CalendarRange,
   ChevronLeft, ChevronRight, CircleUserRound, ClipboardCheck, CloudOff,
-  Hotel, IdCard, Languages, LayoutDashboard, ListChecks, LogOut, RefreshCw,
-  Settings,
+  Hotel, IdCard, Languages, LayoutDashboard, ListChecks, LogOut,
+  MoreHorizontal, RefreshCw, Settings,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
@@ -280,24 +280,57 @@ function StatusStrip() {
   );
 }
 
+/**
+ * Five slots at the bottom of a phone, and up to nine screens to reach.
+ *
+ * "More" used to be a link straight to Settings, which meant an owner on a
+ * phone could not reach Guests, Housekeeping, Reports or the activity log at
+ * all — the owner went looking for the log and could not find it, because it
+ * was only on the sidebar. It is a menu now, and everything is in it.
+ */
 function MobileNav({ path, allowed }) {
   const locale = useLocale();
   const t = useTranslations("Nav");
   const common = useTranslations("Common");
-  const roles = useTranslations("Roles");
-  let items = NAV.filter((item) => allowed.includes(item.href));
-  if (items.length > 5) {
-    const settings = items.find((item) => item.href === "/settings") || items.at(-1);
-    items = [...items.slice(0, 4), { ...settings, key: "settings", mobileLabel: common("more") }];
-  }
+  const [open, setOpen] = useState(false);
+  const items = NAV.filter((item) => allowed.includes(item.href));
+  const shown = items.length > 5 ? items.slice(0, 4) : items;
+  const rest = items.slice(shown.length);
+
+  // Closing on navigation is what a menu is expected to do, and the route
+  // changing is the only signal that a link inside it was followed.
+  useEffect(() => { setOpen(false); }, [path]);
+
   return (
-    <nav className="mobile-nav" aria-label={t("today")}>
-      {items.map(({ href, key, mobileKey, mobileLabel, Icon }) => (
-        <Link key={href} href={localePath(href, locale)} data-active={path === href}>
-          <Icon size={21} aria-hidden="true" /><span>{mobileLabel || t(mobileKey || key)}</span>
-        </Link>
-      ))}
-    </nav>
+    <>
+      {open && rest.length > 0 && (
+        <>
+          <button className="mobile-more-backdrop" aria-label={common("close")}
+            onClick={() => setOpen(false)} />
+          <nav className="mobile-more" aria-label={common("more")}>
+            {rest.map(({ href, key, mobileKey, Icon }) => (
+              <Link key={href} href={localePath(href, locale)} data-active={path === href}>
+                <Icon size={19} aria-hidden="true" /><span>{t(mobileKey || key)}</span>
+              </Link>
+            ))}
+          </nav>
+        </>
+      )}
+
+      <nav className="mobile-nav" aria-label={t("today")}>
+        {shown.map(({ href, key, mobileKey, Icon }) => (
+          <Link key={href} href={localePath(href, locale)} data-active={path === href}>
+            <Icon size={21} aria-hidden="true" /><span>{t(mobileKey || key)}</span>
+          </Link>
+        ))}
+        {rest.length > 0 && (
+          <button type="button" onClick={() => setOpen((was) => !was)}
+            data-active={rest.some((item) => item.href === path)} aria-expanded={open}>
+            <MoreHorizontal size={21} aria-hidden="true" /><span>{common("more")}</span>
+          </button>
+        )}
+      </nav>
+    </>
   );
 }
 

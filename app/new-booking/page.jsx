@@ -5,7 +5,9 @@ import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
 import { localePath, localizedName, useLocale } from "../../lib/locale";
 import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-history";
-import { duplicateCount, guestToReuse, normalisePhone, pickGuest } from "../../lib/guest-match";
+import {
+  duplicateCount, guestToReuse, namesOnPhone, normalisePhone, pickGuest, sameName,
+} from "../../lib/guest-match";
 import { implausibleFields } from "../../lib/guest-record";
 import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
 import { fullDate, joinList } from "../../lib/format";
@@ -59,6 +61,9 @@ function NewBooking() {
   const [history, setHistory] = useState(null);
   const [searching, setSearching] = useState(false);
   const [duplicates, setDuplicates] = useState(0);
+  // Everybody already recorded against this number. With a company
+  // number that is a list of other people, not of this guest.
+  const [onPhone, setOnPhone] = useState([]);
   const [pasting, setPasting] = useState(false);
   // What the message asked for but the form has no box for. Kept as advice
   // next to the room list rather than acted on: which rooms are free is the
@@ -240,6 +245,7 @@ function NewBooking() {
 
     const found = pickGuest(matches || []);
     setDuplicates(duplicateCount(matches || []));
+    setOnPhone(namesOnPhone(matches || [], phone));
 
     // How often they have stayed, and whether they have failed to turn up,
     // is worth knowing before promising the last room on a busy night. If
@@ -258,6 +264,9 @@ function NewBooking() {
     if (found) { setGuest(found); setName(found.full_name); showToast(tn("previousGuest", { name: found.full_name })); }
     else { setGuest(null); showToast(tn("newGuest")); }
   }
+
+  // Names on this number that are not the one being typed.
+  const othersOnPhone = onPhone.filter((other) => !sameName(other, name));
 
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
 
@@ -402,7 +411,9 @@ function NewBooking() {
               <input
                 id="phone" className="mono" dir="ltr" style={{ textAlign: "left" }}
                 value={phone} placeholder="+2010…"
-                onChange={(e) => { setPhone(e.target.value); setGuest(null); setHistory(null); }}
+                onChange={(e) => {
+                  setPhone(e.target.value); setGuest(null); setHistory(null); setOnPhone([]);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && findGuest()}
               />
             </div>
@@ -414,7 +425,16 @@ function NewBooking() {
 
           <div className="field">
             <label htmlFor="name">{tn("guestName")}</label>
-            <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            {/* Typing over the name the search filled in has to mean what it
+                says. It used to change nothing: the booking still went to the
+                guest the search had found, and the typed name was dropped. */}
+            <input id="name" value={name} onChange={(e) => {
+              setName(e.target.value);
+              if (guest && !sameName(guest.full_name, e.target.value)) {
+                setGuest(null);
+                setHistory(null);
+              }
+            }} />
           </div>
 
           {guest && (
@@ -433,7 +453,20 @@ function NewBooking() {
             </div>
           )}
 
-          {duplicates > 0 && (
+          {/* A company number carries many guests. Saying so out loud is the
+              difference between a new row on purpose and a booking quietly
+              filed under somebody else's name. */}
+          {!guest && othersOnPhone.length > 0 && (
+            <div className="banner" style={{ margin: 0 }}>
+              {tn("phoneHasOthers", {
+                count: othersOnPhone.length,
+                names: joinList(othersOnPhone.slice(0, 3), locale),
+              })}
+              {name.trim() ? ` ${tn("willBeNewGuest", { name: name.trim() })}` : ""}
+            </div>
+          )}
+
+          {duplicates > 0 && guest && (
             <div className="banner warn" style={{ margin: 0 }}>
               {t("duplicates", { count: duplicates })}
             </div>

@@ -489,8 +489,8 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   /* The tab bar is 68px plus the home indicator; the page has to end above it. */
   .wrap { padding: 22px 18px calc(96px + env(safe-area-inset-bottom)); }
   .mobile-nav { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 50; min-height: 68px; display: flex; justify-content: space-around; padding: 7px 6px calc(7px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
-  .mobile-nav a { flex: 1; min-width: 0; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 10px; color: var(--muted); text-decoration: none; font-size: 10px; font-weight: 600; }
-  .mobile-nav a[data-active="true"] { color: var(--deep); background: var(--sea-soft); }
+  .mobile-nav a, .mobile-nav button { flex: 1; min-width: 0; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 10px; color: var(--muted); text-decoration: none; font-size: 10px; font-weight: 600; }
+  .mobile-nav a[data-active="true"], .mobile-nav button[data-active="true"] { color: var(--deep); background: var(--sea-soft); }
   .dashboard-stats { gap: 12px; }
   .dashboard-stat { min-height: 112px; gap: 12px; padding: 15px; }
   .dashboard-stat .stat-icon { width: 48px; height: 48px; }
@@ -568,3 +568,30 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* The "more" sheet on a phone. Five slots at the bottom cannot reach nine
+   screens, and "more" used to be a link to Settings — so Guests, Reports and
+   the activity log were unreachable on a phone entirely. */
+.mobile-more-backdrop {
+  position: fixed; inset: 0; z-index: 39;
+  background: rgba(16, 38, 46, .35);
+  border: 0; padding: 0; cursor: pointer;
+}
+.mobile-more {
+  position: fixed; z-index: 40;
+  inset-inline: 10px; bottom: calc(76px + env(safe-area-inset-bottom));
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(16, 38, 46, .18);
+  padding: 6px; display: grid; gap: 2px;
+}
+.mobile-more a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px; border-radius: 10px;
+  color: var(--ink); text-decoration: none; font-size: 15px;
+}
+.mobile-more a[data-active="true"] { background: var(--paper); color: var(--sea); font-weight: 600; }
+.mobile-nav button {
+  background: none; border: 0; font: inherit; cursor: pointer;
+  color: inherit; padding: 0;
+}
+@media (min-width: 901px) { .mobile-more, .mobile-more-backdrop { display: none; } }
