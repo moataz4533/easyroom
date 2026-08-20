@@ -239,7 +239,7 @@ describe("bilingual routing and messages", () => {
     for (const role of ["reception", "housekeeping", "manager"]) {
       expect(typeof ar.Settings[`roleOption_${role}`], role).toBe("string");
     }
-    for (const tab of ["rates", "seasons", "rooms", "charges", "staff", "security", "backup", "property"]) {
+    for (const tab of ["rates", "seasons", "rooms", "charges", "accounts", "staff", "security", "backup", "property"]) {
       expect(typeof ar.Settings[`tab_${tab}`], tab).toBe("string");
     }
     for (const group of ["types", "plans"]) {

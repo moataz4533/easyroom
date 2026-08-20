@@ -11,6 +11,11 @@ import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { ImagePlus, Trash2, Upload } from "lucide-react";
 import { isStaffUsername, normalizeStaffUsername, staffProfileProblem } from "../../lib/auth-login";
+import {
+  EMPTY_ACCOUNT, accountChanges, accountForm, accountInsert, accountProblem,
+  bookingCounts, sortAccounts,
+} from "../../lib/accounts";
+import { joinList } from "../../lib/format";
 
 export default function Page() {
   return (
@@ -29,7 +34,7 @@ const BANDS = ["#1E5F74", "#D99A2B", "#C96F5A", "#6E9075", "#6C6B9E"];
 const NAMED_OCCUPANCIES = [1, 2, 3, 4, 5, 6];
 
 const TAB_IDS = [
-  "rates", "seasons", "rooms", "charges", "staff", "security", "backup", "property",
+  "rates", "seasons", "rooms", "charges", "accounts", "staff", "security", "backup", "property",
 ];
 
 function Settings() {
@@ -47,12 +52,13 @@ function Settings() {
   const [rooms, setRooms] = useState([]);
   const [staff, setStaff] = useState([]);
   const [chargeItems, setChargeItems] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!property) return;
     setLoading(true);
-    const [t, p, r, rm, st, ci] = await Promise.all([
+    const [t, p, r, rm, st, ci, ac] = await Promise.all([
       supabase.from("room_types").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rate_plans").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rates").select("*").eq("property_id", property.id).is("valid_from", null),
@@ -61,6 +67,7 @@ function Settings() {
         .eq("property_id", property.id),
       supabase.from("charge_items").select("*").eq("property_id", property.id)
         .order("sort_order"),
+      supabase.from("accounts").select("*").eq("property_id", property.id).order("name"),
     ]);
     setTypes(t.data || []);
     setPlans(p.data || []);
@@ -72,6 +79,7 @@ function Settings() {
     ));
     setStaff(st.data || []);
     setChargeItems(ci.data || []);
+    setAccounts(ac.data || []);
     setLoading(false);
   }, [property]);
 
@@ -79,7 +87,7 @@ function Settings() {
 
   if (loading) return <div className="empty">{t("loading")}</div>;
 
-  const shared = { property, types, plans, rates, rooms, staff, chargeItems, reload: load, showToast, locale };
+  const shared = { property, types, plans, rates, rooms, staff, chargeItems, accounts, reload: load, showToast, locale };
 
   return (
     <>
@@ -98,6 +106,7 @@ function Settings() {
       {tab === "seasons" && <Seasons {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
       {tab === "charges" && <ChargeItems {...shared} />}
+      {tab === "accounts" && <Accounts {...shared} />}
       {tab === "staff" && <Staff {...shared} />}
       {tab === "security" && <Security {...shared} />}
       {tab === "backup" && <BackupCard property={property} />}
@@ -701,6 +710,189 @@ function ChargeItems({ property, chargeItems, reload, showToast, locale }) {
         </div>
         <button className="btn" disabled={busy} onClick={add}>{t("itemAdd")}</button>
       </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/**
+ * The companies and agencies the hotel deals with.
+ *
+ * A booking could always be filed against a company, and a company can
+ * carry its own rate plan — that is what makes an agency's rooms price
+ * themselves without reception remembering the deal. What was missing was
+ * anywhere to put a company in: the picker on the booking screen hides
+ * itself when the table is empty, which it always was.
+ */
+function Accounts({ property, accounts, plans, reload, showToast, locale }) {
+  const t = useTranslations("Companies");
+  const [counts, setCounts] = useState(null);
+  // Which card is open for editing: an account's id, or "new".
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY_ACCOUNT);
+  const [busy, setBusy] = useState(false);
+
+  // How much each company is actually used. It is the one number that says
+  // whether a company on this list means anything, and it decides whether
+  // hiding it is the polite thing to do or the only thing.
+  useEffect(() => {
+    supabase.from("bookings").select("account_id")
+      .eq("property_id", property.id).not("account_id", "is", null)
+      .then(({ data }) => setCounts(bookingCounts(data)));
+  }, [property.id]);
+
+  const rows = sortAccounts(accounts, locale);
+  const planName = (id) => {
+    const plan = plans.find((p) => p.id === id);
+    return plan ? localizedName(plan, locale) : null;
+  };
+
+  // The unique index still catches the exact repeat that two people typing
+  // at the same moment can slip past the check in the form — but it says so
+  // in Postgres, not in Arabic.
+  const failure = (error) => (error.code === "23505" ? t("nameTaken") : error.message);
+
+  function open(account) {
+    setEditing(account?.id || "new");
+    setForm(accountForm(account));
+  }
+
+  async function save() {
+    const problem = accountProblem(form, rows.filter((a) => a.id !== editing));
+    if (problem) return showToast(t(problem), true);
+
+    if (editing === "new") {
+      setBusy(true);
+      const { error } = await supabase.from("accounts").insert(accountInsert(form, property.id));
+      setBusy(false);
+      if (error) return showToast(failure(error), true);
+      showToast(t("added"));
+    } else {
+      const patch = accountChanges(form, rows.find((a) => a.id === editing));
+      if (patch) {
+        setBusy(true);
+        const { error } = await supabase.from("accounts").update(patch).eq("id", editing);
+        setBusy(false);
+        if (error) return showToast(failure(error), true);
+        showToast(t("saved"));
+      }
+    }
+    setEditing(null);
+    reload();
+  }
+
+  // Hidden, never deleted: bookings point at the company, and a deleted row
+  // would take the name off every one of them.
+  async function toggle(account) {
+    const { error } = await supabase.from("accounts")
+      .update({ is_active: !account.is_active }).eq("id", account.id);
+    if (error) return showToast(error.message, true);
+    showToast(account.is_active ? t("hidden") : t("shown"));
+    reload();
+  }
+
+  const set = (key) => (event) => {
+    const { value } = event.target;
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const fields = (
+    <div className="stack">
+      <div className="field">
+        <label htmlFor="co-name">{t("name")}</label>
+        <input id="co-name" value={form.name} onChange={set("name")} placeholder={t("namePlaceholder")} />
+      </div>
+      <div className="field">
+        <label htmlFor="co-plan">{t("ratePlan")}</label>
+        <select id="co-plan" value={form.rate_plan_id} onChange={set("rate_plan_id")}>
+          <option value="">{t("noRatePlan")}</option>
+          {plans.map((p) => <option key={p.id} value={p.id}>{localizedName(p, locale)}</option>)}
+        </select>
+      </div>
+      <p className="field-hint">{t("ratePlanHint")}</p>
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor="co-contact">{t("contactName")}</label>
+          <input id="co-contact" value={form.contact_name} onChange={set("contact_name")} />
+        </div>
+        <div className="field grow">
+          <label htmlFor="co-phone">{t("contactPhone")}</label>
+          <input id="co-phone" className="mono" dir="ltr" style={{ textAlign: "left" }}
+            value={form.contact_phone} onChange={set("contact_phone")} />
+        </div>
+      </div>
+      <div className="field">
+        <label htmlFor="co-notes">{t("notes")}</label>
+        <input id="co-notes" value={form.notes} onChange={set("notes")}
+          placeholder={t("notesPlaceholder")} />
+      </div>
+      <button className="btn primary wide" disabled={busy} onClick={save}>
+        {busy ? t("saving") : t("save")}
+      </button>
+      <button className="btn wide" onClick={() => setEditing(null)}>{t("cancel")}</button>
+    </div>
+  );
+
+  return (
+    <section className="section">
+      <h2 style={{ fontSize: 14 }}>{t("title")}</h2>
+      <p className="section-note">{t("note")}</p>
+
+      {rows.length === 0 ? (
+        <div className="empty">{t("none")}</div>
+      ) : (
+        <div className="stack">
+          {rows.map((account) => (
+            <div key={account.id} className="card" style={{ opacity: account.is_active ? 1 : 0.55 }}>
+              <div className="spread">
+                <div className="grow">
+                  <div style={{ fontWeight: 600 }}>
+                    {account.name}
+                    {!account.is_active && (
+                      <span className="pill" style={{ marginInlineStart: 6 }}>{t("hiddenPill")}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {joinList([
+                      planName(account.rate_plan_id) || t("standingPrices"),
+                      account.contact_name,
+                      counts ? t("bookings", { count: counts[account.id] || 0 }) : null,
+                    ], locale)}
+                  </div>
+                  {account.contact_phone && (
+                    <div className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
+                      {account.contact_phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="row" style={{ marginTop: 10 }}>
+                <button className="btn sm" onClick={() => open(account)}>{t("edit")}</button>
+                <button className="btn sm" onClick={() => toggle(account)}>
+                  {account.is_active ? t("hide") : t("show")}
+                </button>
+              </div>
+
+              {editing === account.id && (
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+                  {fields}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editing === "new" ? (
+        <div className="card stack" style={{ marginTop: 12, background: "var(--paper)" }}>
+          <h2 style={{ fontSize: 14 }}>{t("addTitle")}</h2>
+          {fields}
+        </div>
+      ) : (
+        <button className="btn ghost wide" style={{ marginTop: 12 }} onClick={() => open(null)}>
+          {t("add")}
+        </button>
+      )}
     </section>
   );
 }

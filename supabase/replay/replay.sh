@@ -66,6 +66,9 @@ if [ "$1" = "--check" ]; then
   echo
   echo "--- discounts: a night is sold at its own price, less the discount ---"
   psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/discounts.sql" 2>&1 | grep "="
+  echo
+  echo "--- companies: an agency's rooms price themselves, and stay its own ---"
+  psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/accounts.sql" 2>&1 | grep "="
 fi
 
 echo
