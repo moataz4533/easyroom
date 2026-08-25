@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import {
-  Building2, KeyRound, Power, RefreshCw, ShieldAlert, UserPlus,
+  Building2, Eraser, KeyRound, Power, RefreshCw, ShieldAlert, UserPlus,
 } from "lucide-react";
 import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
@@ -12,7 +12,7 @@ import { formatNumber } from "../../lib/format";
 import { Toast, useToast } from "../../components/Shell";
 import {
   membersOf, isDormant, neverSignedIn, newHotelProblems, normaliseCode,
-  platformTotals, staffAddressExample, suggestCode, summariseProperty,
+  platformTotals, resetProblem, staffAddressExample, suggestCode, summariseProperty,
 } from "../../lib/platform";
 
 const FUNCTION_URL = "https://huvbguyvgptmplqbcbdp.supabase.co/functions/v1/platform-admin";
@@ -166,6 +166,8 @@ function Total({ label, value, sub, tone }) {
 function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid }) {
   const t = useTranslations("Platform");
   const [asking, setAsking] = useState(false);
+  const [wiping, setWiping] = useState(false);
+  const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function toggleHotel() {
@@ -175,6 +177,32 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
     setAsking(false);
     if (out.error) return onError(out.error);
     onSaid(out.is_active ? t("hotelResumed") : t("hotelSuspended"));
+    onChanged();
+  }
+
+  /**
+   * Emptying the register. This one does not go through the edge function:
+   * it is a single database function, so the six deletes and the checks
+   * that the setup survived them are one transaction. An interrupted reset
+   * cannot leave a hotel with guests and no bookings.
+   */
+  async function resetData() {
+    const problem = resetProblem(typed, summary.slug);
+    if (problem) return onError(t(problem));
+
+    setBusy(true);
+    const { data: out, error } = await supabase.rpc("reset_property_data", {
+      p_property: summary.id, p_confirm: typed,
+    });
+    setBusy(false);
+    if (error) return onError(error.message);
+
+    setWiping(false);
+    setTyped("");
+    onSaid(t("resetDone", {
+      bookings: Number(out?.deleted?.bookings) || 0,
+      guests: Number(out?.deleted?.guests) || 0,
+    }));
     onChanged();
   }
 
@@ -201,12 +229,42 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
           </div>
         </div>
         {!asking && (
-          <button className={`btn sm ${summary.active ? "danger" : ""}`}
-            onClick={() => (summary.active ? setAsking(true) : toggleHotel())} disabled={busy}>
-            <Power size={15} />{summary.active ? t("suspend") : t("resume")}
-          </button>
+          <div className="row" style={{ flex: "none" }}>
+            <button className="btn sm" onClick={() => setWiping((open) => !open)} disabled={busy}>
+              <Eraser size={15} />{t("resetData")}
+            </button>
+            <button className={`btn sm ${summary.active ? "danger" : ""}`}
+              onClick={() => (summary.active ? setAsking(true) : toggleHotel())} disabled={busy}>
+              <Power size={15} />{summary.active ? t("suspend") : t("resume")}
+            </button>
+          </div>
         )}
       </div>
+
+      {wiping && (
+        <div className="card stack" style={{ background: "var(--paper)" }}>
+          <strong style={{ fontSize: 14 }}>{t("resetTitle", { name: summary.name })}</strong>
+          <p className="section-note" style={{ margin: 0 }}>
+            {t("resetGoes", { bookings: summary.bookings, guests: summary.guests })}
+          </p>
+          <p className="section-note" style={{ margin: 0 }}>{t("resetStays")}</p>
+          {/* Said here rather than in a note somewhere: on the free plan the
+              only copy of this hotel is the one somebody downloaded. */}
+          <div className="banner warn" style={{ margin: 0 }}>{t("resetBackupFirst")}</div>
+          <div className="field">
+            <label htmlFor={`wipe-${summary.id}`}>{t("resetTypeCode", { code: summary.slug })}</label>
+            <input id={`wipe-${summary.id}`} className="mono" dir="ltr" style={{ textAlign: "left" }}
+              autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
+          </div>
+          <div className="row">
+            <button className="btn danger grow" onClick={resetData}
+              disabled={busy || resetProblem(typed, summary.slug) !== null}>
+              {busy ? t("resetting") : t("resetConfirm")}
+            </button>
+            <button className="btn" onClick={() => { setWiping(false); setTyped(""); }}>{t("cancel")}</button>
+          </div>
+        </div>
+      )}
 
       {!summary.active && <div className="banner warn" style={{ margin: 0 }}>{t("suspendedNote")}</div>}
 

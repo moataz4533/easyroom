@@ -621,6 +621,7 @@
     "action_updated": "Details updated",
     "action_restored": "Backup restored",
     "action_guests_cleaned": "Guest records cleaned",
+    "action_data_reset": "Hotel data reset",
     "status_clean": "Clean",
     "status_dirty": "Needs cleaning",
     "status_inspected": "Inspected",
@@ -982,7 +983,18 @@
     "accountActivated": "Account activated",
     "accountDeactivated": "Account suspended",
     "hotelResumed": "The hotel is live",
-    "hotelSuspended": "The hotel is suspended"
+    "hotelSuspended": "The hotel is suspended",
+    "resetData": "Reset data",
+    "resetTitle": "Empty the register of “{name}”",
+    "resetGoes": "This deletes {bookings, number} bookings and {guests, number} guests, along with the payments, the extras, the housekeeping tasks, the maintenance blocks and the whole activity log. There is no undo.",
+    "resetStays": "These stay exactly as they are: the rooms and their types, the rates and seasons, the extras catalogue, the companies, the staff accounts, the manager password, and the hotel's own details.",
+    "resetBackupFirst": "Download a backup first, from the hotel's settings. There is no automatic backup on the current plan, and what goes does not come back.",
+    "resetTypeCode": "Type the branch code “{code}” to confirm",
+    "resetConfirm": "Reset the data",
+    "resetting": "Resetting…",
+    "resetDone": "Reset done: {bookings, number} bookings and {guests, number} guests deleted",
+    "needCode": "Type the branch code",
+    "codeMismatch": "That is not this hotel's code"
   },
   "Discount": {
     "add": "Discount",

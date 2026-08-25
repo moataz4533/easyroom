@@ -621,6 +621,7 @@
     "action_updated": "تم تحديث البيانات",
     "action_restored": "تم استرداد نسخة احتياطية",
     "action_guests_cleaned": "تم تنظيف سجلات النزلاء",
+    "action_data_reset": "تصفير بيانات الفندق",
     "status_clean": "نظيفة",
     "status_dirty": "تحتاج تنظيف",
     "status_inspected": "تم فحصها",
@@ -982,7 +983,18 @@
     "accountActivated": "تم تفعيل الحساب",
     "accountDeactivated": "تم إيقاف الحساب",
     "hotelResumed": "الفندق شغّال",
-    "hotelSuspended": "الفندق موقوف"
+    "hotelSuspended": "الفندق موقوف",
+    "resetData": "تصفير البيانات",
+    "resetTitle": "تصفير بيانات «{name}»",
+    "resetGoes": "هيتمسح: {bookings, number} حجز و{guests, number} نزيل، ومعاهم الدفعات والإضافات ومهام النظافة وحجوزات الصيانة وسجل العمليات كله. مفيش رجوع.",
+    "resetStays": "هيفضل زي ما هو: الغرف وأنواعها، الأسعار والمواسم، أصناف الإضافات، الشركات، حسابات الموظفين، كلمة مرور المدير، وبيانات الفندق.",
+    "resetBackupFirst": "نزّل نسخة احتياطية الأول من إعدادات الفندق. مفيش نسخة تلقائية على الخطة الحالية، واللي هيتمسح مش هيرجع.",
+    "resetTypeCode": "اكتب رمز الفرع «{code}» عشان تأكد",
+    "resetConfirm": "تصفير البيانات",
+    "resetting": "جارٍ التصفير…",
+    "resetDone": "تم التصفير: اتمسح {bookings, number} حجز و{guests, number} نزيل",
+    "needCode": "اكتب رمز الفرع",
+    "codeMismatch": "الرمز مش مطابق لرمز الفندق ده"
   },
   "Discount": {
     "add": "خصم",

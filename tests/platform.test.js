@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CODE_PATTERN, codeProblem, isDormant, membersOf, neverSignedIn, newHotelProblems,
-  normaliseCode, platformTotals, staffAddressExample, suggestCode,
+  normaliseCode, platformTotals, resetProblem, staffAddressExample, suggestCode,
   summariseProperty,
 } from "../lib/platform";
 
@@ -154,5 +154,27 @@ describe("what the panel shows", () => {
 
   it("copes with an empty platform", () => {
     expect(platformTotals([], [])).toMatchObject({ hotels: 0, accounts: 0, rooms: 0 });
+  });
+});
+
+/**
+ * Emptying a hotel's register. The database refuses this for anyone who is
+ * not a platform admin and for any code that is not the hotel's own; what
+ * is checked here is that the operator is told which it is before they
+ * press anything.
+ */
+describe("confirming a reset", () => {
+  it("wants the code typed before it will do anything", () => {
+    expect(resetProblem("", "greek-club-dahab")).toBe("needCode");
+    expect(resetProblem("   ", "greek-club-dahab")).toBe("needCode");
+  });
+
+  it("refuses the code of a different hotel", () => {
+    expect(resetProblem("hotel-b", "greek-club-dahab")).toBe("codeMismatch");
+  });
+
+  it("accepts the hotel's own code, however it was typed", () => {
+    expect(resetProblem("greek-club-dahab", "greek-club-dahab")).toBeNull();
+    expect(resetProblem("  Greek Club Dahab ", "greek-club-dahab")).toBeNull();
   });
 });

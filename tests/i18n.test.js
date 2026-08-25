@@ -206,7 +206,7 @@ describe("bilingual routing and messages", () => {
       "created", "checked_in", "checked_out", "housekeeping_status_changed",
       "received", "refunded", "extended", "shortened", "room_moved", "cancelled",
       "no_show", "room_blocked", "room_unblocked", "pin_changed", "updated",
-      "restored", "guests_cleaned",
+      "restored", "guests_cleaned", "data_reset",
     ]) {
       expect(typeof ar.Activity[`action_${action}`], action).toBe("string");
     }
