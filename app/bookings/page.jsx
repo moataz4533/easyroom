@@ -10,9 +10,10 @@ import BookingCharges from "../../components/BookingCharges";
 import RoomDiscount from "../../components/RoomDiscount";
 import BookingEdit from "../../components/BookingEdit";
 import { earlyOutBounds, stayStarted } from "../../lib/booking-edit";
+import ReservationProof from "../../components/ReservationProof";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
-import { MessageCircle, Receipt } from "lucide-react";
+import { FileCheck2, MessageCircle, Receipt } from "lucide-react";
 import { fullDate, joinList } from "../../lib/format";
 
 export default function Page() {
@@ -53,10 +54,11 @@ function Bookings() {
       .select(`
         id, property_id, reference, status, source, check_in, check_out, adults, children,
         total_amount, paid_amount, notes, attention_reason, cancel_reason,
-        guests(id, full_name, phone),
-        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, discount_kind, discount_value, discount_note, discount_amount, rooms(number, room_types(max_occupancy))),
+        guests(id, full_name, phone, id_number, nationality),
+        rate_plans(id, code, name, name_en), accounts(id, name),
+        room_allocations(id, room_id, starts_on, ends_on, occupancy, released_at, release_reason, rate_per_night, discount_kind, discount_value, discount_note, discount_amount, rooms(number, room_types(name, name_en, max_occupancy))),
         payments(id, amount, method, notes, received_at),
-        booking_charges(id, charge_item_id, description, quantity, unit_amount, amount, notes, voided_at)
+        booking_charges(id, charge_item_id, description, description_en, quantity, unit_amount, amount, notes, is_included, pricing_basis, voided_at)
       `)
       .eq("property_id", property.id);
 
@@ -315,9 +317,11 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const tb = useTranslations("Bill");
   const tk = useTranslations("Bookings");
   const td = useTranslations("Discount");
+  const trp = useTranslations("ReservationProof");
   const common = useTranslations("Common");
   const [confirmation, setConfirmation] = useState(false);
   const [bill, setBill] = useState(false);
+  const [proof, setProof] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
@@ -399,6 +403,10 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           <Receipt size={16} />{tb("open")}
         </button>
 
+        <button className="btn wide" style={{ marginBottom: 12 }} onClick={() => setProof(true)}>
+          <FileCheck2 size={16} />{trp("open")}
+        </button>
+
         {bill && (
           <GuestBill
             property={property} booking={b}
@@ -419,6 +427,14 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             onCopied={() => onNotify(t("copied"))}
             onCopyFailed={() => onError(t("copyFailed"))}
           />
+        )}
+
+        {proof && (
+          <ReservationProof property={property} booking={b}
+            allocations={b.room_allocations || []} charges={b.booking_charges || []}
+            onClose={() => setProof(false)}
+            onCopied={() => onNotify(trp("copied"))}
+            onCopyFailed={() => onError(trp("copyFailed"))} />
         )}
 
         {b.attention_reason && (
