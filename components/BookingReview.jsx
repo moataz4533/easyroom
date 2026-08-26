@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { currencyWord } from "../lib/hotel-settings";
 import { Check, X } from "lucide-react";
 import { dayLabel, egp, nights } from "../lib/supabase";
 import { localizedName, useLocale } from "../lib/locale";
@@ -61,7 +62,7 @@ export default function BookingReview({
                 <div key={item.rate_plan_addon_id || item.charge_item_id}>
                   <span><Check size={14} />{locale === "en" ? (item.name_en || item.name) : item.name}
                     <small>{t(`basis_${item.pricing_basis}`)} × {Number(item.quantity)}</small></span>
-                  <strong>{item.is_included ? t("included") : `${egp(item.amount, locale)} ${common("currency")}`}</strong>
+                  <strong>{item.is_included ? t("included") : `${egp(item.amount, locale)} ${currencyWord(locale)}`}</strong>
                 </div>
               ))}
             </div>
@@ -71,9 +72,9 @@ export default function BookingReview({
         {draft.notes && <div className="review-section"><h3>{t("notes")}</h3><p className="review-notes">{draft.notes}</p></div>}
 
         <div className="review-total">
-          <div><span>{t("roomSubtotal")}</span><strong>{egp(roomSubtotal, locale)} {common("currency")}</strong></div>
-          {paid.length > 0 && <div><span>{t("paidServices")}</span><strong>{egp(paid.reduce((sum, row) => sum + Number(row.amount || 0), 0), locale)} {common("currency")}</strong></div>}
-          <div className="grand"><span>{t("total")}</span><strong>{egp(total, locale)} {common("currency")}</strong></div>
+          <div><span>{t("roomSubtotal")}</span><strong>{egp(roomSubtotal, locale)} {currencyWord(locale)}</strong></div>
+          {paid.length > 0 && <div><span>{t("paidServices")}</span><strong>{egp(paid.reduce((sum, row) => sum + Number(row.amount || 0), 0), locale)} {currencyWord(locale)}</strong></div>}
+          <div className="grand"><span>{t("total")}</span><strong>{egp(total, locale)} {currencyWord(locale)}</strong></div>
         </div>
 
         <div className="row booking-review-actions">

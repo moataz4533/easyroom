@@ -26,6 +26,13 @@ insert into property_members (property_id, user_id, role, is_active, login_usern
   ('bbbbbbbb-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', 'owner', true, 'ownerb')
 on conflict do nothing;
 
+-- Every hotel is born with a default rate plan now (a trigger sees to it),
+-- so the fixture adopts hotel A's under the id the suites below use rather
+-- than inserting a second default the unique index would refuse.
+update rate_plans set id = 'eeeeeeee-0000-0000-0000-000000000001', code = 'STD',
+       name = 'Standard plan'
+ where property_id = 'aaaaaaaa-0000-0000-0000-000000000001' and is_default;
+
 insert into guests (property_id, full_name, phone) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Guest of A', '0100000001'),
   ('bbbbbbbb-0000-0000-0000-000000000002', 'Guest of B', '0100000002')

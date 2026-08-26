@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { currencyWord } from "../../lib/hotel-settings";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, dayLabel } from "../../lib/supabase";
 import { useTranslations } from "next-intl";
@@ -48,12 +49,11 @@ function Reports() {
   const [loading, setLoading] = useState(true);
   const tx = useTranslations("Export");
   const t = useTranslations("Reports");
-  const common = useTranslations("Common");
   const [toast, showToast] = useToast();
 
   // Every figure on this screen is money in the same currency, written the
   // same way. Once, here.
-  const money = (value) => `${egp(value, locale)} ${common("currency")}`;
+  const money = (value) => `${egp(value, locale)} ${currencyWord(locale)}`;
 
   useEffect(() => {
     if (range !== "custom") setDates(rangeDates(range));
@@ -169,7 +169,7 @@ function Reports() {
               {/* Beside room revenue, never inside ADR or RevPAR: those are
                   per room-night, and a transfer to the airport is not. */}
               <Kpi label={t("extrasRevenue")} value={money(summary.extras_revenue)}
-                sub={t("totalRevenue", { amount: egp(summary.total_revenue, locale), currency: common("currency") })} />
+                sub={t("totalRevenue", { amount: egp(summary.total_revenue, locale), currency: currencyWord(locale) })} />
               <Kpi label={t("adr")} value={money(summary.adr)} sub={t("adrNote")} />
               <Kpi label={t("revpar")} value={money(summary.revpar)} sub={t("revparNote")} />
               <Kpi label={t("bookingsMade")} value={summary.bookings_made} />

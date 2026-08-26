@@ -8,6 +8,12 @@
 --   30, 31 Aug at 700 (season)      1, 2 Sep at 400 (standing)
 --   list 2200 · 10% off · net 1980 · given away 220
 
+-- Every hotel is born able to take a booking. Hotel B is given nothing by
+-- any suite, so its plan can only have come from the trigger on `properties`
+-- — and there is exactly one, because `one_default_rate_plan` allows one.
+select 'hotel B · default plan on opening (want 1) = ' || count(*)
+from rate_plans where property_id = 'bbbbbbbb-0000-0000-0000-000000000002' and is_default;
+
 insert into room_types (id, property_id, code, name, base_rate, max_occupancy) values
   ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001',
    'STD', 'Standard', 400, 3)
@@ -18,10 +24,9 @@ insert into rooms (id, property_id, room_type_id, number, is_active) values
    'cccccccc-0000-0000-0000-000000000001', '101', true)
 on conflict do nothing;
 
-insert into rate_plans (id, property_id, code, name, is_default) values
-  ('eeeeeeee-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001',
-   'STD', 'Standard plan', true)
-on conflict do nothing;
+-- The plan is hotel A's default, created by the trigger on `properties` and
+-- adopted under this id in seed.sql. Inserting a second default here would
+-- be refused by `one_default_rate_plan`, which is the point of that index.
 
 -- The standing price, and a season sitting on top of it.
 insert into rates (property_id, room_type_id, rate_plan_id, occupancy, amount, valid_from, valid_to) values

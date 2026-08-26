@@ -120,7 +120,7 @@ export default function Login() {
               <>
                 <label className="field"><span>{t("username")}</span><div className="input-with-icon"><UserRound size={18} /><input required autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed" dir="ltr" /></div></label>
                 {showHotel ? (
-                  <label className="field"><span>{t("hotelCode")}</span><div className="input-with-icon"><Hotel size={18} /><input required autoComplete="organization" value={hotel} onChange={(e) => setHotel(e.target.value)} placeholder="greek-club-dahab" dir="ltr" /></div><span className="field-hint">{t("hotelCodeHint")}</span></label>
+                  <label className="field"><span>{t("hotelCode")}</span><div className="input-with-icon"><Hotel size={18} /><input required autoComplete="organization" value={hotel} onChange={(e) => setHotel(e.target.value)} placeholder={DEFAULT_PROPERTY_SLUG} dir="ltr" /></div><span className="field-hint">{t("hotelCodeHint")}</span></label>
                 ) : (
                   <button type="button" className="link-button" onClick={() => setShowHotel(true)}>{t("otherHotel")}</button>
                 )}

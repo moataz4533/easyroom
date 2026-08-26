@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { currencyWord } from "../lib/hotel-settings";
 import { useTranslations } from "next-intl";
 import { Copy, MessageCircle, Printer, X } from "lucide-react";
 import { dayLabel, egp } from "../lib/supabase";
@@ -79,12 +80,12 @@ body{font-family:Arial,Tahoma,sans-serif;margin:0;padding:28px;color:#102d34;bac
             <tbody>
               {model.rooms.map((room, index) => <tr key={`${room.number}-${index}`}>
                 <td>{t("room")} {room.number}</td><td>{room.type} · {t("guestCount", { count: room.occupancy })}</td>
-                {index === 0 ? <td rowSpan={model.rooms.length}>{egp(model.roomSubtotal, locale)} {common("currency")}</td> : null}
+                {index === 0 ? <td rowSpan={model.rooms.length}>{egp(model.roomSubtotal, locale)} {currencyWord(locale)}</td> : null}
               </tr>)}
               {model.paidExtras.map((item, index) => <tr key={`${item.name}-${index}`}>
-                <td>{item.name}</td><td>{t("quantity", { count: item.quantity })}</td><td>{egp(item.amount, locale)} {common("currency")}</td>
+                <td>{item.name}</td><td>{t("quantity", { count: item.quantity })}</td><td>{egp(item.amount, locale)} {currencyWord(locale)}</td>
               </tr>)}
-              <tr className="proof-total"><td colSpan="2">{t("total")}</td><td>{egp(model.total, locale)} {common("currency")}</td></tr>
+              <tr className="proof-total"><td colSpan="2">{t("total")}</td><td>{egp(model.total, locale)} {currencyWord(locale)}</td></tr>
             </tbody>
           </table>
 

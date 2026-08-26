@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { currencyWord } from "../lib/hotel-settings";
 import Link from "next/link";
 import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import SetupChecklist from "../components/SetupChecklist";
@@ -419,7 +420,6 @@ function RoomSheet({ row, role, locale, onClose, onDone, onError }) {
 function CheckOut({ row, busy, locale, run }) {
   const t = useTranslations("Checkout");
   const b = useTranslations("Board");
-  const common = useTranslations("Common");
   const [asking, setAsking] = useState(false);
   const [nights, setNights] = useState(null);
   const leavingEarly = isLeavingEarly(row.ends_on, today());
@@ -475,13 +475,13 @@ function CheckOut({ row, busy, locale, run }) {
       <button className="btn wide choice" disabled={busy} onClick={() => go(false)}>
         <span>{t("billNights")}</span>
         <strong className="mono">
-          {amounts ? `${egp(amounts.stayed, locale)} ${common("currency")}` : "…"}
+          {amounts ? `${egp(amounts.stayed, locale)} ${currencyWord(locale)}` : "…"}
         </strong>
       </button>
       <button className="btn wide choice" disabled={busy} onClick={() => go(true)}>
         <span>{t("billWholeStay")}</span>
         <strong className="mono">
-          {amounts ? `${egp(amounts.booked, locale)} ${common("currency")}` : "…"}
+          {amounts ? `${egp(amounts.booked, locale)} ${currencyWord(locale)}` : "…"}
         </strong>
       </button>
       <button className="btn wide" disabled={busy} onClick={() => setAsking(false)}>

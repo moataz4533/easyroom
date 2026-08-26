@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
+import { currencyWord } from "../../lib/hotel-settings";
 import { useRouter, useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, addDays, nights, dayLabel } from "../../lib/supabase";
@@ -52,7 +53,6 @@ function NewBooking() {
   const tp = useTranslations("Paste");
   const tn = useTranslations("NewBooking");
   const td = useTranslations("Discount");
-  const common = useTranslations("Common");
   const { online } = useOffline();
 
   const presetRoom = params.get("room");
@@ -637,7 +637,7 @@ function NewBooking() {
 
           {history && history.outstanding > 0 && (
             <div className="banner warn" style={{ margin: 0 }}>
-              {tn("owes", { amount: egp(history.outstanding, locale), currency: common("currency") })}
+              {tn("owes", { amount: egp(history.outstanding, locale), currency: currencyWord(locale) })}
             </div>
           )}
         </div>
@@ -856,17 +856,17 @@ function NewBooking() {
               {tn("summary", { rooms: Object.keys(picked).length, heads: totalHeads, nights: n })}
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {reviewTotal !== null ? `${egp(reviewTotal, locale)} ${common("currency")}` : "—"}
+              {reviewTotal !== null ? `${egp(reviewTotal, locale)} ${currencyWord(locale)}` : "—"}
             </div>
             {/* The price before the discount stays visible: reception says
                 both numbers out loud on the phone. */}
             {priced && priced.discount > 0 && (
               <div style={{ fontSize: 12, opacity: .8 }}>
                 <span style={{ textDecoration: "line-through" }}>
-                  {egp(priced.list, locale)} {common("currency")}
+                  {egp(priced.list, locale)} {currencyWord(locale)}
                 </span>
                 {" · "}
-                {td("saved", { amount: egp(priced.discount, locale), currency: common("currency") })}
+                {td("saved", { amount: egp(priced.discount, locale), currency: currencyWord(locale) })}
               </div>
             )}
           </div>

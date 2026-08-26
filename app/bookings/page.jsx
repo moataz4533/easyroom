@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { currencyWord } from "../../lib/hotel-settings";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import { supabase, egp, today, dayLabel, nights } from "../../lib/supabase";
 import { useOffline } from "../../lib/offline";
@@ -181,7 +182,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
     if (error) return onError(error.message);
 
     onDone(t(refund ? "recordedRefund" : "recordedPayment",
-      { amount: egp(n, locale), currency: common("currency") }));
+      { amount: egp(n, locale), currency: currencyWord(locale) }));
   }
 
   return (
@@ -189,9 +190,9 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
       <div className="spread" style={{ marginBottom: 8 }}>
         <h2 style={{ fontSize: 14 }}>{t("payments")}</h2>
         {owed > 0 ? (
-          <span className="pill warn">{t("owed", { amount: egp(owed, locale), currency: common("currency") })}</span>
+          <span className="pill warn">{t("owed", { amount: egp(owed, locale), currency: currencyWord(locale) })}</span>
         ) : owed < 0 ? (
-          <span className="pill bad">{t("overpaid", { amount: egp(-owed, locale), currency: common("currency") })}</span>
+          <span className="pill bad">{t("overpaid", { amount: egp(-owed, locale), currency: currencyWord(locale) })}</span>
         ) : (
           <span className="pill ok">{t("paidInFull")}</span>
         )}
@@ -214,7 +215,7 @@ function PaymentsSection({ b, owed, online, onDone, onError }) {
               </div>
               <span className="mono" style={{ fontWeight: 600,
                 color: Number(p.amount) < 0 ? "var(--danger)" : "var(--ok)" }}>
-                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount), locale)} {common("currency")}
+                {Number(p.amount) < 0 ? "−" : ""}{egp(Math.abs(p.amount), locale)} {currencyWord(locale)}
               </span>
             </div>
           ))}
@@ -310,7 +311,7 @@ function BookingRow({ b, onOpen }) {
         </div>
       </div>
       <div className="mono" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
-        {egp(b.total_amount, locale)} {common("currency")}
+        {egp(b.total_amount, locale)} {currencyWord(locale)}
       </div>
     </button>
   );
@@ -474,10 +475,10 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           </div>
           <div className="spread" style={{ marginTop: 8 }}>
             <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
-              {egp(b.total_amount, locale)} {common("currency")}
+              {egp(b.total_amount, locale)} {currencyWord(locale)}
             </span>
             {owed > 0 ? (
-              <span className="pill warn">{tk("owed", { amount: egp(owed, locale), currency: common("currency") })}</span>
+              <span className="pill warn">{tk("owed", { amount: egp(owed, locale), currency: currencyWord(locale) })}</span>
             ) : (
               <span className="pill ok">{tk("paid")}</span>
             )}
@@ -568,7 +569,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                           the total at the bottom. */}
                       {Number(a.discount_amount) > 0 && (
                         <div style={{ fontSize: 12, color: "var(--sea)" }}>
-                          {td("onRoom", { amount: egp(a.discount_amount, locale), currency: common("currency") })}
+                          {td("onRoom", { amount: egp(a.discount_amount, locale), currency: currencyWord(locale) })}
                           {a.discount_note ? ` · ${a.discount_note}` : ""}
                         </div>
                       )}

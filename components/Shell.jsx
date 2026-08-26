@@ -12,6 +12,7 @@ import {
   MoreHorizontal, RefreshCw, Settings,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { setHotelSettings } from "../lib/hotel-settings";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
 import { useOffline } from "../lib/offline";
 import {
@@ -99,6 +100,11 @@ export default function Shell({ children }) {
       const memberships = memberResult.data || [];
       const property = pickProperty(properties, readSavedProperty());
       const role = roleIn(memberships, property?.id);
+
+      // Before any screen renders. `today()` and every money line read this,
+      // and until it is set they fall back to the device and to pounds —
+      // which is right for nobody in particular.
+      setHotelSettings(property);
 
       setState({
         loading: false, session, property, properties, memberships,

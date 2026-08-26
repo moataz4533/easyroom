@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { currencyWord } from "../lib/hotel-settings";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../lib/locale";
 import { Tag } from "lucide-react";
@@ -113,7 +114,7 @@ export default function RoomDiscount({ allocation, onDone, onError }) {
 
       {given > 0 && (
         <div className="banner ok" style={{ margin: 0 }}>
-          {t("currently", { amount: egp(given, locale), currency: common("currency") })}
+          {t("currently", { amount: egp(given, locale), currency: currencyWord(locale) })}
         </div>
       )}
 

@@ -8,6 +8,7 @@ import Shell, { Toast, useProperty, useToast } from "../../components/Shell";
 import { supabase } from "../../lib/supabase";
 import { joinList } from "../../lib/format";
 import { isNamedReason } from "../../lib/cancel-reasons";
+import { hotelZone } from "../../lib/hotel-settings";
 
 export default function Page() { return <Shell><ActivityLog /></Shell>; }
 
@@ -136,7 +137,7 @@ function ActivityRow({ row, locale, t, label, showDay }) {
       <div className="timeline-day">
         <CalendarClock size={15} />
         {date.toLocaleDateString(tag, {
-          weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Cairo",
+          weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: hotelZone(),
         })}
       </div>
     )}
@@ -149,7 +150,7 @@ function ActivityRow({ row, locale, t, label, showDay }) {
             <div className="timeline-details">{details.join(" · ")}</div>
           </div>
           <time className="mono" dateTime={row.created_at}>
-            {date.toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo" })}
+            {date.toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit", timeZone: hotelZone() })}
           </time>
         </div>
         <div className="timeline-actor">{t("by", { name: row.actor_name || "—" })}</div>
@@ -167,6 +168,6 @@ function groupOf(action) {
 
 function dayKey(value) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: hotelZone(), year: "numeric", month: "2-digit", day: "2-digit",
   }).format(new Date(value));
 }
