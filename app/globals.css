@@ -18,6 +18,7 @@
   --ok-soft: #ebf6ef;
   --shadow-sm: 0 1px 2px rgba(8, 47, 57, .05);
   --shadow-md: 0 14px 35px rgba(8, 47, 57, .09);
+  --shadow-btn: 0 2px 6px rgba(8, 47, 57, .10);
   --radius-sm: 10px;
   --radius: 14px;
   --radius-lg: 22px;
@@ -98,34 +99,85 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* Buttons: quiet by default, obvious when they matter. Colour and a pressed
    state carry the feedback — nothing moves, because a row of controls that
    jumps under a fast thumb is harder to hit, not friendlier. */
-.btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 11px; padding: 10px 16px; background: var(--surface); color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+/* ---------------------------------------------------------------- */
+/* Buttons.
+   Fewer lines, more hierarchy. The old set drew a 1px border around
+   everything, which made a destructive action and a neutral one look the
+   same weight and left the primary competing with its own outline. Here
+   the border carries the quiet buttons, the shadow carries the loud one,
+   and red is a tint rather than only a word — so «إلغاء الحجز» never reads
+   like «رجوع» at a glance on a phone in a lobby. */
+
+.btn {
+  min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px; font-weight: 600; line-height: 1.2;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background .16s ease, border-color .16s ease, color .16s ease,
+              box-shadow .16s ease, transform .16s ease;
+}
 .btn svg { flex: none; }
-.btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
-.btn:active { background: #eaf0f0; }
-.btn:disabled { color: #78898c; background: var(--surface-2); border-color: var(--line); cursor: not-allowed; }
 
-.btn.primary { color: #fff; background: var(--deep); border-color: var(--deep); box-shadow: 0 1px 2px rgba(8,47,57,.18); }
-.btn.primary:hover { background: var(--sea); border-color: var(--sea); }
-.btn.primary:active { background: var(--deep-2); border-color: var(--deep-2); }
-.btn.primary:disabled { color: #fff; background: #7d979c; border-color: #7d979c; box-shadow: none; }
+/* A press should be felt. One pixel is enough on a touch screen and is not
+   noticed as movement — it is noticed as the button answering. */
+.btn:hover { background: var(--surface-2); border-color: var(--line-strong); box-shadow: var(--shadow-btn); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); box-shadow: none; background: #eef3f3; }
 
-.btn.ghost { color: var(--sea); background: transparent; border-color: var(--line); }
-.btn.ghost:hover { color: var(--deep); background: var(--sea-soft); border-color: #c5dcdf; }
+/* Inert, and obviously so. Greying the text alone left a button that still
+   looked pressable, which on a slow connection is a button pressed twice. */
+.btn:disabled {
+  color: var(--muted); background: var(--surface-2); border-color: var(--line);
+  box-shadow: none; transform: none; opacity: .6; cursor: not-allowed;
+}
 
-.btn.danger { color: var(--danger); }
-.btn.danger:hover { color: var(--danger); background: var(--danger-soft); border-color: #e8b5ae; }
-.btn.danger:active { background: #ffe2de; }
+/* The one action the screen is for. No border of its own — the fill is the
+   edge, and the shadow does the lifting. */
+.btn.primary {
+  color: #fff; background: var(--deep); border-color: var(--deep);
+  box-shadow: 0 1px 2px rgba(8,47,57,.20), 0 6px 16px -8px rgba(8,47,57,.45);
+}
+.btn.primary:hover { background: var(--sea); border-color: var(--sea); box-shadow: 0 2px 4px rgba(8,47,57,.22), 0 12px 22px -10px rgba(8,47,57,.5); }
+.btn.primary:active { background: var(--deep-2); border-color: var(--deep-2); box-shadow: 0 1px 2px rgba(8,47,57,.2); }
+.btn.primary:disabled { color: #fff; background: #8ba4a9; border-color: #8ba4a9; box-shadow: none; }
 
-.btn.sm { min-height: 36px; border-radius: 9px; padding: 8px 12px; font-size: 13px; }
+.btn.ghost { color: var(--sea); background: transparent; border-color: var(--line); box-shadow: none; }
+.btn.ghost:hover { color: var(--deep); background: var(--sea-soft); border-color: #c5dcdf; box-shadow: var(--shadow-btn); }
+
+/* Tinted at rest, so a destructive action is never mistaken for a neutral
+   one — but not filled, so it is never the thing the eye goes to first. */
+.btn.danger { color: var(--danger); background: var(--danger-soft); border-color: #f0cdc7; box-shadow: none; }
+.btn.danger:hover { color: #8f342b; background: #ffe4e0; border-color: #e5aca3; box-shadow: var(--shadow-btn); }
+.btn.danger:active { background: #ffd8d2; }
+.btn.danger:disabled { color: var(--muted); background: var(--surface-2); border-color: var(--line); }
+
+.btn.sm { min-height: 36px; border-radius: 10px; padding: 8px 12px; font-size: 13px; }
 .btn.wide { width: 100%; }
-/* A pressed toggle reads as a chosen state, so it borrows the primary look. */
+
 /* Two ways of doing the same thing, each with its price. Neither is the
    default one, so neither gets the primary treatment. */
 .btn.choice { justify-content: space-between; gap: 14px; text-align: start; }
 .btn.choice > span { min-width: 0; }
 .btn.choice > strong { flex: none; font-size: 15px; }
 
-.btn[data-active="true"] { color: #fff; background: var(--deep); border-color: var(--deep); }
+/* A pressed toggle reads as a chosen state, so it borrows the primary look. */
+.btn[data-active="true"] {
+  color: #fff; background: var(--deep); border-color: var(--deep);
+  box-shadow: 0 1px 2px rgba(8,47,57,.2);
+}
+.btn[data-active="true"]:hover { background: var(--sea); border-color: var(--sea); }
+
+/* Movement is a nicety; for anyone who has asked for less of it, it is not. */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn:hover, .btn:active { transition: none; transform: none; }
+}
+
 .pill { display: inline-flex; align-items: center; min-height: 26px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--muted); background: var(--surface-2); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .pill.dark { color: #fff; background: var(--deep); border-color: var(--deep); }
 .pill.warn { color: #754d08; background: var(--sand-soft); border-color: #edc774; }
