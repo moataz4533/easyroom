@@ -16,6 +16,7 @@ import {
   bookingCounts, sortAccounts,
 } from "../../lib/accounts";
 import { joinList } from "../../lib/format";
+import RatePlanManager from "../../components/RatePlanManager";
 
 export default function Page() {
   return (
@@ -48,17 +49,18 @@ function Settings() {
 
   const [types, setTypes] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [planAddons, setPlanAddons] = useState([]);
   const [rates, setRates] = useState({});
   const [rooms, setRooms] = useState([]);
   const [staff, setStaff] = useState([]);
   const [chargeItems, setChargeItems] = useState([]);
-  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!property) return;
     setLoading(true);
-    const [t, p, r, rm, st, ci, ac] = await Promise.all([
+    const [t, p, r, rm, st, ci, ac, pa] = await Promise.all([
       supabase.from("room_types").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rate_plans").select("*").eq("property_id", property.id).order("sort_order"),
       supabase.from("rates").select("*").eq("property_id", property.id).is("valid_from", null),
@@ -68,6 +70,8 @@ function Settings() {
       supabase.from("charge_items").select("*").eq("property_id", property.id)
         .order("sort_order"),
       supabase.from("accounts").select("*").eq("property_id", property.id).order("name"),
+      supabase.from("rate_plan_addons").select("*").eq("property_id", property.id)
+        .order("sort_order"),
     ]);
     setTypes(t.data || []);
     setPlans(p.data || []);
@@ -80,6 +84,7 @@ function Settings() {
     setStaff(st.data || []);
     setChargeItems(ci.data || []);
     setAccounts(ac.data || []);
+    setPlanAddons(pa.data || []);
     setLoading(false);
   }, [property]);
 
@@ -87,7 +92,10 @@ function Settings() {
 
   if (loading) return <div className="empty">{t("loading")}</div>;
 
-  const shared = { property, types, plans, rates, rooms, staff, chargeItems, accounts, reload: load, showToast, locale };
+  const shared = {
+    property, types, plans, accounts, planAddons, rates, rooms, staff,
+    chargeItems, reload: load, showToast, locale,
+  };
 
   return (
     <>
@@ -177,7 +185,7 @@ function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }
 }
 
 /* ------------------------------------------------------------------ */
-function Rates({ property, types, plans, rates, reload, showToast, locale }) {
+function Rates({ property, types, plans, accounts, planAddons, chargeItems, rates, reload, showToast, locale }) {
   const t = useTranslations("Settings");
   const [active, setActive] = useState(types[0]?.id);
   const [draft, setDraft] = useState(rates);
@@ -221,6 +229,10 @@ function Rates({ property, types, plans, rates, reload, showToast, locale }) {
 
   return (
     <>
+      <RatePlanManager property={property} plans={plans} accounts={accounts}
+        planAddons={planAddons} chargeItems={chargeItems} locale={locale}
+        reload={reload} showToast={showToast} />
+
       <p className="section-note">{t("rateHint")}</p>
 
       <RateMatrix types={types} plans={plans} locale={locale}

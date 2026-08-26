@@ -19,6 +19,8 @@ import {
 } from "../../lib/provisional";
 import { useTranslations } from "next-intl";
 import { MessageSquareText } from "lucide-react";
+import BookingReview from "../../components/BookingReview";
+import ReservationProof from "../../components/ReservationProof";
 
 export default function Page() {
   return (
@@ -58,6 +60,7 @@ function NewBooking() {
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [idNumber, setIdNumber] = useState("");
   const [guest, setGuest] = useState(null);
   const [history, setHistory] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -94,6 +97,10 @@ function NewBooking() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [quote, setQuote] = useState(null);
+  const [addonQuote, setAddonQuote] = useState([]);
+  const [addonsLoading, setAddonsLoading] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [completed, setCompleted] = useState(null);
   // One discount for the booking, applied to every room on it. Reception
   // quotes the discounted price on the phone, so it has to be settable
   // before the booking exists rather than corrected afterwards. A room that
@@ -106,11 +113,11 @@ function NewBooking() {
   // never blocked: the desk still takes the booking, and a guest with no
   // papers at 2am is a real guest. What this stops is the silent version,
   // where "123" goes in and nobody sees it again until an inspection.
-  const suspect = implausibleFields({ full_name: name, phone }, locale);
+  const suspect = implausibleFields({ full_name: name, phone, id_number: idNumber }, locale);
 
   useEffect(() => {
     if (!property) return;
-    supabase.from("rate_plans").select("*").eq("property_id", property.id)
+    supabase.from("rate_plans").select("*").eq("property_id", property.id).eq("is_active", true)
       .order("sort_order").then(({ data }) => {
         setPlans(data || []);
         setPlanId((data || []).find((p) => p.is_default)?.id || data?.[0]?.id || "");
@@ -230,6 +237,36 @@ function NewBooking() {
     return () => { current = false; };
   }, [picked, planId, rooms, property, checkIn, checkOut, n, online]);
 
+  // Services attached to the rate plan are quoted by the database with the
+  // same quantity function create_booking uses. The final review therefore
+  // cannot drift from the charge lines that will actually be stored.
+  useEffect(() => {
+    const selected = Object.entries(picked).map(([room_id, occupancy]) => ({ room_id, occupancy }));
+    if (!property || !planId || !selected.length || n < 1 || !online) {
+      setAddonQuote([]);
+      setAddonsLoading(false);
+      return;
+    }
+    let current = true;
+    setAddonsLoading(true);
+    supabase.rpc("quote_rate_plan_addons", {
+      p_property: property.id,
+      p_rate_plan: planId,
+      p_rooms: selected,
+      p_check_in: checkIn,
+      p_check_out: checkOut,
+    }).then(({ data, error }) => {
+      if (!current) return;
+      setAddonsLoading(false);
+      if (error) {
+        setAddonQuote(null);
+        return;
+      }
+      setAddonQuote(data || []);
+    });
+    return () => { current = false; };
+  }, [picked, planId, property, checkIn, checkOut, n, online]);
+
   /**
    * A read message fills the boxes it filled and leaves the rest alone, so
    * pasting over a form somebody has already started cannot wipe their work.
@@ -281,8 +318,12 @@ function NewBooking() {
 
     setSearching(false);
     setHistory(found && past ? summariseStays(past) : null);
-    if (found) { setGuest(found); setName(found.full_name); showToast(tn("previousGuest", { name: found.full_name })); }
-    else { setGuest(null); showToast(tn("newGuest")); }
+    if (found) {
+      setGuest(found); setName(found.full_name); setIdNumber(found.id_number || "");
+      showToast(tn("previousGuest", { name: found.full_name }));
+    } else {
+      setGuest(null); setIdNumber(""); showToast(tn("newGuest"));
+    }
   }
 
   // Names on this number that are not the one being typed.
@@ -311,6 +352,10 @@ function NewBooking() {
   const priced = typeof quote === "number"
     ? previewStay(quote, n * Object.keys(picked).length, discount.kind || null, discount.value)
     : null;
+  const paidAddons = Array.isArray(addonQuote)
+    ? addonQuote.reduce((sum, row) => sum + (row.is_included ? 0 : Number(row.amount || 0)), 0)
+    : null;
+  const reviewTotal = priced && paidAddons !== null ? priced.net + paidAddons : null;
 
   /**
    * With no connection nothing can be held: the room is only reserved when
@@ -320,7 +365,7 @@ function NewBooking() {
   function recordProvisional() {
     const record = newProvisional({
       propertyId: property.id,
-      guestName: name, guestPhone: phone,
+      guestName: name, guestPhone: phone, guestIdNumber: idNumber,
       checkIn, checkOut,
       rooms: picked,
       roomLabels: Object.fromEntries(
@@ -347,7 +392,7 @@ function NewBooking() {
     setTimeout(() => router.push(localePath("/", locale)), 900);
   }
 
-  async function submit() {
+  function openReview() {
     if (!online) return recordProvisional();
     if (!name.trim()) return showToast(tn("needName"), true);
     // The button is disabled for this too; checked again because the list
@@ -356,6 +401,13 @@ function NewBooking() {
     if (!Object.keys(picked).length) return showToast(tn("needRoom"), true);
     const badDiscount = discountProblem(discount.kind || null, discount.value);
     if (badDiscount) return showToast(td(badDiscount), true);
+    if (quote === UNPRICED || quote === null || addonQuote === null || addonsLoading) {
+      return showToast(tn("reviewPriceMissing"), true);
+    }
+    setReviewOpen(true);
+  }
+
+  async function submit() {
     setBusy(true);
 
     let guestId = guest?.id;
@@ -379,9 +431,15 @@ function NewBooking() {
     if (!guestId) {
       const { data, error } = await supabase.from("guests").insert({
         property_id: property.id, full_name: name.trim(), phone: phone.trim() || null,
+        id_number: idNumber.trim() || null,
       }).select().single();
       if (error) { setBusy(false); return showToast(error.message, true); }
       guestId = data.id;
+    } else {
+      const { error: guestUpdateFailed } = await supabase.from("guests").update({
+        full_name: name.trim(), phone: phone.trim() || null, id_number: idNumber.trim() || null,
+      }).eq("id", guestId).eq("property_id", property.id);
+      if (guestUpdateFailed) { setBusy(false); return showToast(guestUpdateFailed.message, true); }
     }
 
     const { data: booking, error } = await supabase.rpc("create_booking", {
@@ -401,9 +459,8 @@ function NewBooking() {
       p_notes: notes || null,
     });
 
-    setBusy(false);
-
     if (error) {
+      setBusy(false);
       // The exclusion constraint fires if someone took the room first.
       return showToast(
         error.message.includes("exclusion") || error.code === "23P01"
@@ -413,13 +470,51 @@ function NewBooking() {
       );
     }
 
+    const { data: full, error: proofError } = await supabase.from("bookings").select(`
+      id, property_id, reference, status, source, check_in, check_out, adults, children,
+      total_amount, paid_amount, notes, rate_plan_id, account_id,
+      guests(id, full_name, phone, id_number, nationality),
+      rate_plans(id, code, name, name_en), accounts(id, name),
+      room_allocations(id, occupancy, starts_on, ends_on, released_at, release_reason,
+        rooms(number, room_types(name, name_en))),
+      booking_charges(id, charge_item_id, description, description_en, quantity,
+        unit_amount, amount, is_included, pricing_basis, voided_at)
+    `).eq("id", booking.id).single();
+    setBusy(false);
+    setReviewOpen(false);
+    if (proofError) {
+      return showToast(tn("proofLoadFailed", { reference: booking.reference }), true);
+    }
+    setCompleted(full);
     showToast(tn("recorded", { reference: booking.reference }));
-    setTimeout(() => router.push(localePath("/", locale)), 900);
   }
 
   return (
     <>
       <Toast {...(toast || {})} />
+      <BookingReview
+        open={reviewOpen}
+        draft={{
+          name, phone, idNumber, checkIn, checkOut, source, notes,
+          rooms: Object.entries(picked).map(([id, occupancy]) => ({
+            id, occupancy, number: choices.find((room) => room.id === id)?.number,
+            type: choices.find((room) => room.id === id)?.type,
+          })),
+        }}
+        plan={plans.find((plan) => plan.id === planId)}
+        account={accounts.find((account) => account.id === accountId)}
+        addons={Array.isArray(addonQuote) ? addonQuote : []}
+        roomSubtotal={priced?.net || 0} total={reviewTotal || 0} busy={busy}
+        onClose={() => setReviewOpen(false)} onConfirm={submit}
+      />
+      {completed && (
+        <ReservationProof property={property} booking={completed}
+          allocations={completed.room_allocations || []}
+          charges={completed.booking_charges || []}
+          onClose={() => router.push(localePath("/", locale))}
+          onCopied={() => showToast(tn("proofCopied"))}
+          onCopyFailed={() => showToast(tn("proofCopyFailed"), true)} />
+      )}
       <h2 style={{ marginBottom: 4 }}>{tn("title")}</h2>
       <p className="section-note">{tn("intro")}</p>
 
@@ -467,6 +562,13 @@ function NewBooking() {
                 setHistory(null);
               }
             }} />
+          </div>
+
+          <div className="field">
+            <label htmlFor="id-number">{tn("idNumber")}</label>
+            <input id="id-number" className="mono" dir="ltr" value={idNumber}
+              placeholder={tn("idNumberHint")}
+              onChange={(e) => setIdNumber(e.target.value)} />
           </div>
 
           {guest && (
@@ -754,7 +856,7 @@ function NewBooking() {
               {tn("summary", { rooms: Object.keys(picked).length, heads: totalHeads, nights: n })}
             </div>
             <div className="mono" style={{ fontSize: 22, fontWeight: 600 }}>
-              {priced ? `${egp(priced.net, locale)} ${common("currency")}` : "—"}
+              {reviewTotal !== null ? `${egp(reviewTotal, locale)} ${common("currency")}` : "—"}
             </div>
             {/* The price before the discount stays visible: reception says
                 both numbers out loud on the phone. */}
@@ -785,12 +887,13 @@ function NewBooking() {
           </div>
         )}
         <button className="btn wide"
-          disabled={busy || !Object.keys(picked).length || n < 1 || (clashes.length > 0 && !clashOk)}
-          onClick={submit}
+          disabled={busy || addonsLoading || !Object.keys(picked).length || n < 1
+            || (clashes.length > 0 && !clashOk)}
+          onClick={openReview}
           style={{ background: "#fff", color: "var(--deep)", borderColor: "#fff", fontWeight: 600 }}>
           {busy
             ? (online ? tn("recording") : t("recording"))
-            : (online ? tn("confirm") : t("record"))}
+            : (online ? tn("review") : t("record"))}
         </button>
       </div>
     </>

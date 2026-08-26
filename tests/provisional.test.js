@@ -9,6 +9,7 @@ const draft = {
   propertyId: "p1",
   guestName: "  سامي عبد الله  ",
   guestPhone: " +201001234567 ",
+  guestIdNumber: " A1234567 ",
   checkIn: "2026-09-01",
   checkOut: "2026-09-04",
   rooms: { r101: 2, r102: 3 },
@@ -25,7 +26,8 @@ describe("recording one", () => {
     const r = make();
     expect(r).toMatchObject({
       id: "rec1", state: "pending", error: null,
-      guestName: "سامي عبد الله", guestPhone: "+201001234567", notes: "وصول متأخر",
+      guestName: "سامي عبد الله", guestPhone: "+201001234567",
+      guestIdNumber: "A1234567", notes: "وصول متأخر",
     });
   });
 
@@ -175,6 +177,7 @@ describe("sending it", () => {
 
   it("sends nothing rather than an empty phone number", () => {
     expect(provisionalArgs(make({ guestPhone: "" })).p_guest_phone).toBeNull();
+    expect(provisionalArgs(make({ guestIdNumber: "" })).p_guest_id_number).toBeNull();
     expect(provisionalArgs(make({ notes: "" })).p_notes).toBeNull();
   });
 
