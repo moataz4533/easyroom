@@ -1065,7 +1065,12 @@
     "copyRatesDo": "Fill {count, number} boxes",
     "copyRatesPickFirst": "Pick the type to copy from",
     "ratesCopied": "{count, number} boxes filled — check them and save",
-    "nothingToCopy": "That type has no prices to copy"
+    "nothingToCopy": "That type has no prices to copy",
+    "currency": "Currency",
+    "dialCode": "Country code",
+    "dialCodeHint": "It decides when two written forms are the same phone — “+2010…” and “010…”. Without it one guest can end up with two records.",
+    "timezone": "Hotel timezone",
+    "timezoneHint": "Today's arrivals, today's departures and every report work out the day in this zone."
   },
   "Platform": {
     "title": "Platform console",

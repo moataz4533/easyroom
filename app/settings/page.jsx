@@ -19,6 +19,9 @@ import { joinList } from "../../lib/format";
 import RatePlanManager from "../../components/RatePlanManager";
 import { EMPTY_TYPE, typeInsert, typeProblem } from "../../lib/room-types";
 import { copiedRates, copyCount } from "../../lib/rate-copy";
+import {
+  CURRENCY_CODES, DIAL_CODES, TIMEZONES, currencyWord,
+} from "../../lib/hotel-settings";
 
 export default function Page() {
   return (
@@ -1324,6 +1327,9 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     address: property.settings?.address || "",
     policy: property.settings?.cancellation_policy || "",
     policy_en: property.settings?.cancellation_policy_en || "",
+    currency: property.currency || "EGP",
+    timezone: property.timezone || "Africa/Cairo",
+    dial_code: String(property.settings?.dial_code || "20"),
   });
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
@@ -1381,6 +1387,8 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     const { error } = await supabase.from("properties").update({
       name: form.name,
       name_en: form.name_en || null,
+      currency: form.currency,
+      timezone: form.timezone,
       logo_url: nextLogoUrl,
       primary_color: form.primary_color,
       settings: {
@@ -1389,6 +1397,7 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
         address: form.address,
         cancellation_policy: form.policy,
         cancellation_policy_en: form.policy_en,
+        dial_code: String(form.dial_code || "").replace(/\D/g, "") || null,
       },
     }).eq("id", property.id);
     setSaving(false);
@@ -1449,6 +1458,38 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
       <div className="field"><label>{t("policyEn")}</label>
         <input dir="ltr" style={{ textAlign: "left" }}
           value={form.policy_en} onChange={set("policy_en")} /></div>
+
+      {/* The three the app used to assume. Every one of them was already a
+          column or a setting; none of them had a box. */}
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor="hotel-currency">{t("currency")}</label>
+          <select id="hotel-currency" value={form.currency} onChange={set("currency")}>
+            {CURRENCY_CODES.map((code) => (
+              <option key={code} value={code}>{code} · {currencyWord(locale, code)}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field grow">
+          <label htmlFor="hotel-dial">{t("dialCode")}</label>
+          <select id="hotel-dial" value={form.dial_code} onChange={set("dial_code")}>
+            {DIAL_CODES.map((country) => (
+              <option key={country.code} value={country.code}>
+                {locale === "en" ? country.en : country.ar} +{country.code}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <p className="field-hint">{t("dialCodeHint")}</p>
+
+      <div className="field">
+        <label htmlFor="hotel-tz">{t("timezone")}</label>
+        <select id="hotel-tz" value={form.timezone} onChange={set("timezone")}>
+          {TIMEZONES.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+        </select>
+      </div>
+      <p className="field-hint">{t("timezoneHint")}</p>
       <button className="btn primary wide" disabled={saving} onClick={save}>
         {saving ? t("uploading") : t("save")}
       </button>

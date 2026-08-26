@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  currencyWord, hotelCurrency, hotelZone, setHotelSettings,
+  CURRENCY_CODES, DIAL_CODES, TIMEZONES,
+  currencyWord, hotelCurrency, hotelDialCode, hotelZone, setHotelSettings,
 } from "../lib/hotel-settings";
 
 afterEach(() => setHotelSettings(null));
@@ -67,5 +68,44 @@ describe("the word after the number", () => {
   it("follows the hotel without being told the code", () => {
     setHotelSettings({ currency: "SAR" });
     expect(currencyWord("ar")).toBe("ر.س");
+  });
+});
+
+describe("the hotel's country code", () => {
+  it("comes from the property's settings", () => {
+    setHotelSettings({ settings: { dial_code: "+966" } });
+    expect(hotelDialCode()).toBe("966");
+  });
+
+  it("keeps Egypt when a hotel has not said otherwise", () => {
+    setHotelSettings({ timezone: "Africa/Cairo" });
+    expect(hotelDialCode()).toBe("20");
+  });
+
+  it("survives a code typed with punctuation or left blank", () => {
+    setHotelSettings({ settings: { dial_code: "00 971" } });
+    expect(hotelDialCode()).toBe("00971");
+    setHotelSettings({ settings: { dial_code: "  " } });
+    expect(hotelDialCode()).toBe("20");
+  });
+});
+
+describe("what the settings screen offers", () => {
+  it("lists the currencies it has words for, Egypt first", () => {
+    expect(CURRENCY_CODES[0]).toBe("EGP");
+    expect(CURRENCY_CODES).toContain("SAR");
+  });
+
+  it("pairs every dialling code with a country in both languages", () => {
+    for (const country of DIAL_CODES) {
+      expect(country.code, country.en).toMatch(/^\d+$/);
+      expect(country.ar.length, country.en).toBeGreaterThan(1);
+      expect(country.en.length, country.en).toBeGreaterThan(1);
+    }
+  });
+
+  it("offers a timezone for every dialling code's country", () => {
+    expect(TIMEZONES).toContain("Africa/Cairo");
+    expect(TIMEZONES.length).toBeGreaterThanOrEqual(DIAL_CODES.length);
   });
 });

@@ -120,3 +120,30 @@ describe("who is already on a number", () => {
     expect(namesOnPhone([], "01220732569")).toEqual([]);
   });
 });
+
+/**
+ * Which prefix means "this country" was Egypt's, written into the code. A
+ * Saudi hotel would have filed `+9665…` and `05…` as two different people —
+ * the same fault that put twelve rows on one number here, arriving by a
+ * different door.
+ */
+describe("a number written the way another country writes it", () => {
+  it("still reads Egyptian numbers exactly as before", () => {
+    expect(normalisePhone("+201118070453", "20")).toBe("01118070453");
+    expect(normalisePhone("00201118070453", "20")).toBe("01118070453");
+    expect(normalisePhone("01118070453", "20")).toBe("01118070453");
+  });
+
+  it("matches the two ways a Saudi number is written", () => {
+    expect(normalisePhone("+966512345678", "966")).toBe("0512345678");
+    expect(normalisePhone("0512345678", "966")).toBe("0512345678");
+    expect(samePhone("+966512345678", "0512345678")).toBe(false); // hotel is Egyptian
+  });
+
+  it("leaves a number alone when it is not this country's", () => {
+    // A German guest's number at an Egyptian hotel: nothing to strip, and
+    // it still equals itself.
+    expect(normalisePhone("+4915112345678", "20")).toBe("+4915112345678");
+    expect(normalisePhone("+4915112345678", "20")).toBe(normalisePhone("+4915112345678", "20"));
+  });
+});
