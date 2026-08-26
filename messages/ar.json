@@ -584,7 +584,12 @@
     "nightsQuick": "كام ليلة؟",
     "stayReads": "من {from} إلى {to}",
     "phoneHasOthers": "الرقم ده مسجّل على {count, plural, one {نزيل تاني} two {نزيلين تانيين} few {# نزلاء تانيين} other {# نزيلاً تانياً}} ({names}).",
-    "willBeNewGuest": "الحجز هيتسجّل باسم «{name}» على نفس الرقم."
+    "willBeNewGuest": "الحجز هيتسجّل باسم «{name}» على نفس الرقم.",
+    "alreadyBooked": "{count, plural, one {النزيل ده عنده حجز قائم في نفس الليالي} two {النزيل ده عنده حجزين قايمين في نفس الليالي} few {النزيل ده عنده # حجوزات قايمة في نفس الليالي} other {النزيل ده عنده # حجز قائم في نفس الليالي}}",
+    "alreadyBookedLine": "{reference} · {from} ← {to} · {rooms}",
+    "noRoomsYet": "من غير غرفة",
+    "bookAnyway": "أيوه، ده حجز تاني فعلاً — كمّل",
+    "confirmDuplicate": "علّم إنك متأكد قبل ما تحجز لنفس النزيل تاني"
   },
   "Activity": {
     "title": "سجل العمليات",

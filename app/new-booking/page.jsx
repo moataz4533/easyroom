@@ -8,6 +8,7 @@ import { isReturning, isUnreliable, summariseStays } from "../../lib/guest-histo
 import {
   duplicateCount, guestToReuse, namesOnPhone, normalisePhone, pickGuest, sameName,
 } from "../../lib/guest-match";
+import { clashingStays, roomsOf } from "../../lib/duplicate-booking";
 import { implausibleFields } from "../../lib/guest-record";
 import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
 import { fullDate, joinList } from "../../lib/format";
@@ -64,6 +65,9 @@ function NewBooking() {
   // Everybody already recorded against this number. With a company
   // number that is a list of other people, not of this guest.
   const [onPhone, setOnPhone] = useState([]);
+  // Live stays over the chosen nights, for spotting the same guest twice.
+  const [staysOver, setStaysOver] = useState([]);
+  const [clashOk, setClashOk] = useState(false);
   const [pasting, setPasting] = useState(false);
   // What the message asked for but the form has no box for. Kept as advice
   // next to the room list rather than acted on: which rooms are free is the
@@ -114,6 +118,22 @@ function NewBooking() {
     supabase.from("accounts").select("*").eq("property_id", property.id)
       .eq("is_active", true).order("name").then(({ data }) => setAccounts(data || []));
   }, [property]);
+
+  /**
+   * Every stay that holds a room over these nights, fetched when the dates
+   * change and not on every keystroke of the name. Who it belongs to is
+   * worked out here in the browser, so the warning appears as the name is
+   * being typed rather than a request later.
+   */
+  useEffect(() => {
+    if (!property || !online || n < 1) return setStaysOver([]);
+    supabase.from("bookings")
+      .select("reference, status, check_in, check_out, guests(full_name, phone), room_allocations(released_at, rooms(number))")
+      .eq("property_id", property.id)
+      .in("status", ["confirmed", "checked_in", "inquiry"])
+      .lt("check_in", checkOut).gt("check_out", checkIn)
+      .then(({ data }) => setStaysOver(data || []));
+  }, [property, checkIn, checkOut, n, online]);
 
   // Look up availability whenever the dates make sense. Offline there is no
   // availability to look up, so the saved room list stands in for it.
@@ -268,6 +288,15 @@ function NewBooking() {
   // Names on this number that are not the one being typed.
   const othersOnPhone = onPhone.filter((other) => !sameName(other, name));
 
+  /**
+   * The same guest already booked over these nights. A warning, never a
+   * refusal: two rooms for one family under one name is a real booking.
+   * Ticking the box is what turns a second booking from an accident into a
+   * decision.
+   */
+  const clashes = clashingStays(staysOver, { name, phone, checkIn, checkOut });
+  useEffect(() => { setClashOk(false); }, [clashes.length, name, checkIn, checkOut]);
+
   const totalHeads = Object.values(picked).reduce((a, b) => a + b, 0);
 
   /**
@@ -321,6 +350,9 @@ function NewBooking() {
   async function submit() {
     if (!online) return recordProvisional();
     if (!name.trim()) return showToast(tn("needName"), true);
+    // The button is disabled for this too; checked again because the list
+    // can change under a dialog that is already open.
+    if (clashes.length && !clashOk) return showToast(tn("confirmDuplicate"), true);
     if (!Object.keys(picked).length) return showToast(tn("needRoom"), true);
     const badDiscount = discountProblem(discount.kind || null, discount.value);
     if (badDiscount) return showToast(td(badDiscount), true);
@@ -456,6 +488,29 @@ function NewBooking() {
           {/* A company number carries many guests. Saying so out loud is the
               difference between a new row on purpose and a booking quietly
               filed under somebody else's name. */}
+          {clashes.length > 0 && (
+            <div className="banner warn">
+              <strong>{tn("alreadyBooked", { count: clashes.length })}</strong>
+              <ul style={{ margin: "6px 0 0", paddingInlineStart: 18 }}>
+                {clashes.map((stay) => (
+                  <li key={stay.reference} style={{ fontSize: 12 }}>
+                    {tn("alreadyBookedLine", {
+                      reference: stay.reference,
+                      from: dayLabel(stay.check_in, locale),
+                      to: dayLabel(stay.check_out, locale),
+                      rooms: joinList(roomsOf(stay), locale) || tn("noRoomsYet"),
+                    })}
+                  </li>
+                ))}
+              </ul>
+              <label className="row" style={{ gap: 8, marginTop: 8, alignItems: "center" }}>
+                <input type="checkbox" style={{ width: "auto" }}
+                  checked={clashOk} onChange={(e) => setClashOk(e.target.checked)} />
+                <span style={{ fontSize: 13 }}>{tn("bookAnyway")}</span>
+              </label>
+            </div>
+          )}
+
           {!guest && othersOnPhone.length > 0 && (
             <div className="banner" style={{ margin: 0 }}>
               {tn("phoneHasOthers", {
@@ -729,7 +784,8 @@ function NewBooking() {
             {t("noPrice")}
           </div>
         )}
-        <button className="btn wide" disabled={busy || !Object.keys(picked).length || n < 1}
+        <button className="btn wide"
+          disabled={busy || !Object.keys(picked).length || n < 1 || (clashes.length > 0 && !clashOk)}
           onClick={submit}
           style={{ background: "#fff", color: "var(--deep)", borderColor: "#fff", fontWeight: 600 }}>
           {busy

@@ -584,7 +584,12 @@
     "nightsQuick": "How many nights?",
     "stayReads": "From {from} to {to}",
     "phoneHasOthers": "This number is already on {count, plural, one {one other guest} other {# other guests}} ({names}).",
-    "willBeNewGuest": "The booking will be recorded under “{name}” on the same number."
+    "willBeNewGuest": "The booking will be recorded under “{name}” on the same number.",
+    "alreadyBooked": "{count, plural, one {This guest already has a booking on these nights} other {This guest already has # bookings on these nights}}",
+    "alreadyBookedLine": "{reference} · {from} → {to} · {rooms}",
+    "noRoomsYet": "no room yet",
+    "bookAnyway": "Yes, this really is a second booking — carry on",
+    "confirmDuplicate": "Tick the box before booking the same guest again"
   },
   "Activity": {
     "title": "Activity log",
