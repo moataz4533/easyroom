@@ -18,6 +18,7 @@ import {
 import { joinList } from "../../lib/format";
 import RatePlanManager from "../../components/RatePlanManager";
 import { EMPTY_TYPE, typeInsert, typeProblem } from "../../lib/room-types";
+import { copiedRates, copyCount } from "../../lib/rate-copy";
 
 export default function Page() {
   return (
@@ -186,6 +187,71 @@ function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }
 }
 
 /* ------------------------------------------------------------------ */
+/**
+ * Filling one type's prices from another's.
+ *
+ * Nothing here is saved. It writes into the draft the matrix above is
+ * already showing, so the numbers are on screen to be read and corrected
+ * before the manager password is asked for at all.
+ */
+function CopyRates({ types, plans, locale, active, draft, setDraft, showToast }) {
+  const t = useTranslations("Settings");
+  const [from, setFrom] = useState("");
+  const [addAmount, setAddAmount] = useState("");
+  const [addPercent, setAddPercent] = useState("");
+
+  const target = types.find((type) => type.id === active);
+  const sources = types.filter((type) => type.id !== active);
+  const options = {
+    from, to: active, plans,
+    maxOccupancy: target?.max_occupancy || 0,
+    addAmount: Number(addAmount) || 0,
+    addPercent: Number(addPercent) || 0,
+  };
+  const willFill = copyCount(draft, options);
+
+  function apply() {
+    const filled = copiedRates(draft, options);
+    if (!Object.keys(filled).length) return showToast(t("nothingToCopy"), true);
+    setDraft((current) => ({ ...current, ...filled }));
+    showToast(t("ratesCopied", { count: Object.keys(filled).length }));
+  }
+
+  if (!target || !sources.length) return null;
+
+  return (
+    <div className="card stack" style={{ marginTop: 12, background: "var(--paper)" }}>
+      <strong style={{ fontSize: 13 }}>{t("copyRatesTitle", { name: localizedName(target, locale) })}</strong>
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor="copy-from">{t("copyFrom")}</label>
+          <select id="copy-from" value={from} onChange={(e) => setFrom(e.target.value)}>
+            <option value="">{t("copyPick")}</option>
+            {sources.map((type) => (
+              <option key={type.id} value={type.id}>{localizedName(type, locale)}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field" style={{ width: 110 }}>
+          <label htmlFor="copy-amount">{t("copyPlusAmount")}</label>
+          <input id="copy-amount" className="mono" type="number" value={addAmount}
+            placeholder="0" onChange={(e) => setAddAmount(e.target.value)} />
+        </div>
+        <div className="field" style={{ width: 100 }}>
+          <label htmlFor="copy-percent">{t("copyPlusPercent")}</label>
+          <input id="copy-percent" className="mono" type="number" value={addPercent}
+            placeholder="0" onChange={(e) => setAddPercent(e.target.value)} />
+        </div>
+      </div>
+      <p className="field-hint">{t("copyRatesHint")}</p>
+      <button className="btn" disabled={!from} onClick={apply}>
+        {from ? t("copyRatesDo", { count: willFill }) : t("copyRatesPickFirst")}
+      </button>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 function Rates({ property, types, plans, accounts, planAddons, chargeItems, rates, reload, showToast, locale }) {
   const t = useTranslations("Settings");
   const [active, setActive] = useState(types[0]?.id);
@@ -238,6 +304,14 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
 
       <RateMatrix types={types} plans={plans} locale={locale}
         active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+
+      {/* Splitting one type into two does not double the typing; it adds
+          eight empty boxes per new type, and every one of them has to be
+          right or a booking quotes zero. */}
+      {types.length > 1 && (
+        <CopyRates types={types} plans={plans} locale={locale} active={active}
+          draft={draft} setDraft={setDraft} showToast={showToast} />
+      )}
 
       {dirty && !asking && (
         <button className="btn primary wide" style={{ marginTop: 14 }}

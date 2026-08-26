@@ -1055,7 +1055,17 @@
     "typeAddedNext": "اتضاف «{name}». دلوقتي انقل الغرف عليه من تحت، وحطله سعر من تبويب الأسعار.",
     "needTypeName": "اكتب اسم النوع",
     "typeNameTaken": "في نوع بنفس الاسم موجود بالفعل",
-    "typeHeadsRange": "عدد الأفراد من ١ لـ٦"
+    "typeHeadsRange": "عدد الأفراد من ١ لـ٦",
+    "copyRatesTitle": "املا أسعار «{name}» من نوع تاني",
+    "copyFrom": "انسخ من",
+    "copyPick": "— اختار النوع —",
+    "copyPlusAmount": "زايد (ج)",
+    "copyPlusPercent": "زايد (٪)",
+    "copyRatesHint": "بيملا الخانات على الشاشة بس — مش بيحفظ. راجع الأرقام وبعدين احفظ بكلمة مرور المدير.",
+    "copyRatesDo": "املا {count, number} خانة",
+    "copyRatesPickFirst": "اختار النوع اللي هتنسخ منه",
+    "ratesCopied": "اتملت {count, number} خانة — راجعها واحفظ",
+    "nothingToCopy": "النوع ده مالوش أسعار تتنسخ"
   },
   "Platform": {
     "title": "لوحة المنصة",

@@ -1055,7 +1055,17 @@
     "typeAddedNext": "“{name}” added. Now move rooms onto it below, and give it a price on the Rates tab.",
     "needTypeName": "Enter a name for the type",
     "typeNameTaken": "A type with this name already exists",
-    "typeHeadsRange": "Between 1 and 6 guests"
+    "typeHeadsRange": "Between 1 and 6 guests",
+    "copyRatesTitle": "Fill “{name}” from another type",
+    "copyFrom": "Copy from",
+    "copyPick": "— Pick a type —",
+    "copyPlusAmount": "plus (EGP)",
+    "copyPlusPercent": "plus (%)",
+    "copyRatesHint": "This only fills the boxes on screen — it saves nothing. Check the numbers, then save with the manager password.",
+    "copyRatesDo": "Fill {count, number} boxes",
+    "copyRatesPickFirst": "Pick the type to copy from",
+    "ratesCopied": "{count, number} boxes filled — check them and save",
+    "nothingToCopy": "That type has no prices to copy"
   },
   "Platform": {
     "title": "Platform console",
