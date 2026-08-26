@@ -625,7 +625,12 @@
     "status_clean": "Clean",
     "status_dirty": "Needs cleaning",
     "status_inspected": "Inspected",
-    "status_out_of_order": "Out of service"
+    "status_out_of_order": "Out of service",
+    "reason_guest_cancelled": "The guest cancelled",
+    "reason_date_change": "Dates or room changed",
+    "reason_duplicate": "Duplicate booking",
+    "reason_mistake": "Entered by mistake",
+    "reason_other": "Something else…"
   },
   "Bookings": {
     "title": "Bookings",
@@ -709,7 +714,14 @@
     "call": "Call",
     "whatsapp": "WhatsApp",
     "leavingToday": "Leaving today",
-    "earlyReads": "Departure becomes {date} — the stay becomes {nights, plural, one {one night} other {# nights}}, and {dropped, plural, one {one night} other {# nights}} come off the bill."
+    "earlyReads": "Departure becomes {date} — the stay becomes {nights, plural, one {one night} other {# nights}}, and {dropped, plural, one {one night} other {# nights}} come off the bill.",
+    "pickReason": "— Pick a reason —",
+    "reasonWords": "Say what happened",
+    "reason_guest_cancelled": "The guest cancelled",
+    "reason_date_change": "Dates or room changed",
+    "reason_duplicate": "Duplicate booking",
+    "reason_mistake": "Entered by mistake",
+    "reason_other": "Something else…"
   },
   "Reports": {
     "title": "Reports",

@@ -7,6 +7,7 @@ import { useLocale } from "../../lib/locale";
 import Shell, { Toast, useProperty, useToast } from "../../components/Shell";
 import { supabase } from "../../lib/supabase";
 import { joinList } from "../../lib/format";
+import { isNamedReason } from "../../lib/cancel-reasons";
 
 export default function Page() { return <Shell><ActivityLog /></Shell>; }
 
@@ -15,7 +16,7 @@ const KNOWN_ACTIONS = new Set([
   "created", "checked_in", "checked_out", "housekeeping_status_changed",
   "received", "refunded", "extended", "shortened", "room_moved", "cancelled",
   "no_show", "room_blocked", "room_unblocked", "pin_changed", "updated",
-  "restored", "guests_cleaned",
+  "restored", "guests_cleaned", "data_reset",
 ]);
 
 const KNOWN_STATUSES = new Set(["clean", "dirty", "inspected", "out_of_order"]);
@@ -119,6 +120,14 @@ function ActivityRow({ row, locale, t, label, showDay }) {
       && t(`status_${row.payload.status}`),
     ["received", "refunded"].includes(row.action) && row.payload?.amount != null
       ? `${Math.abs(Number(row.payload.amount)).toLocaleString(tag)} EGP`
+      : null,
+    // Written on every cancellation since the beginning and shown on none
+    // of them — which is how twenty-one of them came to say `greekclub`
+    // without anybody noticing.
+    row.action === "cancelled" && row.payload?.reason
+      ? (isNamedReason(row.payload.reason)
+        ? t(`reason_${row.payload.reason}`)
+        : row.payload.reason)
       : null,
   ].filter(Boolean);
 

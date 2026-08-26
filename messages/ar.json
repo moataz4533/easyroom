@@ -625,7 +625,12 @@
     "status_clean": "نظيفة",
     "status_dirty": "تحتاج تنظيف",
     "status_inspected": "تم فحصها",
-    "status_out_of_order": "خارج الخدمة"
+    "status_out_of_order": "خارج الخدمة",
+    "reason_guest_cancelled": "النزيل غيّر رأيه",
+    "reason_date_change": "تغيير التواريخ أو الغرفة",
+    "reason_duplicate": "حجز مكرر",
+    "reason_mistake": "غلط في التسجيل",
+    "reason_other": "سبب تاني…"
   },
   "Bookings": {
     "title": "الحجوزات",
@@ -709,7 +714,14 @@
     "call": "اتصل",
     "whatsapp": "واتساب",
     "leavingToday": "ماشي النهاردة",
-    "earlyReads": "الخروج يبقى {date} — الإقامة تصبح {nights, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}، ويتشيل من الحساب {dropped, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}."
+    "earlyReads": "الخروج يبقى {date} — الإقامة تصبح {nights, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}، ويتشيل من الحساب {dropped, plural, one {ليلة واحدة} two {ليلتان} few {# ليالٍ} other {# ليلة}}.",
+    "pickReason": "— اختار السبب —",
+    "reasonWords": "اكتب السبب",
+    "reason_guest_cancelled": "النزيل غيّر رأيه",
+    "reason_date_change": "تغيير التواريخ أو الغرفة",
+    "reason_duplicate": "حجز مكرر",
+    "reason_mistake": "غلط في التسجيل",
+    "reason_other": "سبب تاني…"
   },
   "Reports": {
     "title": "التقارير",

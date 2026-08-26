@@ -226,6 +226,12 @@ describe("bilingual routing and messages", () => {
     for (const key of ["active", "today", "past", "cancelled"]) {
       expect(typeof ar.Bookings[`filter_${key}`], key).toBe("string");
     }
+    // Every reason the cancel dialog offers, and the same names again in
+    // the log — a reason that reads as a raw key is a reason nobody trusts.
+    for (const key of ["guest_cancelled", "date_change", "duplicate", "mistake", "other"]) {
+      expect(typeof ar.Bookings[`reason_${key}`], key).toBe("string");
+      expect(typeof ar.Activity[`reason_${key}`], key).toBe("string");
+    }
     for (const source of ["whatsapp", "phone", "walk_in", "website", "ota", "referral", "other"]) {
       expect(typeof ar.Reports[`source_${source}`], source).toBe("string");
     }

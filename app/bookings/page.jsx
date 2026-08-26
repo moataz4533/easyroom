@@ -10,6 +10,9 @@ import BookingCharges from "../../components/BookingCharges";
 import RoomDiscount from "../../components/RoomDiscount";
 import BookingEdit from "../../components/BookingEdit";
 import { earlyOutBounds, stayStarted } from "../../lib/booking-edit";
+import {
+  CANCEL_REASONS, cancelProblem, cancelReason, isNamedReason,
+} from "../../lib/cancel-reasons";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
@@ -321,6 +324,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
+  const [why, setWhy] = useState("");
   const [charge, setCharge] = useState(0);
   const early = earlyOutBounds(b, today());
   const [newOut, setNewOut] = useState(() => early?.initial || today());
@@ -425,7 +429,9 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           <div className="banner bad">{b.attention_reason}</div>
         )}
         {b.cancel_reason && (
-          <div className="banner">{tk("cancelReason", { reason: b.cancel_reason })}</div>
+          <div className="banner">{tk("cancelReason", {
+            reason: isNamedReason(b.cancel_reason) ? tk(`reason_${b.cancel_reason}`) : b.cancel_reason,
+          })}</div>
         )}
 
         <section className="section">
@@ -541,18 +547,33 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                 ? tk("cancelInHouse")
                 : tk("cancelFrees", { rooms: joinList(live.map((a) => a.rooms?.number), locale) })}
             </p>
+            {/* Named, not typed. The free-text box collected the
+                reception's username twenty-one times out of twenty-one. */}
             <div className="field">
-              <label>{tk("reason")}</label>
-              <input value={reason} placeholder={tk("cancelReasonPlaceholder")}
-                onChange={(e) => setReason(e.target.value)} />
+              <label htmlFor={`why-${b.id}`}>{tk("reason")}</label>
+              <select id={`why-${b.id}`} value={reason} onChange={(e) => setReason(e.target.value)}>
+                <option value="">{tk("pickReason")}</option>
+                {CANCEL_REASONS.map((key) => (
+                  <option key={key} value={key}>{tk(`reason_${key}`)}</option>
+                ))}
+              </select>
             </div>
+            {reason === "other" && (
+              <div className="field">
+                <label htmlFor={`whytext-${b.id}`}>{tk("reasonWords")}</label>
+                <input id={`whytext-${b.id}`} value={why} autoFocus
+                  placeholder={tk("cancelReasonPlaceholder")}
+                  onChange={(e) => setWhy(e.target.value)} />
+              </div>
+            )}
             <PinPrompt
               title={tk("pinTitle")}
               confirmLabel={tk("cancelConfirm")}
               danger busy={busy}
+              disabled={cancelProblem(reason, why) !== null}
               onCancel={() => setMode(null)}
               onConfirm={(pin) => call("cancel_booking",
-                { p_booking: b.id, p_reason: reason || tk("noReasonGiven"), p_pin: pin },
+                { p_booking: b.id, p_reason: cancelReason(reason, why), p_pin: pin },
                 tk("cancelled"))}
             />
           </div>
