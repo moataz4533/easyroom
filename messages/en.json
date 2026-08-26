@@ -948,8 +948,7 @@
     "descriptionEn": "Description in English",
     "code": "Code",
     "maxOccupancy": "Max",
-    "typeNamePlaceholder": "Sea view room",
-    "needNameAndCode": "The name and the code are both required",
+    "typeNamePlaceholder": "Double",
     "needName": "The name is required",
     "typeAdded": "Room type added",
     "typeRenamed": "Room type updated",
@@ -1050,7 +1049,13 @@
     "phoneTooShort": "That phone number is too short — check it or leave it empty",
     "usernameFixed": "The username “{username}” cannot be changed — it is half of this member's sign-in address, and changing it would lock them out. To change it, create a new account and deactivate this one.",
     "usernameFixedOwner": "The owner signs in with their email address, not a username.",
-    "tab_accounts": "Companies"
+    "tab_accounts": "Companies",
+    "newType": "New room type",
+    "newTypeHint": "Just the name and how many it sleeps. The code is made for you.",
+    "typeAddedNext": "“{name}” added. Now move rooms onto it below, and give it a price on the Rates tab.",
+    "needTypeName": "Enter a name for the type",
+    "typeNameTaken": "A type with this name already exists",
+    "typeHeadsRange": "Between 1 and 6 guests"
   },
   "Platform": {
     "title": "Platform console",

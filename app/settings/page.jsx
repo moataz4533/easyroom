@@ -17,6 +17,7 @@ import {
 } from "../../lib/accounts";
 import { joinList } from "../../lib/format";
 import RatePlanManager from "../../components/RatePlanManager";
+import { EMPTY_TYPE, typeInsert, typeProblem } from "../../lib/room-types";
 
 export default function Page() {
   return (
@@ -267,31 +268,25 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
   const ts = useTranslations("Settings");
   const [newRoom, setNewRoom] = useState("");
   const [newType, setNewType] = useState("");
-  const [typeName, setTypeName] = useState("");
-  const [typeNameEn, setTypeNameEn] = useState("");
-  const [typeDescription, setTypeDescription] = useState("");
-  const [typeDescriptionEn, setTypeDescriptionEn] = useState("");
-  const [typeCode, setTypeCode] = useState("");
-  const [typeMax, setTypeMax] = useState(2);
+  // Three fields, not six. The `code` this form used to demand is derived,
+  // and the two description boxes were written to columns no screen reads.
+  const [typeDraft, setTypeDraft] = useState(EMPTY_TYPE);
   const [editing, setEditing] = useState(null);   // the type being renamed
   const [draftType, setDraftType] = useState({});
 
   async function addType() {
-    if (!typeName.trim() || !typeCode.trim()) return showToast(ts("needNameAndCode"), true);
-    const { error } = await supabase.from("room_types").insert({
-      property_id: property.id,
-      code: typeCode.trim().toUpperCase(),
-      name: typeName.trim(),
-      name_en: typeNameEn.trim() || null,
-      description: typeDescription.trim() || null,
-      description_en: typeDescriptionEn.trim() || null,
-      max_occupancy: Number(typeMax),
-      base_occupancy: Math.min(2, Number(typeMax)),
-      sort_order: types.length + 1,
-    });
+    const problem = typeProblem(typeDraft, types);
+    if (problem) return showToast(ts(problem), true);
+
+    const { error } = await supabase.from("room_types").insert(
+      typeInsert(typeDraft, property.id, types.map((t) => t.code), types.length + 1)
+    );
     if (error) return showToast(error.message, true);
-    setTypeName(""); setTypeNameEn(""); setTypeDescription(""); setTypeDescriptionEn(""); setTypeCode(""); setTypeMax(2);
-    showToast(ts("typeAdded")); reload();
+    setTypeDraft(EMPTY_TYPE);
+    // A new type starts with no rooms and no prices, and neither is obvious
+    // from this screen. Said once, at the moment it is true.
+    showToast(ts("typeAddedNext", { name: typeDraft.name.trim() }));
+    reload();
   }
 
   /**
@@ -385,24 +380,26 @@ function Rooms({ property, types, rooms, reload, showToast, locale }) {
         </div>
 
         <div className="card stack" style={{ marginTop: 10, background: "var(--paper)" }}>
+          <strong style={{ fontSize: 13 }}>{ts("newType")}</strong>
           <div className="row">
-            <div className="field grow"><label>{ts("name")}</label>
-              <input value={typeName} placeholder={ts("typeNamePlaceholder")}
-                onChange={(e) => setTypeName(e.target.value)} /></div>
-            <div className="field grow"><label>{ts("nameEn")}</label>
-              <input value={typeNameEn} placeholder="Sea View Room" dir="ltr"
-                onChange={(e) => setTypeNameEn(e.target.value)} /></div>
-            <div className="field grow"><label>{ts("description")}</label>
-              <input value={typeDescription} onChange={(e) => setTypeDescription(e.target.value)} /></div>
-            <div className="field grow"><label>{ts("descriptionEn")}</label>
-              <input value={typeDescriptionEn} dir="ltr" onChange={(e) => setTypeDescriptionEn(e.target.value)} /></div>
-            <div className="field" style={{ width: 100 }}><label>{ts("code")}</label>
-              <input className="mono" value={typeCode} placeholder="SEA"
-                onChange={(e) => setTypeCode(e.target.value)} /></div>
-            <div className="field" style={{ width: 90 }}><label>{ts("maxOccupancy")}</label>
-              <input className="mono" type="number" min="1" max="6" value={typeMax}
-                onChange={(e) => setTypeMax(e.target.value)} /></div>
+            <div className="field grow">
+              <label htmlFor="type-name">{ts("name")}</label>
+              <input id="type-name" value={typeDraft.name} placeholder={ts("typeNamePlaceholder")}
+                onChange={(e) => setTypeDraft((d) => ({ ...d, name: e.target.value }))} />
+            </div>
+            <div className="field grow">
+              <label htmlFor="type-name-en">{ts("nameEn")}</label>
+              <input id="type-name-en" value={typeDraft.name_en} placeholder="Double" dir="ltr"
+                onChange={(e) => setTypeDraft((d) => ({ ...d, name_en: e.target.value }))} />
+            </div>
+            <div className="field" style={{ width: 110 }}>
+              <label htmlFor="type-max">{ts("maxOccupancy")}</label>
+              <input id="type-max" className="mono" type="number" min="1" max="6"
+                value={typeDraft.max_occupancy}
+                onChange={(e) => setTypeDraft((d) => ({ ...d, max_occupancy: e.target.value }))} />
+            </div>
           </div>
+          <p className="field-hint">{ts("newTypeHint")}</p>
           <button className="btn" onClick={addType}>{ts("addType")}</button>
         </div>
       </section>
