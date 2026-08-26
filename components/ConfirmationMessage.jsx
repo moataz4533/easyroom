@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { GUEST_LOCALES, LANGUAGE_NAMES, isRtl } from "../lib/guest-locales";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../lib/locale";
 import { Copy, MessageCircle, X } from "lucide-react";
@@ -50,12 +51,12 @@ export default function ConfirmationMessage({ property, booking, rooms, onClose,
         <div className="field">
           <label htmlFor="confirmation-locale">{t("language")}</label>
           <div className="tabs" role="tablist" id="confirmation-locale">
-            {["ar", "en"].map((option) => (
+            {GUEST_LOCALES.map((option) => (
               <button
                 key={option} className="tab" role="tab" aria-selected={locale === option}
                 onClick={() => { setLocale(option); setEdited(false); }}
               >
-                {option === "ar" ? "العربية" : "English"}
+                {LANGUAGE_NAMES[option]}
               </button>
             ))}
           </div>
@@ -65,7 +66,7 @@ export default function ConfirmationMessage({ property, booking, rooms, onClose,
           <label htmlFor="confirmation-text">{t("message")}</label>
           <textarea
             id="confirmation-text" className="confirmation-text" rows={14}
-            dir={locale === "ar" ? "rtl" : "ltr"} value={text}
+            dir={isRtl(locale) ? "rtl" : "ltr"} value={text}
             onChange={(event) => { setText(event.target.value); setEdited(true); }}
           />
         </div>

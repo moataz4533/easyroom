@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { GUEST_LOCALES, LANGUAGE_NAMES, isRtl } from "../lib/guest-locales";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../lib/locale";
 import { Copy, MessageCircle, Printer, X } from "lucide-react";
@@ -44,7 +45,7 @@ export default function GuestBill({ property, booking, allocations, charges, pay
   function print() {
     const win = window.open("", "_blank", "width=680,height=840");
     if (!win) return;
-    win.document.write(`<!doctype html><html dir="${locale === "en" ? "ltr" : "rtl"}" lang="${locale}">
+    win.document.write(`<!doctype html><html dir="${isRtl(locale) ? "rtl" : "ltr"}" lang="${locale}">
 <head><meta charset="utf-8"><title>${booking?.reference || ""}</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 32px; color: #102d34; }
@@ -69,13 +70,13 @@ export default function GuestBill({ property, booking, allocations, charges, pay
         </div>
 
         <div className="tabs" role="tablist" aria-label={t("language")}>
-          <button className="tab" role="tab" aria-selected={locale === "ar"}
-            onClick={() => setLocale("ar")}>العربية</button>
-          <button className="tab" role="tab" aria-selected={locale === "en"}
-            onClick={() => setLocale("en")}>English</button>
+          {GUEST_LOCALES.map((option) => (
+            <button key={option} className="tab" role="tab" aria-selected={locale === option}
+              onClick={() => setLocale(option)}>{LANGUAGE_NAMES[option]}</button>
+          ))}
         </div>
 
-        <pre className="confirmation-text" dir={locale === "en" ? "ltr" : "rtl"}>{text}</pre>
+        <pre className="confirmation-text" dir={isRtl(locale) ? "rtl" : "ltr"}>{text}</pre>
 
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn primary grow" onClick={print}>
