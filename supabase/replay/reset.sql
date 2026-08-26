@@ -13,7 +13,7 @@
 insert into platform_admins (user_id) values ('11111111-1111-1111-1111-111111111111')
 on conflict do nothing;
 
-select 'before · hotel A bookings (want 3)        = ' || count(*)
+select 'before · hotel A bookings (want 4)        = ' || count(*)
 from bookings where property_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
 -- Hotel B is not a platform admin, and asking politely with the right code
@@ -41,10 +41,10 @@ exception when others then
   raise notice 'wrong code typed (want refused)           = refused';
 end $$;
 
-select 'refused · bookings still there (want 3)   = ' || count(*)
+select 'refused · bookings still there (want 4)   = ' || count(*)
 from bookings where property_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
-select 'reset · reported deleted bookings (want 3) = '
+select 'reset · reported deleted bookings (want 4) = '
   || (reset_property_data('aaaaaaaa-0000-0000-0000-000000000001', 'hotel-a') -> 'deleted' ->> 'bookings');
 
 -- What had to go.

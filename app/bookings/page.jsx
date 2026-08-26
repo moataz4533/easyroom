@@ -13,6 +13,9 @@ import { earlyOutBounds, stayStarted } from "../../lib/booking-edit";
 import {
   CANCEL_REASONS, cancelProblem, cancelReason, isNamedReason,
 } from "../../lib/cancel-reasons";
+import {
+  datesChange, datesForm, datesProblem, nightOptions,
+} from "../../lib/stay-dates";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import { MessageCircle, Receipt } from "lucide-react";
@@ -311,6 +314,99 @@ function BookingRow({ b, onOpen }) {
   );
 }
 
+/**
+ * Moving a booking that already exists.
+ *
+ * Both dates in one form, because a stay that moves usually moves whole —
+ * and because sending an arrival and a departure as two calls leaves the
+ * booking, for a moment, somewhere nobody asked for. The database takes
+ * them together.
+ *
+ * The manager password appears only when the stay is getting shorter. That
+ * is the direction money comes off the bill, and it is the same rule the
+ * early-departure form has always followed. A guest asking at the desk for
+ * one more night should not need the manager fetched.
+ */
+function DateChange({ b, form, setForm, tk, locale, busy, onCancel, onSave }) {
+  const problem = datesProblem(form, b);
+  const change = datesChange(form, b);
+  const resident = b.status === "checked_in";
+  const set = (key) => (event) =>
+    setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  return (
+    <div className="card stack" style={{ background: "var(--paper)" }}>
+      <h2 style={{ fontSize: 14 }}>{tk("changeDatesTitle")}</h2>
+      <p className="section-note" style={{ margin: 0 }}>{tk("changeDatesNote")}</p>
+
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor={`in-${b.id}`}>{tk("checkIn")}</label>
+          <input id={`in-${b.id}`} type="date" className="mono" dir="ltr"
+            style={{ textAlign: "left" }} value={form.check_in}
+            disabled={resident} onChange={set("check_in")} />
+        </div>
+        <div className="field grow">
+          <label htmlFor={`out-${b.id}`}>{tk("checkOut")}</label>
+          <input id={`out-${b.id}`} type="date" className="mono" dir="ltr"
+            style={{ textAlign: "left" }} value={form.check_out}
+            min={form.check_in} onChange={set("check_out")} />
+        </div>
+      </div>
+
+      {resident && <p className="field-hint">{tk("residentArrivalFixed")}</p>}
+
+      {/* "Three more nights" is the sentence the guest actually says; the
+          date it lands on is arithmetic nobody should do at the desk. */}
+      <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+        {nightOptions(form.check_in).map(({ nights: n, date }) => (
+          <button key={n} type="button"
+            className={`btn sm${form.check_out === date ? " primary" : ""}`}
+            onClick={() => setForm((current) => ({ ...current, check_out: date }))}>
+            {tk("nightsShortcut", { count: n })}
+          </button>
+        ))}
+      </div>
+
+      {/* The chosen days said back in words, and what the change costs the
+          stay — the same rule the booking screen follows. */}
+      {problem ? (
+        <div className="banner warn" style={{ margin: 0 }}>{tk(problem)}</div>
+      ) : (
+        <div className="banner ok" style={{ margin: 0 }}>
+          {tk("datesRead", {
+            from: fullDate(form.check_in, locale),
+            to: fullDate(form.check_out, locale),
+            nights: change.now,
+          })}
+          {change.delta !== 0 && ` · ${tk(change.longer ? "nightsAdded" : "nightsDropped",
+            { count: Math.abs(change.delta) })}`}
+        </div>
+      )}
+
+      {change.shorter ? (
+        <PinPrompt
+          title={tk("shorterPinTitle")}
+          note={tk("shorterPinNote")}
+          confirmLabel={tk("saveDates")}
+          busy={busy}
+          disabled={problem !== null}
+          onCancel={onCancel}
+          onConfirm={onSave}
+        />
+      ) : (
+        <>
+          <button className="btn primary wide" disabled={busy || problem !== null}
+            onClick={() => onSave(null)}>
+            {busy ? tk("saving") : tk("saveDates")}
+          </button>
+          <button className="btn wide" onClick={onCancel}>{tk("back")}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, onError }) {
   const locale = useLocale();
   const { property } = useProperty();
@@ -325,6 +421,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
   const [why, setWhy] = useState("");
+  const [dates, setDates] = useState(null);
   const [charge, setCharge] = useState(0);
   const early = earlyOutBounds(b, today());
   const [newOut, setNewOut] = useState(() => early?.initial || today());
@@ -535,10 +632,26 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
                 {tk("recordNoShow")}
               </button>
             )}
+            {/* The one that was missing. Without it the only way to move a
+                departure was a second booking and a cancellation — which is
+                what four bookings in the week of 18 August turned out to
+                be. */}
+            <button className="btn wide" onClick={() => { setDates(datesForm(b)); setMode("dates"); }}>
+              {tk("changeDates")}
+            </button>
             <button className="btn wide danger" onClick={() => setMode("cancel")}>
               {tk("cancelBooking")}
             </button>
           </div>
+        ) : mode === "dates" && dates ? (
+          <DateChange b={b} form={dates} setForm={setDates} tk={tk} locale={locale}
+            busy={busy} onCancel={() => setMode(null)}
+            onSave={(pin) => call("set_stay_dates", {
+              p_booking: b.id,
+              p_check_in: dates.check_in,
+              p_check_out: dates.check_out,
+              p_pin: pin || null,
+            }, tk("datesChanged"))} />
         ) : mode === "cancel" ? (
           <div className="card stack" style={{ background: "var(--paper)" }}>
             <h2 style={{ fontSize: 14 }}>{tk("cancelTitle")}</h2>

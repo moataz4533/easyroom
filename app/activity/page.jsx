@@ -16,7 +16,7 @@ const KNOWN_ACTIONS = new Set([
   "created", "checked_in", "checked_out", "housekeeping_status_changed",
   "received", "refunded", "extended", "shortened", "room_moved", "cancelled",
   "no_show", "room_blocked", "room_unblocked", "pin_changed", "updated",
-  "restored", "guests_cleaned", "data_reset",
+  "restored", "guests_cleaned", "data_reset", "dates_changed",
 ]);
 
 const KNOWN_STATUSES = new Set(["clean", "dirty", "inspected", "out_of_order"]);
