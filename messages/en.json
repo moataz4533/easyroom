@@ -940,7 +940,7 @@
     "occHeader": "Guests",
     "occFallback": "{count, plural, one {one guest} other {# guests}}",
     "needTypeFirst": "Add a room type first, from the Rooms tab.",
-    "rateHint": "The nightly price for the whole room. The columns are rate plans, created on the “Companies & terms” tab. An empty box means that combination is not for sale.",
+    "rateHint": "The nightly price for the whole room: pick a room type and a rate plan, then set a price per head count. Plans are created on the “Companies & terms” tab, and an empty box means that combination is not for sale.",
     "saveRates": "Save the rates",
     "ratesSaved": "{count, plural, one {One rate saved} other {# rates saved}}",
     "ratesPinTitle": "Confirm the rate change",
@@ -1075,7 +1075,8 @@
     "dialCode": "Country code",
     "dialCodeHint": "It decides when two written forms are the same phone — “+2010…” and “010…”. Without it one guest can end up with two records.",
     "timezone": "Hotel timezone",
-    "timezoneHint": "Today's arrivals, today's departures and every report work out the day in this zone."
+    "timezoneHint": "Today's arrivals, today's departures and every report work out the day in this zone.",
+    "ratePlanColumn": "Rate plan"
   },
   "Platform": {
     "title": "Platform console",

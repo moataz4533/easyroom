@@ -19,6 +19,7 @@ import { joinList } from "../../lib/format";
 import RatePlanManager from "../../components/RatePlanManager";
 import { EMPTY_TYPE, typeInsert, typeProblem } from "../../lib/room-types";
 import { copiedRates, copyCount } from "../../lib/rate-copy";
+import { useNarrow } from "../../lib/use-narrow";
 import {
   CURRENCY_CODES, DIAL_CODES, TIMEZONES, currencyWord,
 } from "../../lib/hotel-settings";
@@ -150,21 +151,73 @@ export function rateKey(typeId, planId, occupancy) {
 
 function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }) {
   const t = useTranslations("Settings");
+  const narrow = useNarrow();
+  const [plan, setPlan] = useState("");
   const type = types.find((x) => x.id === active);
+  const chosen = plans.find((p) => p.id === plan) || plans[0];
+
   const occupancyLabel = (o) =>
     NAMED_OCCUPANCIES.includes(o) ? t(`occ_${o}`) : t("occFallback", { count: o });
+  const heads = type ? Array.from({ length: type.max_occupancy }, (_, i) => i + 1) : [];
+  const set = (typeId, planId, o) => (event) => setDraft((d) => ({
+    ...d,
+    [rateKey(typeId, planId, o)]: event.target.value === "" ? "" : Number(event.target.value),
+  }));
+
+  const typeTabs = (
+    <div className="tabs" role="tablist">
+      {types.map((x, i) => (
+        <button key={x.id} className="tab" role="tab" aria-selected={active === x.id}
+          onClick={() => setActive(x.id)}>
+          <span className="dot" style={{ background: BANDS[i % BANDS.length] }} />
+          {localizedName(x, locale)}
+        </button>
+      ))}
+    </div>
+  );
+
+  /**
+   * On a phone: one plan at a time, and a plain list of head count against
+   * price. The same boxes, the same draft — just not asked to be a table on
+   * a screen that has no room for one.
+   */
+  if (narrow) {
+    return (
+      <>
+        {typeTabs}
+        <div className="tabs" role="tablist" aria-label={t("ratePlanColumn")}>
+          {plans.map((p) => (
+            <button key={p.id} className="tab" role="tab"
+              aria-selected={chosen?.id === p.id} onClick={() => setPlan(p.id)}>
+              {localizedName(p, locale)}
+            </button>
+          ))}
+        </div>
+
+        {type && chosen && (
+          <div className="stack">
+            {heads.map((o) => (
+              <div key={o} className="card spread" style={{ padding: "10px 12px" }}>
+                <div>
+                  <strong style={{ fontSize: 14 }}>{occupancyLabel(o)}</strong>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>{o} pax</div>
+                </div>
+                <input type="number" min="0" placeholder="—" className="mono"
+                  style={{ width: 120, textAlign: "center" }}
+                  aria-label={`${occupancyLabel(o)} · ${localizedName(chosen, locale)}`}
+                  value={draft[rateKey(type.id, chosen.id, o)] ?? ""}
+                  onChange={set(type.id, chosen.id, o)} />
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="tabs" role="tablist">
-        {types.map((x, i) => (
-          <button key={x.id} className="tab" role="tab" aria-selected={active === x.id}
-            onClick={() => setActive(x.id)}>
-            <span className="dot" style={{ background: BANDS[i % BANDS.length] }} />
-            {localizedName(x, locale)}
-          </button>
-        ))}
-      </div>
-
+      {typeTabs}
       {type && (
         <div className="matrix-wrap">
           <table className="matrix">
@@ -175,7 +228,7 @@ function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: type.max_occupancy }, (_, i) => i + 1).map((o) => (
+              {heads.map((o) => (
                 <tr key={o}>
                   <td className="occ">{occupancyLabel(o)}<small>{o} pax</small></td>
                   {plans.map((p) => (
@@ -184,9 +237,7 @@ function RateMatrix({ types, plans, locale, active, setActive, draft, setDraft }
                         type="number" min="0" placeholder="—"
                         aria-label={`${occupancyLabel(o)} · ${localizedName(p, locale)}`}
                         value={draft[rateKey(type.id, p.id, o)] ?? ""}
-                        onChange={(e) => setDraft((d) => ({
-                          ...d, [rateKey(type.id, p.id, o)]: e.target.value === "" ? "" : Number(e.target.value),
-                        }))}
+                        onChange={set(type.id, p.id, o)}
                       />
                     </td>
                   ))}
