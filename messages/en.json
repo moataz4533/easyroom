@@ -567,7 +567,11 @@
     "alreadyBookedLine": "{reference} · {from} → {to} · {rooms}",
     "noRoomsYet": "no room yet",
     "bookAnyway": "Yes, this really is a second booking — carry on",
-    "confirmDuplicate": "Tick the box before booking the same guest again"
+    "confirmDuplicate": "Tick the box before booking the same guest again",
+    "extrasTitle": "Extras on this booking",
+    "addExtra": "＋ Add a line",
+    "removeExtra": "Remove the line",
+    "extraFailed": "The booking was taken but “{name}” was not added — add it from the booking sheet"
   },
   "RatePlans": {
     "title": "Rate plans and companies",
@@ -650,7 +654,8 @@
     "total": "Final total",
     "back": "Back to edit",
     "recording": "Confirming booking…",
-    "confirm": "Confirm and save booking"
+    "confirm": "Confirm and save booking",
+    "addedHere": "Added on this booking"
   },
   "ReservationProof": {
     "open": "Reservation proof / permit",

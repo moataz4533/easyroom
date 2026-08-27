@@ -567,7 +567,11 @@
     "alreadyBookedLine": "{reference} · {from} ← {to} · {rooms}",
     "noRoomsYet": "من غير غرفة",
     "bookAnyway": "أيوه، ده حجز تاني فعلاً — كمّل",
-    "confirmDuplicate": "علّم إنك متأكد قبل ما تحجز لنفس النزيل تاني"
+    "confirmDuplicate": "علّم إنك متأكد قبل ما تحجز لنفس النزيل تاني",
+    "extrasTitle": "إضافات على الحجز ده",
+    "addExtra": "＋ إضافة سطر",
+    "removeExtra": "شيل السطر",
+    "extraFailed": "الحجز اتسجّل بس «{name}» ماتسجلتش — ضيفها من ورقة الحجز"
   },
   "RatePlans": {
     "title": "خطط الأسعار والشركات",
@@ -650,7 +654,8 @@
     "total": "الإجمالي النهائي",
     "back": "رجوع للتعديل",
     "recording": "جارٍ تثبيت الحجز…",
-    "confirm": "تأكيد وتثبيت الحجز"
+    "confirm": "تأكيد وتثبيت الحجز",
+    "addedHere": "إضافات على الحجز ده"
   },
   "ReservationProof": {
     "open": "إثبات / تصريح الحجز",

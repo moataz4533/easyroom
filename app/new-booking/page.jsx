@@ -10,6 +10,9 @@ import {
   duplicateCount, guestToReuse, namesOnPhone, normalisePhone, pickGuest, sameName,
 } from "../../lib/guest-match";
 import { clashingStays, roomsOf } from "../../lib/duplicate-booking";
+import {
+  extraPayloads, extraRow, extrasProblem, extrasTotal, fillFromItem,
+} from "../../lib/booking-extras";
 import { implausibleFields } from "../../lib/guest-record";
 import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
 import { fullDate, joinList } from "../../lib/format";
@@ -53,6 +56,8 @@ function NewBooking() {
   const tp = useTranslations("Paste");
   const tn = useTranslations("NewBooking");
   const td = useTranslations("Discount");
+  // The extras catalogue speaks for itself; its rules read from Charges.
+  const tch = useTranslations("Charges");
   const { online } = useOffline();
 
   const presetRoom = params.get("room");
@@ -98,6 +103,9 @@ function NewBooking() {
   const [busy, setBusy] = useState(false);
   const [quote, setQuote] = useState(null);
   const [addonQuote, setAddonQuote] = useState([]);
+  // The catalogue, and the lines reception is adding by hand on this booking.
+  const [chargeItems, setChargeItems] = useState([]);
+  const [extras, setExtras] = useState([]);
   const [addonsLoading, setAddonsLoading] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [completed, setCompleted] = useState(null);
@@ -124,6 +132,8 @@ function NewBooking() {
       });
     supabase.from("accounts").select("*").eq("property_id", property.id)
       .eq("is_active", true).order("name").then(({ data }) => setAccounts(data || []));
+    supabase.from("charge_items").select("*").eq("property_id", property.id)
+      .eq("is_active", true).order("sort_order").then(({ data }) => setChargeItems(data || []));
   }, [property]);
 
   /**
@@ -355,7 +365,12 @@ function NewBooking() {
   const paidAddons = Array.isArray(addonQuote)
     ? addonQuote.reduce((sum, row) => sum + (row.is_included ? 0 : Number(row.amount || 0)), 0)
     : null;
-  const reviewTotal = priced && paidAddons !== null ? priced.net + paidAddons : null;
+// The number at the bottom of the screen and on the review has to be what
+// the guest will actually be told: rooms, the plan's paid extras, and
+// whatever reception is adding on this booking.
+  const reviewTotal = priced && paidAddons !== null
+    ? priced.net + paidAddons + extrasTotal(extras)
+    : null;
 
   /**
    * With no connection nothing can be held: the room is only reserved when
@@ -398,6 +413,8 @@ function NewBooking() {
     // The button is disabled for this too; checked again because the list
     // can change under a dialog that is already open.
     if (clashes.length && !clashOk) return showToast(tn("confirmDuplicate"), true);
+    const badExtra = extrasProblem(extras);
+    if (badExtra) return showToast(tch(badExtra), true);
     if (!Object.keys(picked).length) return showToast(tn("needRoom"), true);
     const badDiscount = discountProblem(discount.kind || null, discount.value);
     if (badDiscount) return showToast(td(badDiscount), true);
@@ -470,6 +487,16 @@ function NewBooking() {
       );
     }
 
+    // One call per line, through the same function the booking sheet has
+    // always used — so a line added here and a line added later are the same
+    // kind of thing, and the total is recalculated by the database either way.
+    for (const payload of extraPayloads(extras, booking.id)) {
+      const { error: chargeFailed } = await supabase.rpc("add_booking_charge", payload);
+      // The booking exists and the room is held. Saying which line did not
+      // land beats unwinding a confirmed booking over a transfer.
+      if (chargeFailed) showToast(tn("extraFailed", { name: payload.p_description }), true);
+    }
+
     const { data: full, error: proofError } = await supabase.from("bookings").select(`
       id, property_id, reference, status, source, check_in, check_out, adults, children,
       total_amount, paid_amount, notes, rate_plan_id, account_id,
@@ -504,6 +531,7 @@ function NewBooking() {
         plan={plans.find((plan) => plan.id === planId)}
         account={accounts.find((account) => account.id === accountId)}
         addons={Array.isArray(addonQuote) ? addonQuote : []}
+        extras={extras}
         roomSubtotal={priced?.net || 0} total={reviewTotal || 0} busy={busy}
         onClose={() => setReviewOpen(false)} onConfirm={submit}
       />
@@ -806,6 +834,70 @@ function NewBooking() {
             <input id="notes" value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder={tn("notesPlaceholder")} />
           </div>
+
+          {/* The plan's own extras already come down with the price. These
+              are the ones the guest asks for while reception's hands are
+              still on the screen — a transfer, a late checkout — which used
+              to mean confirming the booking and finding it again. */}
+          {online && (
+            <div className="stack">
+              <div className="spread">
+                <strong style={{ fontSize: 13 }}>{tn("extrasTitle")}</strong>
+                {extrasTotal(extras) > 0 && (
+                  <span className="pill">
+                    {`${egp(extrasTotal(extras), locale)} ${currencyWord(locale)}`}
+                  </span>
+                )}
+              </div>
+
+              {extras.map((row, index) => (
+                <div key={row.key} className="extra-line">
+                  <div className="field">
+                    <label htmlFor={`ex-item-${row.key}`}>{tch("item")}</label>
+                    <select id={`ex-item-${row.key}`} value={row.charge_item_id}
+                      onChange={(e) => setExtras((rows) => rows.map((r, i) => i === index
+                        ? fillFromItem(r, chargeItems.find((item) => item.id === e.target.value))
+                        : r))}>
+                      <option value="">{tch("freeLine")}</option>
+                      {chargeItems.map((item) => (
+                        <option key={item.id} value={item.id}>{localizedName(item, locale)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`ex-desc-${row.key}`}>{tch("description")}</label>
+                    <input id={`ex-desc-${row.key}`} value={row.description}
+                      placeholder={tch("descriptionHint")}
+                      onChange={(e) => setExtras((rows) => rows.map((r, i) =>
+                        i === index ? { ...r, description: e.target.value } : r))} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`ex-qty-${row.key}`}>{tch("quantity")}</label>
+                    <input id={`ex-qty-${row.key}`} className="mono" type="number" min="1"
+                      value={row.quantity}
+                      onChange={(e) => setExtras((rows) => rows.map((r, i) =>
+                        i === index ? { ...r, quantity: e.target.value } : r))} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`ex-amt-${row.key}`}>{tch("unitAmount")}</label>
+                    <input id={`ex-amt-${row.key}`} className="mono" type="number" min="0"
+                      value={row.unit_amount}
+                      onChange={(e) => setExtras((rows) => rows.map((r, i) =>
+                        i === index ? { ...r, unit_amount: e.target.value } : r))} />
+                  </div>
+                  <button className="btn sm danger remove"
+                    aria-label={tn("removeExtra")}
+                    onClick={() => setExtras((rows) => rows.filter((_, i) => i !== index))}>
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              <button className="btn ghost" onClick={() => setExtras((rows) => [...rows, extraRow()])}>
+                {tn("addExtra")}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

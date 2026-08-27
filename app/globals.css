@@ -99,6 +99,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* Buttons: quiet by default, obvious when they matter. Colour and a pressed
    state carry the feedback — nothing moves, because a row of controls that
    jumps under a fast thumb is harder to hit, not friendlier. */
+/* One extra being added while a booking is taken.
+   Four fields on one row fit a desk and not a phone — at 390px the
+   description field collapsed to a single character, which is the width
+   reception actually works at. So: stacked by default, in a row only when
+   there is room for one. */
+.extra-line {
+  display: grid; gap: 8px; align-items: end;
+  grid-template-columns: 1fr;
+  padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--paper);
+}
+.extra-line .field { margin: 0; }
+.extra-line .remove { justify-self: start; }
+@media (min-width: 720px) {
+  .extra-line { grid-template-columns: 1fr 1fr 84px 116px auto; }
+  .extra-line .remove { justify-self: auto; }
+}
+
 /* ---------------------------------------------------------------- */
 /* Buttons.
    Fewer lines, more hierarchy. The old set drew a 1px border around

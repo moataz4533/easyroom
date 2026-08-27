@@ -7,7 +7,7 @@ import { dayLabel, egp, nights } from "../lib/supabase";
 import { localizedName, useLocale } from "../lib/locale";
 
 export default function BookingReview({
-  open, draft, plan, account, addons = [], roomSubtotal,
+  open, draft, plan, account, addons = [], extras = [], roomSubtotal,
   total, busy, onClose, onConfirm,
 }) {
   const t = useTranslations("BookingReview");
@@ -63,6 +63,28 @@ export default function BookingReview({
                   <span><Check size={14} />{locale === "en" ? (item.name_en || item.name) : item.name}
                     <small>{t(`basis_${item.pricing_basis}`)} × {Number(item.quantity)}</small></span>
                   <strong>{item.is_included ? t("included") : `${egp(item.amount, locale)} ${currencyWord(locale)}`}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lines reception added on this booking. Shown apart from the
+            plan's own, because one of them came with the price and the
+            other is being charged on top — and this is the last screen
+            before the guest is told a number. */}
+        {extras.length > 0 && (
+          <div className="review-section">
+            <h3>{t("addedHere")}</h3>
+            <div className="review-lines">
+              {extras.map((row) => (
+                <div key={row.key}>
+                  <span><Check size={14} />{row.description}
+                    <small>× {Number(row.quantity) || 0}</small></span>
+                  <strong>
+                    {egp((Number(row.quantity) || 0) * (Number(row.unit_amount) || 0), locale)}
+                    {" "}{currencyWord(locale)}
+                  </strong>
                 </div>
               ))}
             </div>
