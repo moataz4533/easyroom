@@ -574,8 +574,8 @@
     "extraFailed": "The booking was taken but “{name}” was not added — add it from the booking sheet"
   },
   "RatePlans": {
-    "title": "Rate plans and companies",
-    "note": "Create a tailored company rate and choose what is included or charged on top.",
+    "title": "Agreements and what they include",
+    "note": "A rate plan is an agreement: special prices for a company, what the price includes, and what is charged on top. The prices themselves are set on the “Rates” tab.",
     "add": "New rate plan",
     "default": "Default",
     "inactive": "Inactive",
@@ -940,7 +940,7 @@
     "occHeader": "Guests",
     "occFallback": "{count, plural, one {one guest} other {# guests}}",
     "needTypeFirst": "Add a room type first, from the Rooms tab.",
-    "rateHint": "The nightly price for the whole room. An empty box means that combination is not for sale.",
+    "rateHint": "The nightly price for the whole room. The columns are rate plans, created on the “Companies & terms” tab. An empty box means that combination is not for sale.",
     "saveRates": "Save the rates",
     "ratesSaved": "{count, plural, one {One rate saved} other {# rates saved}}",
     "ratesPinTitle": "Confirm the rate change",
@@ -1054,7 +1054,7 @@
     "phoneTooShort": "That phone number is too short — check it or leave it empty",
     "usernameFixed": "The username “{username}” cannot be changed — it is half of this member's sign-in address, and changing it would lock them out. To change it, create a new account and deactivate this one.",
     "usernameFixedOwner": "The owner signs in with their email address, not a username.",
-    "tab_accounts": "Companies",
+    "tab_accounts": "Companies & terms",
     "newType": "New room type",
     "newTypeHint": "Just the name and how many it sleeps. The code is made for you.",
     "typeAddedNext": "“{name}” added. Now move rooms onto it below, and give it a price on the Rates tab.",

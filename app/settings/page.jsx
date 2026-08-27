@@ -119,7 +119,18 @@ function Settings() {
       {tab === "seasons" && <Seasons {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
       {tab === "charges" && <ChargeItems {...shared} />}
-      {tab === "accounts" && <Accounts {...shared} />}
+      {/* One screen, one question. «الأسعار» answers "how much is a night";
+          this answers "who do I sell to, and on what terms" — and a company
+          and its agreement are the same conversation, so they stopped being
+          two tabs. */}
+      {tab === "accounts" && (
+        <>
+          <Accounts {...shared} />
+          <RatePlanManager property={property} plans={plans} accounts={accounts}
+            planAddons={planAddons} chargeItems={chargeItems} locale={locale}
+            reload={load} showToast={showToast} />
+        </>
+      )}
       {tab === "staff" && <Staff {...shared} />}
       {tab === "security" && <Security {...shared} />}
       {tab === "backup" && <BackupCard property={property} />}
@@ -299,10 +310,6 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
 
   return (
     <>
-      <RatePlanManager property={property} plans={plans} accounts={accounts}
-        planAddons={planAddons} chargeItems={chargeItems} locale={locale}
-        reload={reload} showToast={showToast} />
-
       <p className="section-note">{t("rateHint")}</p>
 
       <RateMatrix types={types} plans={plans} locale={locale}
