@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الدليل الكامل — Easyroom</title>
+<style>
+  @font-face { font-family: Plex; src: url(plex-arabic-400.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: Plex; src: url(plex-arabic-600.woff2) format("woff2"); font-weight: 600; }
+  @font-face { font-family: Plex; src: url(plex-arabic-700.woff2) format("woff2"); font-weight: 700; }
+
+  :root {
+    --deep: #0B3A46;
+    --sea: #1E5F74;
+    --sand: #F5B841;
+    --ink: #10262E;
+    --muted: #5C7079;
+    --line: #DCE5E8;
+    --paper: #F6F9FA;
+    --bad: #B23A32;
+    --ok: #1F7A55;
+  }
+
+  * { box-sizing: border-box; }
+
+  @page { size: A4; margin: 14mm 0 16mm; }
+
+  body {
+    font-family: Plex, sans-serif;
+    color: var(--ink);
+    font-size: 11.5pt;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  /* Nothing may be split down the middle by a page break: a step that
+     starts on one page and finishes on the next is a step nobody follows. */
+  section, .step, .card, .rowbox, table { break-inside: avoid; }
+  h2 { break-after: avoid; }
+
+  /* ---------- cover ---------- */
+  .cover {
+    background: var(--deep);
+    color: #fff;
+    padding: 24mm 16mm 16mm;
+    border-radius: 12px;
+    min-height: 254mm;
+    display: flex;
+    flex-direction: column;
+    break-after: page;
+  }
+  .cover .spacer { flex: 1; }
+
+  /* Everything that is not the cover. Side padding on a block that spans
+     pages is applied on each of them, which is what a margin cannot do. */
+  .body-pad { padding: 0 13mm; }
+  .cover .eyebrow {
+    font-size: 10pt; letter-spacing: .18em; opacity: .72; margin: 0 0 6mm;
+  }
+  .cover h1 { font-size: 30pt; margin: 0 0 4mm; font-weight: 700; line-height: 1.3; }
+  .cover p { font-size: 13pt; opacity: .9; margin: 0 0 14mm; max-width: 130mm; }
+  .cover .rule { height: 3px; width: 34mm; background: var(--sand); margin-bottom: 10mm; }
+  .cover .who {
+    border-top: 1px solid rgba(255,255,255,.25); padding-top: 6mm;
+    font-size: 11pt; opacity: .85;
+  }
+
+  /* ---------- contents ---------- */
+  .toc { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 6mm 8mm; margin-bottom: 10mm; }
+  .toc h2 { margin: 0 0 3mm; font-size: 13pt; }
+  .toc ol { margin: 0; padding-inline-start: 6mm; columns: 2; column-gap: 10mm;
+    list-style-type: arabic-indic; }
+  .toc li { margin-bottom: 1.5mm; }
+
+  /* ---------- headings ---------- */
+  h2 {
+    font-size: 16pt; color: var(--deep); margin: 10mm 0 3mm;
+    padding-bottom: 2mm; border-bottom: 2px solid var(--sand);
+  }
+  h2 .n {
+    display: inline-block; background: var(--deep); color: #fff;
+    width: 9mm; height: 9mm; line-height: 9mm; text-align: center;
+    border-radius: 50%; font-size: 11pt; margin-inline-end: 3mm;
+  }
+  h3 { font-size: 12.5pt; color: var(--sea); margin: 6mm 0 2mm; }
+  p { margin: 0 0 3mm; }
+  .lead { color: var(--muted); margin-bottom: 5mm; }
+
+  /* ---------- steps ---------- */
+  .step {
+    display: flex; gap: 4mm; align-items: flex-start;
+    padding: 3mm 0; border-bottom: 1px dashed var(--line);
+  }
+  .step:last-child { border-bottom: 0; }
+  .step .num {
+    flex: 0 0 8mm; height: 8mm; line-height: 8mm; text-align: center;
+    background: var(--sea); color: #fff; border-radius: 50%;
+    font-size: 10.5pt; font-weight: 600; margin-top: 1mm;
+  }
+  .step .body { flex: 1; }
+  .step b { color: var(--deep); }
+  .step .note { color: var(--muted); font-size: 10.5pt; display: block; }
+
+  /* ---------- button chips ---------- */
+  .btn {
+    display: inline-block; background: var(--deep); color: #fff;
+    padding: 0.5mm 2.5mm; border-radius: 4px; font-size: 10.5pt;
+    font-weight: 600; white-space: nowrap;
+  }
+  .btn.ghost { background: #fff; color: var(--deep); border: 1.5px solid var(--deep); }
+  .btn.danger { background: var(--bad); }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 11pt; }
+  th, td { text-align: start; padding: 2.5mm 3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--paper); color: var(--deep); font-weight: 600; }
+  td:first-child { white-space: nowrap; }
+
+  .swatch {
+    display: inline-block; width: 4mm; height: 4mm; border-radius: 2px;
+    margin-inline-end: 2mm; vertical-align: -0.5mm; border: 1px solid rgba(0,0,0,.15);
+  }
+
+  /* ---------- callouts ---------- */
+  .card {
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 4mm 5mm; margin: 4mm 0; background: var(--paper);
+  }
+  .card.warn { background: #FFF7E6; border-color: #E8C979; }
+  .card.stop { background: #FDF0EE; border-color: #E5B3AE; }
+  .card.ok   { background: #EFF7F2; border-color: #B9DCC9; }
+  .card h4 { margin: 0 0 2mm; font-size: 11.5pt; color: var(--deep); }
+  .card.stop h4 { color: var(--bad); }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  ul { margin: 0 0 3mm; padding-inline-start: 6mm; }
+  li { margin-bottom: 1.5mm; }
+
+  .final { break-before: page; }
+  .final h2 { margin-top: 0; }
+
+  .quick {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 4mm;
+  }
+  .quick .rowbox {
+    border: 1px solid var(--line); border-radius: 8px; padding: 3mm 4mm;
+    background: #fff;
+  }
+  .quick .rowbox b { display: block; color: var(--deep); margin-bottom: 1mm; }
+  .quick .rowbox span { font-size: 10.5pt; color: var(--muted); }
+
+  .foot {
+    margin-top: 10mm; padding-top: 4mm; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 10pt;
+  }
+
+  /* Role columns: a matrix is the whole point of this document. */
+  .matrix th, .matrix td { text-align: center; }
+  .matrix td:first-child, .matrix th:first-child { text-align: start; white-space: normal; }
+  .yes { color: var(--ok); font-weight: 700; }
+  .no  { color: var(--muted); }
+  .pin { color: var(--sand); font-weight: 700; }
+  .role-card { border-inline-start: 4px solid var(--sea); }
+  .role-card.owner { border-inline-start-color: var(--deep); }
+  .role-card.manager { border-inline-start-color: var(--sea); }
+  .role-card.reception { border-inline-start-color: var(--sand); }
+  .role-card.housekeeping { border-inline-start-color: var(--ok); }
+  .role-card.platform { border-inline-start-color: var(--bad); }
+  .role-card h4 { display: flex; justify-content: space-between; align-items: baseline; }
+  .role-card h4 span { font-size: 10pt; font-weight: 400; color: var(--muted); }
+  .legend { font-size: 10pt; color: var(--muted); margin-top: -2mm; }
+</style>
+</head><body>
+
+<div class="body-pad">
+
+<div class="cover">
+  <p class="eyebrow">EASYROOM</p>
+  <div class="rule"></div>
+  <h1>الدليل الكامل<br>الحسابات والصلاحيات والاستخدام</h1>
+  <p>كل حاجة في التطبيق: مين يقدر يعمل إيه، وإزاي، وليه. مكتوب من الكود نفسه — كل صلاحية في الورق دي مقروءة من قاعدة البيانات مش من الذاكرة.</p>
+  <div class="spacer"></div>
+  <div class="who">
+    للمالك والمدير — والاستقبال يكفيه دليل الاستقبال المنفصل.<br>
+    الوقت المطلوب: نص ساعة.
+  </div>
+</div>
+
+<div class="toc">
+  <h2>المحتويات</h2>
+  <ol>
+    <li>أنواع الحسابات الخمسة</li>
+    <li>مصفوفة الصلاحيات</li>
+    <li>كلمة مرور المدير</li>
+    <li>إزاي العزل شغّال</li>
+    <li>الشاشات واحدة واحدة</li>
+    <li>رحلة الحجز كاملة</li>
+    <li>الإعدادات — التسعة تبويبات</li>
+    <li>لوحة المنصة</li>
+    <li>الأوفلاين</li>
+    <li>مشاكل شائعة</li>
+  </ol>
+</div>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">١</span>أنواع الحسابات الخمسة</h2>
+
+<p class="lead">أربعة أدوار جوه الفندق، وواحد فوقهم كلهم للمنصة.</p>
+
+<div class="card role-card owner">
+  <h4>المالك <span>owner</span></h4>
+  <p>بيشوف كل الشاشات ويعمل كل حاجة. بيتعمل مرة واحدة وقت ما الفندق يتفتح، وبيدخل <b>بالبريد الإلكتروني</b> مش باسم مستخدم.</p>
+</div>
+
+<div class="card role-card manager">
+  <h4>المدير <span>manager</span></h4>
+  <p>نفس صلاحيات المالك بالظبط — في التطبيق وفي قاعدة البيانات. الفرق إنه بيتعمل من الإعدادات وبيدخل باسم مستخدم، وممكن توقفه.</p>
+</div>
+
+<div class="card role-card reception">
+  <h4>الاستقبال <span>reception</span></h4>
+  <p>بيحجز ويسكّن ويخرّج ويعدّل ويقبض. <b>مبيشوفش</b>: التقارير، سجل العمليات، الإعدادات.</p>
+</div>
+
+<div class="card role-card housekeeping">
+  <h4>النظافة <span>housekeeping</span></h4>
+  <p>شاشة واحدة بس — النظافة. مبيشوفش حجز ولا نزيل ولا فلوس.</p>
+</div>
+
+<div class="card role-card platform">
+  <h4>مشغّل المنصة <span>platform admin</span></h4>
+  <p>مش دور في الفندق — ده حساب في جدول منفصل. بيفتح فنادق جديدة، ويوقف حساب أو فندق كامل، ويصفّر بيانات فندق. <b>ومبيشوفش بيانات أي فندق</b>: لا نزيل ولا حجز ولا مبلغ — أرقام وأسماء فنادق وحسابات بس.</p>
+</div>
+
+<div class="card warn">
+  <h4>الدور بيتغيّر، مش الحساب</h4>
+  <p>لو موظف اتنقل من استقبال لمدير، تغيّر دوره من <b>الإعدادات ← الموظفين</b> — نفس الحساب ونفس كلمة المرور. متعملش حساب جديد.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٢</span>مصفوفة الصلاحيات</h2>
+
+<p class="lead">دي مقروءة من الكود: <span class="code">ALLOWED</span> في التطبيق، و<span class="code">is_member</span> و<span class="code">can_manage</span> و<span class="code">is_admin</span> في قاعدة البيانات.</p>
+
+<h3>الشاشات</h3>
+<table class="matrix">
+  <tr><th>الشاشة</th><th>مالك</th><th>مدير</th><th>استقبال</th><th>نظافة</th></tr>
+  <tr><td>اليوم (رفّ الغرف)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>التقويم</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>حجز جديد</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>الحجوزات</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>النزلاء</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>النظافة</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>التقارير</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>سجل العمليات</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>الإعدادات</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+</table>
+
+<h3>الإجراءات</h3>
+<p class="legend"><span class="yes">✓</span> ينفع · <span class="pin">🔑</span> ينفع بكلمة مرور المدير · <span class="no">—</span> مينفعش</p>
+<table class="matrix">
+  <tr><th>الإجراء</th><th>مالك</th><th>مدير</th><th>استقبال</th><th>نظافة</th></tr>
+  <tr><td>تسجيل حجز</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>تسكين وتسجيل خروج</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>تعديل بيانات الحجز والنزيل</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>تغيير التواريخ (تمديد)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>تغيير التواريخ (تقصير)</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>مغادرة مبكرة</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>إلغاء حجز</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>تسجيل عدم حضور</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>إلغاء غرفة من حجز</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>تسجيل دفعة</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>إضافة سطر على الحساب</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+  <tr><td>إلغاء سطر من الحساب</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>خصم على غرفة</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td></tr>
+  <tr><td>تغيير حالة النظافة</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>تغيير الأسعار</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>المواسم (حفظ وحذف)</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>خطط الأسعار والشركات</td><td class="pin">🔑</td><td class="pin">🔑</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>الغرف وأنواعها</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>أصناف الإضافات</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>الشركات</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>حسابات الموظفين</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>بيانات الفندق</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+  <tr><td>النسخة الاحتياطية</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+</table>
+
+<div class="card">
+  <h4>المالك والمدير متساويين — عن قصد</h4>
+  <p>مفيش ولا إجراء واحد في التطبيق كله مسموح للمالك ومتقفول على المدير. الفرق الوحيد إن المالك بيدخل بالبريد ومبيتوقفش، والمدير بيتعمل ويتوقف من الإعدادات.</p>
+</div>
+</section>
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٣</span>كلمة مرور المدير</h2>
+
+<p class="lead">مش كلمة مرور دخول — دي قفل تاني على القرارات اللي بتغيّر فلوس.</p>
+
+<p>الاستقبال بيعرف الأزرار دي ويقدر يوصلها، لكن مبيقدرش ينفّذها لوحده. القايمة كاملة — <b>إحدى عشر إجراء</b>:</p>
+
+<table>
+  <tr><th>الإجراء</th><th>بيغيّر إيه</th></tr>
+  <tr><td>إلغاء حجز</td><td>بيصفّر الحساب ويرجّع الغرف للبيع</td></tr>
+  <tr><td>تسجيل عدم حضور</td><td>زي الإلغاء، مع رسم اختياري</td></tr>
+  <tr><td>مغادرة مبكرة</td><td>بيشيل ليالي من الحساب</td></tr>
+  <tr><td>تقصير الإقامة</td><td>نفس الحاجة من شاشة تغيير التواريخ</td></tr>
+  <tr><td>إلغاء غرفة من حجز</td><td>بيشيل غرفة وليّاليها</td></tr>
+  <tr><td>إلغاء سطر من الحساب</td><td>بينزّل الإجمالي</td></tr>
+  <tr><td>خصم على غرفة</td><td>بيقلل سعر الليالي</td></tr>
+  <tr><td>حفظ الأسعار</td><td>بيغيّر تسعير كل الحجوزات الجاية</td></tr>
+  <tr><td>حفظ موسم</td><td>أسعار مختلفة لفترة</td></tr>
+  <tr><td>حذف موسم</td><td>رجوع للأسعار العادية</td></tr>
+  <tr><td>حفظ خطة أسعار / شركة</td><td>بيغيّر تسعير شركة كاملة</td></tr>
+</table>
+
+<div class="card stop">
+  <h4>لو مفيش كلمة مرور متسجّلة، القفل مفتوح</h4>
+  <p>الإحدى عشر إجراء دول <b>بيعدّوا على طول</b> من غير سؤال لو الفندق لسه محطّش كلمة مرور مدير. الأدوار بتفضل شغالة (النظافة مش هتشوف حجز)، بس الاستقبال هيقدر يلغي ويخصم لوحده.</p>
+  <p><b>حطّها من أول يوم:</b> الإعدادات ← كلمة مرور المدير.</p>
+</div>
+
+<div class="card">
+  <h4>خمس محاولات وبعدين إيقاف</h4>
+  <p>كلمة المرور متخزنة مشفّرة، ومحدش يقدر يقراها — لا من التطبيق ولا من قاعدة البيانات. وبعد خمس محاولات غلط بيتقفل الإدخال مؤقتاً.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٤</span>إزاي العزل شغّال</h2>
+
+<p class="lead">أهم قرار في المشروع كله، ويستاهل صفحة.</p>
+
+<p>الصلاحيات <b>مش في المتصفح</b>. لو حد فتح أدوات المطوّر وغيّر أي حاجة في الصفحة، مش هيقدر يشوف ولا صف زيادة — لأن المنع في قاعدة البيانات نفسها، على مستوى الصف الواحد (Row Level Security)، على <b>عشرين جدول</b>.</p>
+
+<table>
+  <tr><th>الدالة</th><th>معناها</th><th>بتحكم إيه</th></tr>
+  <tr><td><span class="code">is_member</span></td><td>عضو مفعّل في فندق شغّال</td><td>القراءة</td></tr>
+  <tr><td><span class="code">can_manage</span></td><td>مالك أو مدير أو استقبال</td><td>الحجوزات، النزلاء، الدفعات، الإضافات</td></tr>
+  <tr><td><span class="code">is_admin</span></td><td>مالك أو مدير</td><td>الأسعار، الغرف، الموظفين، الإعدادات</td></tr>
+</table>
+
+<div class="card ok">
+  <h4>إيقاف الفندق بيوقف كل حساباته فوراً</h4>
+  <p>الثلاث دوال بيتأكدوا إن <b>الفندق نفسه شغّال</b> مش بس الموظف. فإيقاف فندق من لوحة المنصة بيقفل كل حساباته في نفس اللحظة، من غير ما حد يلمس حساب واحد واحد.</p>
+</div>
+
+<div class="card">
+  <h4>الحجز المزدوج مستحيل — مش «صعب»</h4>
+  <p>فيه قيد في بوستجريس بيمنع غرفتين محجوزتين في نفس الليلة. لو اتنين موظفين حجزوا نفس الغرفة في نفس الثانية، واحد بس هينجح والتاني هيشوف «تم حجز الغرفة منذ لحظات». مش شرط في الكود ممكن يتنسى — ده قانون في قاعدة البيانات.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٥</span>الشاشات واحدة واحدة</h2>
+
+<table>
+  <tr><th>الشاشة</th><th>بتعمل إيه</th></tr>
+  <tr><td><b>اليوم</b></td><td>رفّ مفاتيح بحالة كل غرفة، وأرقام الإشغال والمغادرات والغرف المحتاجة تنظيف، وجدول وصول اليوم بزرار تسكين. ومن ورقة الغرفة: تمديد ونقل غرفة وتسجيل خروج.</td></tr>
+  <tr><td><b>التقويم</b></td><td>الغرف صفوف والأيام أعمدة — ٧ أو ١٤ أو ٣٠ يوم. بيوري الفاضي والمحجوز نظرة واحدة.</td></tr>
+  <tr><td><b>حجز جديد</b></td><td>مرتّب زي المكالمة: الرقم، الاسم، التواريخ، الغرف، الخطة والشركة، الإضافات، المصدر والملاحظات. وفيه لصق رسالة واتساب، وخصم، وتحذير التكرار.</td></tr>
+  <tr><td><b>الحجوزات</b></td><td>بحث وفلاتر، وورقة كل حجز: التعديل، تغيير التواريخ، الدفعات، الإضافات، الخصم، بيان الحساب، رسالة التأكيد، إثبات الحجز، والإلغاء بكل أنواعه.</td></tr>
+  <tr><td><b>النزلاء</b></td><td>السجل الرسمي: الاسم والجنسية ورقم الإثبات وتاريخ الميلاد، وتصدير CSV، وملف كل نزيل وتاريخه. وبينبّه على البيانات غير المعقولة من غير ما يمنع الحفظ.</td></tr>
+  <tr><td><b>النظافة</b></td><td>زرار واحد لكل غرفة، معمولة للموبايل.</td></tr>
+  <tr><td><b>التقارير</b></td><td>إشغال وإيراد وADR وRevPAR ومصادر الحجز والمتبقي والإلغاءات والخصومات، وتصدير Excel. <b>مدير ومالك بس.</b></td></tr>
+  <tr><td><b>سجل العمليات</b></td><td>كل إجراء اتعمل، ومين عمله، وإمتى — بفلاتر وبحث. <b>مدير ومالك بس.</b></td></tr>
+  <tr><td><b>الإعدادات</b></td><td>تسع تبويبات، القسم السابع.</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٦</span>رحلة الحجز كاملة</h2>
+
+<div class="step"><div class="num">١</div><div class="body"><b>الحجز</b> — حجز جديد. الحالة تبقى «مؤكد» والغرفة تتحجز فوراً.</div></div>
+<div class="step"><div class="num">٢</div><div class="body"><b>التأكيد للنزيل</b> — من ورقة الحجز: رسالة واتساب أو إثبات حجز. بلغة النزيل مش لغتك.</div></div>
+<div class="step"><div class="num">٣</div><div class="body"><b>الوصول</b> — «تسجيل الوصول» من وصول اليوم. الحالة تبقى «ساكن».</div></div>
+<div class="step"><div class="num">٤</div><div class="body"><b>أثناء الإقامة</b> — إضافات على الحساب، دفعات، تمديد أو تقصير، نقل غرفة.</div></div>
+<div class="step"><div class="num">٥</div><div class="body"><b>الخروج</b> — «تسجيل خروج». الحساب بيتقفل والغرفة بتتعلّم «تحتاج تنظيف».</div></div>
+<div class="step"><div class="num">٦</div><div class="body"><b>النظافة</b> — «خلصت» فترجع الغرفة للبيع.</div></div>
+
+<div class="card warn">
+  <h4>الحالات الستة</h4>
+  <p><b>مبدئي</b> (اتسجل أوفلاين ولسه ماوصلش) · <b>مؤكد</b> · <b>ساكن</b> · <b>خرج</b> · <b>ملغي</b> · <b>لم يحضر</b>.</p>
+</div>
+</section>
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٧</span>الإعدادات — التسعة تبويبات</h2>
+
+<p class="lead">كلها للمالك والمدير بس. الاستقبال مش شايف التبويب ده أصلاً.</p>
+
+<h3>١. الأسعار</h3>
+<p>السعر بيتحدد بـ<b>ثلاث حاجات</b>: نوع الغرفة × عدد الأفراد × خطة الأسعار. فوق المصفوفة فيه <b>خطط الأسعار والشركات</b>، وتحتها <b>نسخ الأسعار من نوع لنوع</b> («املا أسعار كينج من دبل زايد ٢٠٠»).</p>
+<p>الحفظ بيطلب كلمة مرور المدير. والنسخ بيملا الخانات على الشاشة بس — مش بيحفظ لحد ما تراجع.</p>
+
+<h3>٢. المواسم</h3>
+<p>أسعار مختلفة لفترة بتاريخ. السعر بيتحسب <b>ليلة بليلة</b>، فإقامة بتعدي على حدود موسمين كل ليلة فيها بتتحسب بسعرها الصح.</p>
+
+<h3>٣. الغرف</h3>
+<p>أنواع الغرف (الاسم وعدد الأفراد — والرمز بيتعمل لوحده)، والغرف نفسها ونوع كل واحدة.</p>
+<div class="card">
+  <h4>النوع الجديد بيتولد من غير غرف ومن غير سعر</h4>
+  <p>بعد ما تضيف نوع، لسه ناقص خطوتين: تنقل الغرف عليه من نفس الشاشة، وتسعّره من تبويب الأسعار. حجز على نوع مش متسعّر إجماليه هيطلع صفر.</p>
+</div>
+
+<h3>٤. الإضافات</h3>
+<p>كتالوج الأصناف (فطار، غسيل، ترانسفير) بسعر لكل واحد. الاستقبال بيختار منه فالسعر بيتملا لوحده، وبيقدر يعدّله لحالة بعينها.</p>
+
+<h3>٥. الشركات</h3>
+<p>الشركة أو الوكالة اللي بتبعتلك نزلاء. تربطها بخطة أسعارها، فالحجز اللي يتسجّل عليها ياخد أسعارها من غير ما حد يفتكر الاتفاق. الشركة <b>تتخفي مش تتحذف</b> — الحجوزات القديمة بتفضل مربوطة باسمها.</p>
+
+<h3>٦. الموظفين</h3>
+<p>إنشاء حساب (اسم، اسم مستخدم، تليفون، كلمة مرور، دور)، وتغيير الدور، وتعديل الاسم والتليفون، وتغيير كلمة المرور، وإيقاف الحساب.</p>
+<div class="card warn">
+  <h4>اسم المستخدم مقفول عن قصد</h4>
+  <p>هو نص عنوان الدخول. تغييره معناه موظف مش عارف يدخل تاني الصبح.</p>
+</div>
+
+<h3>٧. كلمة مرور المدير</h3>
+<p>القسم الثالث. ستة خانات على الأقل، ومش أرقام متتابعة ولا خانة مكررة.</p>
+
+<h3>٨. نسخة احتياطية</h3>
+<p>تحميل نسخة كاملة من بيانات الفندق كملف، واستردادها. <b>على الخطة المجانية دي النسخة الوحيدة</b> — مفيش نسخ تلقائي.</p>
+
+<h3>٩. بيانات الفندق</h3>
+<p>الاسم بالعربي والإنجليزي، الشعار، اللون، <b>رقم الواتساب</b>، العنوان، <b>سياسة الإلغاء بالعربي والإنجليزي</b>، <b>العملة</b>، <b>رمز الدولة</b>، و<b>توقيت الفندق</b>.</p>
+<div class="card stop">
+  <h4>التلاتة دول بيوصلوا للنزيل</h4>
+  <p><b>رقم الواتساب</b> — من غيره رسالة التأكيد وبيان الحساب وإثبات الحجز مالهمش رقم يتبعتوا منه.<br>
+  <b>سياسة الإلغاء الإنجليزية</b> — النزيل الأجنبي بكل اللغات بياخد النسخة دي.<br>
+  <b>اسم الفندق الإنجليزي</b> — من غيره الأجنبي بيشوف الاسم العربي.</p>
+</div>
+<div class="card">
+  <h4>ورمز الدولة والتوقيت مش تفاصيل</h4>
+  <p><b>رمز الدولة</b> بيحدد إمتى «+٢٠١٠…» و«٠١٠…» نفس الرقم — من غيره النزيل الواحد بياخد سجلين.<br>
+  <b>التوقيت</b> بيحدد «النهاردة» — وصول اليوم ومغادرة اليوم والتقارير كلها بتتحسب بيه.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٨</span>لوحة المنصة</h2>
+
+<p class="lead">على <span class="code">/admin</span>. مالهاش لينك من أي مكان في التطبيق، وبتترفض لأي حد مش مسجّل مشغّل منصة.</p>
+
+<table>
+  <tr><th>الإجراء</th><th>التفاصيل</th></tr>
+  <tr><td><b>فتح فندق جديد</b></td><td>الاسم ورمز الفرع والتوقيت، وحساب المالك بالبريد وكلمة المرور. الفندق بيتولد ومعاه خطة أسعار افتراضية عشان يقدر ياخد حجز من أول يوم.</td></tr>
+  <tr><td><b>إيقاف حساب</b></td><td>الموظف مبيقدرش يدخل.</td></tr>
+  <tr><td><b>إيقاف فندق كامل</b></td><td>كل حساباته بتتقفل في نفس اللحظة.</td></tr>
+  <tr><td><b>تغيير كلمة مرور حساب</b></td><td>لو موظف نسيها.</td></tr>
+  <tr><td><b>تصفير بيانات فندق</b></td><td>تحت.</td></tr>
+</table>
+
+<div class="card stop">
+  <h4>تصفير البيانات — إيه بيروح وإيه بيفضل</h4>
+  <p><b>بيروح:</b> الحجوزات وكل اللي عليها (الغرف المخصصة، الليالي، الدفعات، الإضافات)، النزلاء، مهام النظافة، حجوزات الصيانة، وسجل العمليات.</p>
+  <p><b>بيفضل:</b> الغرف وأنواعها، الأسعار والمواسم، أصناف الإضافات، الشركات، حسابات الموظفين، كلمة مرور المدير، وبيانات الفندق.</p>
+  <p>محتاج تكتب <b>رمز الفرع</b> بإيدك، وبيتسجل في سجل العمليات كأول سطر بعده. <b>نزّل نسخة احتياطية الأول.</b></p>
+</div>
+
+<div class="card">
+  <h4>مشغّل المنصة مبيشوفش بيانات فندق</h4>
+  <p>اللوحة بتوري أعداد بس — كام غرفة وكام حجز وكام نزيل. ولا اسم نزيل ولا مبلغ ولا ملاحظة بتظهر فيها أبداً.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">٩</span>الأوفلاين</h2>
+
+<p class="lead">النت في دهب بيقطع. التطبيق متصمم على ده.</p>
+
+<table>
+  <tr><th>شغّال بدون نت</th><th>محتاج نت</th></tr>
+  <tr><td>تشوف الغرف والحجوزات المحفوظة</td><td>تأكيد حجز جديد</td></tr>
+  <tr><td>تسجيل وصول وخروج</td><td>تسجيل دفعة</td></tr>
+  <tr><td>تعليم النظافة</td><td>الإضافات على الحساب</td></tr>
+  <tr><td><b>حجز مبدئي</b></td><td>التقارير</td></tr>
+</table>
+
+<div class="card warn">
+  <h4>الحجز المبدئي مش حجز مؤكد</h4>
+  <p>لما تسجّل حجز والنت مقطوع، بيتكتب على الجهاز و<b>الغرفة مش محجوزة فعلاً</b> لحد ما النت يرجع. التطبيق بيقول ده صراحة. أول ما الاتصال يرجع بيتبعت لوحده — ولو الغرفة اتاخدت في الوقت ده، بيتقالك إنه اترفض ومحتاج تدخّل.</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+<h2><span class="n">١٠</span>مشاكل شائعة</h2>
+
+<table>
+  <tr><th>اللي بيحصل</th><th>السبب والحل</th></tr>
+  <tr><td>حجز إجماليه صفر</td><td>نوع الغرفة أو الخطة مش متسعّرين. الإعدادات ← الأسعار. <b>الحجوزات القديمة مبتتسعّرش بأثر رجعي</b> — سعر الليلة بيتخزن وقت الحجز عن قصد.</td></tr>
+  <tr><td>«الغرفة محجوزة من …»</td><td>التواريخ الجديدة عليها حجز تاني. التطبيق بيقولك رقم الغرفة ومين حاجزها — غيّر التواريخ أو انقل الغرفة.</td></tr>
+  <tr><td>موظف مش عارف يدخل</td><td>اتأكد إن حسابه مفعّل (الإعدادات ← الموظفين)، وإن الفندق نفسه مش موقوف.</td></tr>
+  <tr><td>الاستقبال مش شايف التقارير</td><td>ده مقصود. التقارير وسجل العمليات والإعدادات للمدير والمالك بس.</td></tr>
+  <tr><td>الإلغاء بيعدي من غير ما يسأل كلمة مرور</td><td>مفيش كلمة مرور مدير متسجّلة. حطّها.</td></tr>
+  <tr><td>النزيل الواحد ليه سجلين</td><td>رمز الدولة غلط أو مش متسجّل، فالرقمين مش بيتطابقوا. الإعدادات ← بيانات الفندق.</td></tr>
+  <tr><td>«النزيل ده عنده حجز قائم»</td><td>تنبيه مش منع. لو ده فعلاً حجز تاني علّم وكمّل؛ ولو الأول محتاج تعديل، عدّله بدل ما تعمل تاني.</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section class="final">
+<h2>كارت المدير</h2>
+
+<div class="quick">
+  <div class="rowbox"><b>موظف جديد</b><span>الإعدادات ← الموظفين ← إضافة موظف. اختار الدور صح من الأول.</span></div>
+  <div class="rowbox"><b>موظف مشي</b><span>أوقف حسابه، متحذفوش — سجل العمليات محتاج اسمه.</span></div>
+  <div class="rowbox"><b>سعر جديد</b><span>الإعدادات ← الأسعار. بكلمة مرور المدير.</span></div>
+  <div class="rowbox"><b>شركة جديدة</b><span>الإعدادات ← الأسعار ← خطة أسعار جديدة، واكتب اسم الشركة فيها.</span></div>
+  <div class="rowbox"><b>موسم</b><span>الإعدادات ← المواسم. السعر بيتحسب ليلة بليلة لوحده.</span></div>
+  <div class="rowbox"><b>نسخة احتياطية</b><span>الإعدادات ← نسخة احتياطية ← تحميل. اعملها كل أسبوع.</span></div>
+  <div class="rowbox"><b>مين عمل إيه؟</b><span>سجل العمليات. بحث بالنزيل أو الموظف أو رقم الحجز.</span></div>
+  <div class="rowbox"><b>كام دخّلنا؟</b><span>التقارير ← حدد المدة ← تصدير Excel.</span></div>
+</div>
+
+<div class="foot">
+  الدليل ده مبني من الكود مباشرة. أي تغيير في الصلاحيات لازم يتحدّث هنا —
+  ورقة بصلاحيات قديمة أسوأ من مفيش ورقة.
+</div>
+</section>
+
+</div>
+</body>
+</html>
