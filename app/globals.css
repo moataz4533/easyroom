@@ -655,7 +655,16 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .dashboard-stat { min-height: 112px; gap: 12px; padding: 15px; }
   .dashboard-stat .stat-icon { width: 48px; height: 48px; }
   .arrival-row { grid-template-columns: 1fr 1.1fr 1fr .55fr .7fr auto; font-size: 12px; }
-  .arrival-notes, .arrival-head span:nth-child(6) { display: none; }
+  .arrival-head span:nth-child(6) { display: none; }
+  /* A note reception wrote for themselves — «وصول متأخر», «سرير زيادة» — is
+     content, not chrome. It used to be dropped on every screen narrower
+     than a laptop. Now it wraps onto its own line instead. */
+  .arrival-notes { grid-column: 1 / -1; grid-row: 2; color: var(--muted); font-size: 12px; }
+  .arrival-notes[data-empty="true"] { display: none; }
+  /* The note takes a second line, so the button has to be told to stay on
+     the first — otherwise a row with a note and a row without put their
+     check-in buttons in different places. */
+  .arrival-action { grid-column: 6; grid-row: 1; }
   .room-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -670,7 +679,9 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .language-button span { display: none; }
   .page-header { align-items: stretch; flex-direction: column; }
   .dashboard-heading { align-items: center; margin-bottom: 18px; }
-  .dashboard-heading .eyebrow, .dashboard-refresh { display: none; }
+  .dashboard-heading .eyebrow { display: none; }
+  .dashboard-refresh span { display: none; }
+  .dashboard-refresh { padding-inline: 12px; }
   .dashboard-heading h1 { font-size: 28px; }
   .dashboard-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 26px; }
   .dashboard-stat { min-height: 112px; align-items: center; justify-content: center; flex-direction: column; gap: 6px; padding: 10px 6px; text-align: center; }
@@ -689,7 +700,6 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
   .arrival-reference { grid-column: 2; grid-row: 1; }
   .arrival-stay { grid-column: 1; }
   .arrival-room { grid-column: 2; text-align: end; }
-  .arrival-notes { display: none; }
   .arrival-action { grid-column: 1 / -1; width: 100%; }
   .room-status-grid { grid-template-columns: 1fr; gap: 10px; }
   .room-status-card { min-height: 112px; gap: 14px; padding: 14px 16px; }

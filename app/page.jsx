@@ -109,9 +109,13 @@ function Board() {
           <span className="eyebrow">{t("eyebrow")}</span>
           <h1>{t("title")}</h1>
         </div>
-        <button className="btn dashboard-refresh" onClick={load} disabled={loading}>
+        {/* On a phone the word goes and the button stays. It used to be the
+            other way round, which left reception with no way to refresh on
+            the one device they actually carry. */}
+        <button className="btn dashboard-refresh" onClick={load} disabled={loading}
+          aria-label={t("refresh")}>
           <RefreshCw size={17} className={loading ? "spin" : ""} />
-          {t("refresh")}
+          <span>{t("refresh")}</span>
         </button>
       </div>
 
@@ -144,7 +148,7 @@ function Board() {
                 <span className="arrival-stay">{dayLabel(b.check_in, locale)} ← {dayLabel(b.check_out, locale)}<small>{t("paxCount", { count: b.adults || 0 })}</small></span>
                 <span className="mono arrival-room">{arrivalRooms(b, locale)}</span>
                 <span>{t(`source_${b.source || "other"}`)}</span>
-                <span className="arrival-notes">{b.notes || "—"}</span>
+                <span className="arrival-notes" data-empty={!b.notes}>{b.notes || "—"}</span>
                 <button
                   className="btn primary sm arrival-action"
                   onClick={async () => {
