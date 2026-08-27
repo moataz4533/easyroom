@@ -329,6 +329,13 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(rates);
 
+  /**
+   * A hidden plan is not a column. The plan manager still lists it — that is
+   * where you bring one back — but a matrix with eight retired columns is
+   * the shape that made this screen unreadable in the first place.
+   */
+  const live = plans.filter((plan) => plan.is_active !== false);
+
   // Writes go through save_rates: direct writes to the rates table are
   // closed, because a policy can't take a password as an argument.
   async function save(pin) {
@@ -363,14 +370,14 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
     <>
       <p className="section-note">{t("rateHint")}</p>
 
-      <RateMatrix types={types} plans={plans} locale={locale}
+      <RateMatrix types={types} plans={live} locale={locale}
         active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
 
       {/* Splitting one type into two does not double the typing; it adds
           eight empty boxes per new type, and every one of them has to be
           right or a booking quotes zero. */}
       {types.length > 1 && (
-        <CopyRates types={types} plans={plans} locale={locale} active={active}
+        <CopyRates types={types} plans={live} locale={locale} active={active}
           draft={draft} setDraft={setDraft} showToast={showToast} />
       )}
 
