@@ -232,6 +232,11 @@ describe("bilingual routing and messages", () => {
       expect(typeof ar.CheckpointPass[`gap_${gap}`], gap).toBe("string");
       expect(typeof en.CheckpointPass[`gap_${gap}`], gap).toBe("string");
     }
+    // The document's own two languages, offered as a switch on the panel.
+    for (const code of ["en", "ar"]) {
+      expect(typeof ar.CheckpointPass[`lang_${code}`], code).toBe("string");
+      expect(typeof en.CheckpointPass[`lang_${code}`], code).toBe("string");
+    }
     // Every reason the cancel dialog offers, and the same names again in
     // the log — a reason that reads as a raw key is a reason nobody trusts.
     for (const key of ["guest_cancelled", "date_change", "duplicate", "mistake", "other"]) {

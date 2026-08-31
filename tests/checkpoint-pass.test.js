@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  PASS_FIELDS, PASS_WORDS, buildCheckpointPassText, checkpointPassModel,
-  passDate, passGaps, passStatement, passableBooking,
+  PASS_FIELDS, PASS_LOCALES, PASS_SECTIONS, buildCheckpointPassText,
+  checkpointPassModel, nightsLine, partyLine, passDate, passGaps, passValues,
+  passWords, passableBooking, roomsLine,
 } from "../lib/checkpoint-pass";
 
 const property = {
@@ -40,7 +41,7 @@ describe("checkpointPassModel", () => {
     expect(model.roomCount).toBe(1);
   });
 
-  it("carries the guest identity a checkpoint reads", () => {
+  it("carries the guest identity the paper is built around", () => {
     expect(model.guest).toBe("محمود أحمد جمعة");
     expect(model.idNumber).toBe("30111052503613");
     expect(model.nationality).toBe("مصري");
@@ -68,10 +69,17 @@ describe("checkpointPassModel", () => {
     expect(Object.keys(priced)).not.toContain("total");
   });
 
-  it("reads the hotel letterhead off the property", () => {
-    expect(model.hotel.name).toBe("نادي اليونانيين");
-    expect(model.hotel.nameEn).toBe("The Greek Club");
+  it("puts the hotel's English name on the letterhead, in either language", () => {
+    expect(model.hotel.brand).toBe("The Greek Club");
+    const arabicOnly = checkpointPassModel({
+      property: { ...property, name_en: "" }, booking, allocations,
+    });
+    expect(arabicOnly.hotel.brand).toBe("نادي اليونانيين");
+  });
+
+  it("reads the rest of the letterhead off the property", () => {
     expect(model.hotel.logo).toBe("https://example.test/logo.png");
+    expect(model.hotel.address).toBe("دهب، جنوب سيناء");
     expect(model.hotel.phone).toBe("0100 000 0000");
   });
 
@@ -84,7 +92,7 @@ describe("checkpointPassModel", () => {
 });
 
 describe("passGaps", () => {
-  it("is silent when everything a checkpoint needs is on file", () => {
+  it("is silent when everything the paper needs is on file", () => {
     expect(passGaps(checkpointPassModel({ property, booking, allocations }))).toEqual([]);
   });
 
@@ -95,7 +103,7 @@ describe("passGaps", () => {
     expect(passGaps(model)).toContain("idNumber");
   });
 
-  it("names a hotel with no number to verify against", () => {
+  it("names a hotel with nothing to contact it by", () => {
     const model = checkpointPassModel({ property: { ...property, settings: {} }, booking, allocations });
     expect(passGaps(model)).toEqual(expect.arrayContaining(["hotelPhone", "hotelAddress"]));
   });
@@ -116,50 +124,88 @@ describe("passableBooking", () => {
 });
 
 describe("passDate", () => {
-  it("writes the form the checkpoint's own paper uses", () => {
-    expect(passDate("2026-08-12")).toBe("12 / 08 / 2026");
+  it("spells the month out, so no reader can take it day-first or month-first", () => {
+    expect(passDate("2026-08-12", "en")).toBe("12 August 2026");
+    expect(passDate("2026-08-12", "ar")).toContain("أغسطس");
+  });
+
+  it("uses Western digits even in Arabic", () => {
+    const arabic = passDate("2026-08-12", "ar");
+    expect(arabic).toContain("12");
+    expect(arabic).toContain("2026");
+    expect(arabic).not.toMatch(/[٠-٩]/);
   });
 
   it("survives a missing or odd value", () => {
-    expect(passDate(null)).toBe("");
-    expect(passDate("soon")).toBe("soon");
+    expect(passDate(null, "en")).toBe("");
+    expect(passDate("soon", "en")).toBe("soon");
   });
 });
 
-describe("the bilingual document", () => {
-  it("labels every field in both languages", () => {
-    for (const field of PASS_FIELDS) {
-      expect(PASS_WORDS[field].ar).toBeTruthy();
-      expect(PASS_WORDS[field].en).toBeTruthy();
+describe("the document's two languages", () => {
+  it("has every printed word in both", () => {
+    for (const locale of PASS_LOCALES) {
+      const w = passWords(locale);
+      for (const key of [...PASS_FIELDS, "title", "reference", "issuedOn", "statement", "stamp", "missing"]) {
+        expect(w[key], `${locale}.${key}`).toBeTruthy();
+      }
+      for (const section of PASS_SECTIONS) expect(w[section.key], section.key).toBeTruthy();
     }
   });
 
-  it("names the hotel and the guest in each statement", () => {
-    expect(passStatement("نادي اليونانيين", "محمود", { locale: "ar" })).toContain("نادي اليونانيين");
-    expect(passStatement("نادي اليونانيين", "محمود", { locale: "ar" })).toContain("محمود");
-    expect(passStatement("The Greek Club", "Mahmoud", { locale: "en" })).toContain("The Greek Club");
+  it("says nothing about why the paper was issued", () => {
+    for (const locale of PASS_LOCALES) {
+      const printed = Object.values(passWords(locale)).join(" ");
+      // Whole words only — "Passport / ID no." is an ordinary voucher line
+      // and must not trip a search for "pass".
+      for (const word of ["كمين", "كمائن", "تصريح", "مرور", "checkpoint", "pass", "permit", "certificate"]) {
+        expect(printed, word).not.toMatch(new RegExp(`(^|\\P{L})${word}(\\P{L}|$)`, "iu"));
+      }
+    }
   });
 
-  it("still reads when the hotel or the guest has no name", () => {
-    expect(passStatement("", "", { locale: "ar" })).toContain("الفندق");
-    expect(passStatement("", "", { locale: "en" })).toContain("the hotel");
+  it("falls back to English for a language the document does not speak", () => {
+    expect(passWords("ru").title).toBe(passWords("en").title);
+  });
+});
+
+describe("printed values", () => {
+  const model = checkpointPassModel({ property, booking, allocations, issuedOn: "2026-08-09" });
+
+  it("names the room in the document's own language", () => {
+    expect(roomsLine(model, "en")).toBe("4 — Triple");
+    expect(roomsLine(model, "ar")).toBe("غرفة تريبل — 4");
+  });
+
+  it("writes counts as words, not bare numbers", () => {
+    expect(nightsLine(3, "en")).toBe("3 nights");
+    expect(nightsLine(1, "en")).toBe("1 night");
+    expect(partyLine(1, "ar")).toBe("1 فرد");
+    expect(partyLine(3, "ar")).toBe("3 أفراد");
+  });
+
+  it("fills every field the document lays out", () => {
+    const values = passValues(model, "en");
+    for (const field of PASS_FIELDS) expect(values[field], field).toBeTruthy();
   });
 });
 
 describe("buildCheckpointPassText", () => {
-  const text = buildCheckpointPassText({ property, booking, allocations, issuedOn: "2026-08-09" });
+  const text = buildCheckpointPassText({
+    property, booking, allocations, issuedOn: "2026-08-09", locale: "en",
+  });
 
-  it("carries the identity, the stay and the number to call", () => {
+  it("leads with the hotel's name and carries the stay", () => {
+    expect(text).toContain("The Greek Club");
     expect(text).toContain("GR26-0042");
     expect(text).toContain("30111052503613");
-    expect(text).toContain("12 / 08 / 2026");
+    expect(text).toContain("12 August 2026");
     expect(text).toContain("0100 000 0000");
   });
 
-  it("says out loud that it holds no money", () => {
-    expect(text).toContain(PASS_WORDS.noMoney.ar);
+  it("carries no money", () => {
     const priced = buildCheckpointPassText({
-      property, booking: { ...booking, total_amount: 5400, paid_amount: 1800 }, allocations,
+      property, booking: { ...booking, total_amount: 5400, paid_amount: 1800 }, allocations, locale: "en",
     });
     expect(priced).not.toContain("5400");
     expect(priced).not.toContain("1800");
@@ -167,15 +213,22 @@ describe("buildCheckpointPassText", () => {
 
   it("marks a blank field instead of leaving a hole", () => {
     const bare = buildCheckpointPassText({
-      property, booking: { ...booking, guests: { full_name: "زائر" } }, allocations,
+      property, booking: { ...booking, guests: { full_name: "زائر" } }, allocations, locale: "ar",
     });
-    expect(bare).toContain(PASS_WORDS.missing.ar);
+    expect(bare).toContain(passWords("ar").missing);
   });
 
-  it("drops the verify line when there is no number to verify against", () => {
+  it("drops the contact line when the hotel has no contact on file", () => {
     const bare = buildCheckpointPassText({
-      property: { ...property, settings: {} }, booking, allocations,
+      property: { ...property, settings: {} }, booking, allocations, locale: "en",
     });
-    expect(bare).not.toContain(PASS_WORDS.verify.ar);
+    expect(bare).not.toContain("دهب");
+    expect(bare).not.toContain("0100");
+  });
+
+  it("writes the whole thing in the language it was asked for", () => {
+    const arabic = buildCheckpointPassText({ property, booking, allocations, locale: "ar" });
+    expect(arabic).toContain(passWords("ar").title);
+    expect(arabic).not.toContain(passWords("en").title);
   });
 });
