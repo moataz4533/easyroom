@@ -91,6 +91,9 @@ a { color: inherit; }
 .spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .grow { flex: 1; min-width: 0; }
 .field { display: flex; flex-direction: column; gap: 6px; }
+/* Two fields to a line on anything wider than a phone, one on a phone. */
+.field-pairs { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 560px) { .field-pairs { grid-template-columns: 1fr 1fr; } }
 .field > span, .field label { color: var(--muted); font-size: 12px; font-weight: 600; }
 input, select, textarea { width: 100%; min-height: 44px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--ink); background: var(--surface); }
 textarea { min-height: 94px; resize: vertical; }

@@ -226,16 +226,36 @@ describe("bilingual routing and messages", () => {
     for (const key of ["active", "today", "past", "cancelled"]) {
       expect(typeof ar.Bookings[`filter_${key}`], key).toBe("string");
     }
-    // Every gap the checkpoint pass can report before it is printed. A
+    // Every gap the booking form can report before it is printed. A
     // gap that reads as a raw key is a warning reception will ignore.
     for (const gap of ["idNumber", "hotelPhone", "hotelAddress"]) {
-      expect(typeof ar.CheckpointPass[`gap_${gap}`], gap).toBe("string");
-      expect(typeof en.CheckpointPass[`gap_${gap}`], gap).toBe("string");
+      expect(typeof ar.BookingForm[`gap_${gap}`], gap).toBe("string");
+      expect(typeof en.BookingForm[`gap_${gap}`], gap).toBe("string");
     }
     // The document's own two languages, offered as a switch on the panel.
     for (const code of ["en", "ar"]) {
-      expect(typeof ar.CheckpointPass[`lang_${code}`], code).toBe("string");
-      expect(typeof en.CheckpointPass[`lang_${code}`], code).toBe("string");
+      expect(typeof ar.BookingForm[`lang_${code}`], code).toBe("string");
+      expect(typeof en.BookingForm[`lang_${code}`], code).toBe("string");
+    }
+    // Every reason the hand-typed form refuses to print.
+    for (const problem of ["needGuest", "needDates", "checkOutAfterCheckIn"]) {
+      expect(typeof ar.BookingForms[`problem_${problem}`], problem).toBe("string");
+      expect(typeof en.BookingForms[`problem_${problem}`], problem).toBe("string");
+    }
+    for (const key of ["booking", "manual"]) {
+      expect(typeof ar.BookingForms[`source_${key}`], key).toBe("string");
+      expect(typeof en.BookingForms[`source_${key}`], key).toBe("string");
+    }
+    for (const key of ["current", "past"]) {
+      expect(typeof ar.BookingForms[`range_${key}`], key).toBe("string");
+      expect(typeof ar.BookingForms[`empty_${key}`], key).toBe("string");
+      expect(typeof en.BookingForms[`range_${key}`], key).toBe("string");
+      expect(typeof en.BookingForms[`empty_${key}`], key).toBe("string");
+    }
+    for (const key of ["guest", "idNumber", "nationality", "phone", "checkIn",
+      "checkOut", "party", "rooms", "reference"]) {
+      expect(typeof ar.BookingForms[`field_${key}`], key).toBe("string");
+      expect(typeof en.BookingForms[`field_${key}`], key).toBe("string");
     }
     // Every reason the cancel dialog offers, and the same names again in
     // the log — a reason that reads as a raw key is a reason nobody trusts.
