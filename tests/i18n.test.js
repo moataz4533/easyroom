@@ -226,6 +226,12 @@ describe("bilingual routing and messages", () => {
     for (const key of ["active", "today", "past", "cancelled"]) {
       expect(typeof ar.Bookings[`filter_${key}`], key).toBe("string");
     }
+    // Every gap the checkpoint pass can report before it is printed. A
+    // gap that reads as a raw key is a warning reception will ignore.
+    for (const gap of ["idNumber", "hotelPhone", "hotelAddress"]) {
+      expect(typeof ar.CheckpointPass[`gap_${gap}`], gap).toBe("string");
+      expect(typeof en.CheckpointPass[`gap_${gap}`], gap).toBe("string");
+    }
     // Every reason the cancel dialog offers, and the same names again in
     // the log — a reason that reads as a raw key is a reason nobody trusts.
     for (const key of ["guest_cancelled", "date_change", "duplicate", "mistake", "other"]) {
