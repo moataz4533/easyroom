@@ -22,7 +22,7 @@
     "settings": "Settings",
     "calendar": "Calendar",
     "guests": "Guests",
-    "passes": "Passes"
+    "bookingForm": "Booking form"
   },
   "Auth": {
     "title": "Sign in",
@@ -1243,31 +1243,53 @@
     "nameTaken": "A company with this name already exists",
     "bookings": "{count, plural, =0 {no bookings} one {# booking} other {# bookings}}"
   },
-  "Passes": {
-    "title": "Checkpoint passes",
-    "subtitle": "The hotel's headed booking confirmation — for guests crossing the South Sinai checkpoints.",
-    "open": "Printable confirmation",
-    "issue": "Print confirmation",
+  "BookingForms": {
+    "title": "Booking form",
+    "subtitle": "The hotel's headed booking confirmation — for the guest to carry or to be sent to them.",
+    "open": "Printable booking form",
+    "issue": "Show the form",
+    "source_booking": "From a booking",
+    "source_manual": "Type it in",
+    "range_current": "Current and upcoming",
+    "range_past": "Finished stays",
     "searchPlaceholder": "Search by name, reference or phone",
     "loading": "Loading bookings…",
-    "empty": "No live bookings — a pass is issued for a stay that has not ended yet.",
+    "empty_current": "No current or upcoming bookings.",
+    "empty_past": "No finished stays yet.",
     "noMatches": "No booking matches that search.",
     "summary": "{nights, plural, one {1 night} other {# nights}} · {pax, plural, one {1 guest} other {# guests}} · {rooms, plural, =0 {no room} one {1 room} other {# rooms}}",
     "missingId": "ID number missing",
-    "copied": "Confirmation copied",
+    "manualIsNotABooking": "This screen prints a paper only — it does not create a booking, hold a room, or reach any report. If this is a real booking, make it from “New booking”.",
+    "field_guest": "Guest name",
+    "field_idNumber": "Passport / ID no.",
+    "field_nationality": "Nationality",
+    "field_phone": "Telephone",
+    "field_checkIn": "Arrival",
+    "field_checkOut": "Departure",
+    "field_party": "Guests",
+    "field_rooms": "Accommodation",
+    "field_reference": "Confirmation no. (optional)",
+    "placeholder_guest": "The name exactly as on the ID",
+    "placeholder_rooms": "e.g. Double room",
+    "placeholder_reference": "Leave empty if there is none",
+    "problem_needGuest": "Enter the guest's name.",
+    "problem_needDates": "Set both the arrival and the departure date.",
+    "problem_checkOutAfterCheckIn": "Departure must be after arrival.",
+    "clear": "Clear the fields",
+    "copied": "Form copied",
     "copyFailed": "Could not copy — copy the text by hand"
   },
-  "CheckpointPass": {
-    "title": "Guest booking confirmation",
-    "subtitle": "The hotel's own headed confirmation — it passes a checkpoint without looking like it was made for one.",
-    "gapsTitle": "Before printing, some details a checkpoint asks for are missing:",
-    "gap_idNumber": "The guest has no national ID or passport number on file — add it from the guests screen.",
-    "gap_hotelPhone": "The hotel has no phone number on file, so the paper prints without its contact line — add it in Settings → Hotel details.",
+  "BookingForm": {
+    "title": "Booking form",
+    "subtitle": "The hotel's headed paper, in Arabic or English, carrying no amounts.",
+    "lang_en": "English",
+    "lang_ar": "عربي",
+    "gapsTitle": "Before printing, some details are missing:",
+    "gap_idNumber": "No passport or ID number on file — add it from the guests screen, or type it in under “Type it in”.",
+    "gap_hotelPhone": "The hotel has no phone number on file, so the paper prints without its details under the logo — add it in Settings → Hotel details.",
     "gap_hotelAddress": "The hotel has no address on file — add it in Settings → Hotel details.",
     "print": "Print / save PDF",
     "copy": "Copy the text",
-    "whatsapp": "Send on WhatsApp",
-    "lang_en": "English",
-    "lang_ar": "عربي"
+    "whatsapp": "Send on WhatsApp"
   }
 }

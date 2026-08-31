@@ -9,7 +9,7 @@ import {
   BarChart3, BedDouble, BookOpenCheck, CalendarPlus, CalendarRange,
   ChevronLeft, ChevronRight, CircleUserRound, ClipboardCheck, CloudOff,
   Hotel, IdCard, Languages, LayoutDashboard, ListChecks, LogOut,
-  MoreHorizontal, RefreshCw, Settings, ShieldCheck,
+  FileText, MoreHorizontal, RefreshCw, Settings,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { setHotelSettings } from "../lib/hotel-settings";
@@ -57,7 +57,7 @@ const NAV = [
   { href: "/new-booking", key: "newBooking", mobileKey: "bookingShort", Icon: CalendarPlus },
   { href: "/bookings", key: "bookings", Icon: BookOpenCheck },
   { href: "/guests", key: "guests", Icon: IdCard },
-  { href: "/passes", key: "passes", Icon: ShieldCheck },
+  { href: "/booking-form", key: "bookingForm", Icon: FileText },
   { href: "/housekeeping", key: "housekeeping", Icon: ClipboardCheck },
   { href: "/reports", key: "reports", Icon: BarChart3 },
   { href: "/activity", key: "activity", Icon: ListChecks },
@@ -65,9 +65,9 @@ const NAV = [
 ];
 
 const ALLOWED = {
-  owner: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/passes", "/housekeeping", "/reports", "/activity", "/settings"],
-  manager: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/passes", "/housekeeping", "/reports", "/activity", "/settings"],
-  reception: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/passes", "/housekeeping"],
+  owner: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/booking-form", "/housekeeping", "/reports", "/activity", "/settings"],
+  manager: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/booking-form", "/housekeeping", "/reports", "/activity", "/settings"],
+  reception: ["/", "/calendar", "/new-booking", "/bookings", "/guests", "/booking-form", "/housekeeping"],
   housekeeping: ["/housekeeping"],
 };
 

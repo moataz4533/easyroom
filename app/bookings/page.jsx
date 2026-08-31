@@ -18,10 +18,10 @@ import {
   datesChange, datesForm, datesProblem, nightOptions,
 } from "../../lib/stay-dates";
 import ReservationProof from "../../components/ReservationProof";
-import CheckpointPass from "../../components/CheckpointPass";
+import BookingForm from "../../components/BookingForm";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
-import { FileCheck2, MessageCircle, Receipt, ShieldCheck } from "lucide-react";
+import { FileCheck2, FileText, MessageCircle, Receipt } from "lucide-react";
 import { fullDate, joinList } from "../../lib/format";
 
 export default function Page() {
@@ -419,7 +419,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const tk = useTranslations("Bookings");
   const td = useTranslations("Discount");
   const trp = useTranslations("ReservationProof");
-  const tp = useTranslations("Passes");
+  const tp = useTranslations("BookingForms");
   const common = useTranslations("Common");
   const [confirmation, setConfirmation] = useState(false);
   const [bill, setBill] = useState(false);
@@ -512,11 +512,10 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           <FileCheck2 size={16} />{trp("open")}
         </button>
 
-        {/* Guests driving to Sinai are stopped on the road, and the paper
-            the desk used to write by hand is now one button. */}
+        {/* The paper the desk used to write out by hand, now one button. */}
         {isOpen && (
           <button className="btn wide" style={{ marginBottom: 12 }} onClick={() => setPass(true)}>
-            <ShieldCheck size={16} />{tp("open")}
+            <FileText size={16} />{tp("open")}
           </button>
         )}
 
@@ -551,7 +550,7 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
         )}
 
         {pass && (
-          <CheckpointPass property={property} booking={b}
+          <BookingForm property={property} booking={b}
             allocations={b.room_allocations || []}
             onClose={() => setPass(false)}
             onCopied={() => onNotify(tp("copied"))}

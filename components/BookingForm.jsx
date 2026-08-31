@@ -6,9 +6,9 @@ import { Copy, MessageCircle, Printer, X } from "lucide-react";
 import { whatsappLink } from "../lib/confirmation";
 import { today } from "../lib/supabase";
 import {
-  PASS_LOCALES, PASS_SECTIONS, buildCheckpointPassText, checkpointPassModel,
-  passDate, passGaps, passValues, passWords,
-} from "../lib/checkpoint-pass";
+  PASS_LOCALES, PASS_SECTIONS, bookingFormModel, passDate, passGaps,
+  passText, passValues, passWords,
+} from "../lib/booking-form";
 
 /**
  * The one stylesheet the document has. It is used for the panel on screen
@@ -17,8 +17,7 @@ import {
  * of its CSS and they have already drifted once.
  *
  * The look is a hotel's own stationery: a rule under the letterhead, small
- * caps section headings, generous leading, one accent colour. Nothing on
- * the page announces what the paper is for.
+ * caps section headings, generous leading, one accent colour.
  */
 const PASS_CSS = `
 .pass-paper{--ink:#16232b;--soft:#6b7f88;--rule:#dfe6e4;--accent:#0d3b45;background:#fff;color:var(--ink);
@@ -72,26 +71,29 @@ function absolute(url) {
   try { return new URL(url, window.location.origin).href; } catch { return url; }
 }
 
-export default function CheckpointPass({
-  property, booking, allocations = [], onClose, onCopied, onCopyFailed,
+/**
+ * Takes either a booking to build the document from, or a ready-made
+ * `model` — the hand-typed route builds its own. One component either way,
+ * so the paper a guest is handed is the same paper whichever route the desk
+ * came in by.
+ */
+export default function BookingForm({
+  property, booking, allocations = [], model: given = null,
+  onClose, onCopied, onCopyFailed,
 }) {
-  const t = useTranslations("CheckpointPass");
+  const t = useTranslations("BookingForm");
   const common = useTranslations("Common");
-  // English first: the guest driving down usually wants the paper that
-  // reads the same to a checkpoint and to a hotel anywhere else.
+  // English first: the paper reads the same to a reader anywhere.
   const [lang, setLang] = useState("en");
   const issuedOn = today();
   const model = useMemo(
-    () => checkpointPassModel({ property, booking, allocations, issuedOn }),
-    [property, booking, allocations, issuedOn]
+    () => given || bookingFormModel({ property, booking, allocations, issuedOn }),
+    [given, property, booking, allocations, issuedOn]
   );
   const gaps = passGaps(model);
   const w = passWords(lang);
   const values = passValues(model, lang);
-  const text = useMemo(
-    () => buildCheckpointPassText({ property, booking, allocations, issuedOn, locale: lang }),
-    [property, booking, allocations, issuedOn, lang]
-  );
+  const text = useMemo(() => passText(model, lang), [model, lang]);
   // A passport number and a phone number are pure code and must run
   // left-to-right whatever the page does. A date is not: forcing it
   // left-to-right turns "12 أغسطس 2026" into "أغسطس 12 2026".
@@ -105,7 +107,7 @@ export default function CheckpointPass({
   }
 
   function print() {
-    const paper = document.getElementById("checkpoint-pass-paper");
+    const paper = document.getElementById("booking-form-paper");
     if (!paper) return;
     const win = window.open("", "_blank", "width=920,height=1000");
     if (!win) return onCopyFailed?.();
@@ -156,7 +158,7 @@ export default function CheckpointPass({
           </div>
         )}
 
-        <article id="checkpoint-pass-paper" className="pass-paper"
+        <article id="booking-form-paper" className="pass-paper"
           dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
           <header className="pass-top">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -173,7 +175,9 @@ export default function CheckpointPass({
           <div className="pass-head">
             <h2>{w.title}</h2>
             <div className="pass-meta">
-              <div>{w.reference}<b>{model.reference}</b></div>
+              {/* A hand-typed form may have no reference; an empty box under
+                  a heading looks like something went missing. */}
+              {model.reference && <div>{w.reference}<b>{model.reference}</b></div>}
               <div>{w.issuedOn}<b>{passDate(model.issuedOn, lang)}</b></div>
             </div>
           </div>

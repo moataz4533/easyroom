@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  PASS_FIELDS, PASS_LOCALES, PASS_SECTIONS, buildCheckpointPassText,
-  checkpointPassModel, nightsLine, partyLine, passDate, passGaps, passValues,
-  passWords, passableBooking, roomsLine,
-} from "../lib/checkpoint-pass";
+  PASS_FIELDS, PASS_LOCALES, PASS_SECTIONS, bookingFormModel, bookingFormText,
+  isCurrentStay, manualForm, manualModel, manualProblem, nightsLine, partyLine,
+  passDate, passGaps, passText, passValues, passWords, passableBooking, roomsLine,
+} from "../lib/booking-form";
 
 const property = {
   name: "نادي اليونانيين",
@@ -33,8 +33,8 @@ const allocations = [
     rooms: { number: "5", room_types: { name: "غرفة دبل", name_en: "Double" } } },
 ];
 
-describe("checkpointPassModel", () => {
-  const model = checkpointPassModel({ property, booking, allocations, issuedOn: "2026-08-09" });
+describe("bookingFormModel", () => {
+  const model = bookingFormModel({ property, booking, allocations, issuedOn: "2026-08-09" });
 
   it("keeps only the rooms the booking still holds", () => {
     expect(model.rooms.map((room) => room.number)).toEqual(["4"]);
@@ -50,11 +50,11 @@ describe("checkpointPassModel", () => {
 
   it("takes the larger party count so the paper never lists fewer people than the car", () => {
     expect(model.party).toBe(3);
-    const roomier = checkpointPassModel({
+    const roomier = bookingFormModel({
       property, booking: { ...booking, adults: 1, children: 0 }, allocations,
     });
     expect(roomier.party).toBe(3);
-    const typed = checkpointPassModel({
+    const typed = bookingFormModel({
       property, booking: { ...booking, adults: 4, children: 2 }, allocations,
     });
     expect(typed.party).toBe(6);
@@ -62,7 +62,7 @@ describe("checkpointPassModel", () => {
 
   it("never carries money", () => {
     const withMoney = { ...booking, total_amount: 5400, paid_amount: 1800 };
-    const priced = checkpointPassModel({ property, booking: withMoney, allocations });
+    const priced = bookingFormModel({ property, booking: withMoney, allocations });
     const serialised = JSON.stringify(priced);
     expect(serialised).not.toContain("5400");
     expect(serialised).not.toContain("1800");
@@ -71,7 +71,7 @@ describe("checkpointPassModel", () => {
 
   it("puts the hotel's English name on the letterhead, in either language", () => {
     expect(model.hotel.brand).toBe("The Greek Club");
-    const arabicOnly = checkpointPassModel({
+    const arabicOnly = bookingFormModel({
       property: { ...property, name_en: "" }, booking, allocations,
     });
     expect(arabicOnly.hotel.brand).toBe("نادي اليونانيين");
@@ -84,7 +84,7 @@ describe("checkpointPassModel", () => {
   });
 
   it("falls back to the WhatsApp number when no phone is recorded", () => {
-    const other = checkpointPassModel({
+    const other = bookingFormModel({
       property: { ...property, settings: { address: "x", whatsapp: "0111" } }, booking, allocations,
     });
     expect(other.hotel.phone).toBe("0111");
@@ -93,33 +93,97 @@ describe("checkpointPassModel", () => {
 
 describe("passGaps", () => {
   it("is silent when everything the paper needs is on file", () => {
-    expect(passGaps(checkpointPassModel({ property, booking, allocations }))).toEqual([]);
+    expect(passGaps(bookingFormModel({ property, booking, allocations }))).toEqual([]);
   });
 
   it("names the missing guest ID", () => {
-    const model = checkpointPassModel({
+    const model = bookingFormModel({
       property, booking: { ...booking, guests: { ...booking.guests, id_number: "" } }, allocations,
     });
     expect(passGaps(model)).toContain("idNumber");
   });
 
   it("names a hotel with nothing to contact it by", () => {
-    const model = checkpointPassModel({ property: { ...property, settings: {} }, booking, allocations });
+    const model = bookingFormModel({ property: { ...property, settings: {} }, booking, allocations });
     expect(passGaps(model)).toEqual(expect.arrayContaining(["hotelPhone", "hotelAddress"]));
   });
 });
 
 describe("passableBooking", () => {
-  it("issues for a live stay that has not ended", () => {
-    expect(passableBooking(booking, "2026-08-10")).toBe(true);
-    expect(passableBooking({ ...booking, status: "checked_in" }, "2026-08-13")).toBe(true);
+  it("issues for a stay that is coming, running, or already over", () => {
+    expect(passableBooking(booking)).toBe(true);
+    expect(passableBooking({ ...booking, status: "checked_in" })).toBe(true);
+    // Guests ask for the paper after they get home as often as before.
+    expect(passableBooking({ ...booking, status: "checked_out" })).toBe(true);
   });
 
-  it("refuses a cancelled or finished stay", () => {
-    expect(passableBooking({ ...booking, status: "cancelled" }, "2026-08-10")).toBe(false);
-    expect(passableBooking({ ...booking, status: "checked_out" }, "2026-08-10")).toBe(false);
-    expect(passableBooking(booking, "2026-08-20")).toBe(false);
-    expect(passableBooking(null, "2026-08-10")).toBe(false);
+  it("refuses a stay that never happened", () => {
+    expect(passableBooking({ ...booking, status: "cancelled" })).toBe(false);
+    expect(passableBooking({ ...booking, status: "no_show" })).toBe(false);
+    expect(passableBooking(null)).toBe(false);
+  });
+});
+
+describe("isCurrentStay", () => {
+  it("keeps a stay current until the day it ends", () => {
+    expect(isCurrentStay(booking, "2026-08-10")).toBe(true);
+    expect(isCurrentStay(booking, "2026-08-15")).toBe(true);
+    expect(isCurrentStay(booking, "2026-08-16")).toBe(false);
+    expect(isCurrentStay(null, "2026-08-10")).toBe(false);
+  });
+});
+
+describe("the hand-typed form", () => {
+  const filled = manualForm({
+    guest: "Sara Halim", idNumber: "29901011234567", nationality: "Egyptian",
+    phone: "01000000000", checkIn: "2026-09-01", checkOut: "2026-09-04",
+    party: "2", rooms: "غرفة دبل", reference: "TMP-7",
+  });
+
+  it("starts empty and refuses to print until it can say who and when", () => {
+    expect(manualProblem(manualForm())).toBe("needGuest");
+    expect(manualProblem(manualForm({ guest: "Sara" }))).toBe("needDates");
+    expect(manualProblem(manualForm({ guest: "Sara", checkIn: "2026-09-04", checkOut: "2026-09-01" })))
+      .toBe("checkOutAfterCheckIn");
+    expect(manualProblem(manualForm({ guest: "Sara", checkIn: "2026-09-01", checkOut: "2026-09-01" })))
+      .toBe("checkOutAfterCheckIn");
+    expect(manualProblem(filled)).toBe(null);
+  });
+
+  it("builds the same document a booking builds", () => {
+    const model = manualModel({ property, form: filled, issuedOn: "2026-08-30" });
+    const values = passValues(model, "en");
+    expect(values.guest).toBe("Sara Halim");
+    expect(values.checkIn).toBe("1 September 2026");
+    expect(values.nights).toBe("3 nights");
+    expect(values.party).toBe("2 guests");
+    // The accommodation is printed exactly as typed, in either language.
+    expect(values.rooms).toBe("غرفة دبل");
+    expect(passValues(model, "ar").rooms).toBe("غرفة دبل");
+    expect(model.hotel.brand).toBe("The Greek Club");
+  });
+
+  it("still warns about a missing ID typed by hand", () => {
+    const model = manualModel({ property, form: { ...filled, idNumber: "" } });
+    expect(passGaps(model)).toContain("idNumber");
+  });
+
+  it("never lists fewer than one guest", () => {
+    expect(manualModel({ property, form: { ...filled, party: "0" } }).party).toBe(1);
+    expect(manualModel({ property, form: { ...filled, party: "" } }).party).toBe(1);
+  });
+
+  it("carries no money, like every other route to this paper", () => {
+    const model = manualModel({ property, form: { ...filled, total_amount: 5400 } });
+    expect(JSON.stringify(model)).not.toContain("5400");
+  });
+
+  it("prints without a reference rather than trailing a dash", () => {
+    const model = manualModel({ property, form: { ...filled, reference: "" } });
+    const text = passText(model, "en");
+    expect(text).toContain(passWords("en").title);
+    expect(text).not.toContain("— \n");
+    expect(text.split("\n")[1].trim()).toBe(passWords("en").title);
   });
 });
 
@@ -170,7 +234,7 @@ describe("the document's two languages", () => {
 });
 
 describe("printed values", () => {
-  const model = checkpointPassModel({ property, booking, allocations, issuedOn: "2026-08-09" });
+  const model = bookingFormModel({ property, booking, allocations, issuedOn: "2026-08-09" });
 
   it("names the room in the document's own language", () => {
     expect(roomsLine(model, "en")).toBe("4 — Triple");
@@ -190,8 +254,8 @@ describe("printed values", () => {
   });
 });
 
-describe("buildCheckpointPassText", () => {
-  const text = buildCheckpointPassText({
+describe("buildBookingFormText", () => {
+  const text = bookingFormText({
     property, booking, allocations, issuedOn: "2026-08-09", locale: "en",
   });
 
@@ -204,7 +268,7 @@ describe("buildCheckpointPassText", () => {
   });
 
   it("carries no money", () => {
-    const priced = buildCheckpointPassText({
+    const priced = bookingFormText({
       property, booking: { ...booking, total_amount: 5400, paid_amount: 1800 }, allocations, locale: "en",
     });
     expect(priced).not.toContain("5400");
@@ -212,14 +276,14 @@ describe("buildCheckpointPassText", () => {
   });
 
   it("marks a blank field instead of leaving a hole", () => {
-    const bare = buildCheckpointPassText({
+    const bare = bookingFormText({
       property, booking: { ...booking, guests: { full_name: "زائر" } }, allocations, locale: "ar",
     });
     expect(bare).toContain(passWords("ar").missing);
   });
 
   it("drops the contact line when the hotel has no contact on file", () => {
-    const bare = buildCheckpointPassText({
+    const bare = bookingFormText({
       property: { ...property, settings: {} }, booking, allocations, locale: "en",
     });
     expect(bare).not.toContain("دهب");
@@ -227,7 +291,7 @@ describe("buildCheckpointPassText", () => {
   });
 
   it("writes the whole thing in the language it was asked for", () => {
-    const arabic = buildCheckpointPassText({ property, booking, allocations, locale: "ar" });
+    const arabic = bookingFormText({ property, booking, allocations, locale: "ar" });
     expect(arabic).toContain(passWords("ar").title);
     expect(arabic).not.toContain(passWords("en").title);
   });
