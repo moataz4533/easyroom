@@ -21,7 +21,8 @@
     "activity": "Activity log",
     "settings": "Settings",
     "calendar": "Calendar",
-    "guests": "Guests"
+    "guests": "Guests",
+    "passes": "Passes"
   },
   "Auth": {
     "title": "Sign in",
@@ -1241,5 +1242,32 @@
     "needCompanyName": "Enter the company name",
     "nameTaken": "A company with this name already exists",
     "bookings": "{count, plural, =0 {no bookings} one {# booking} other {# bookings}}"
+  },
+  "Passes": {
+    "title": "Checkpoint passes",
+    "subtitle": "The hotel's headed booking confirmation — for guests crossing the South Sinai checkpoints.",
+    "open": "Printable confirmation",
+    "issue": "Print confirmation",
+    "searchPlaceholder": "Search by name, reference or phone",
+    "loading": "Loading bookings…",
+    "empty": "No live bookings — a pass is issued for a stay that has not ended yet.",
+    "noMatches": "No booking matches that search.",
+    "summary": "{nights, plural, one {1 night} other {# nights}} · {pax, plural, one {1 guest} other {# guests}} · {rooms, plural, =0 {no room} one {1 room} other {# rooms}}",
+    "missingId": "ID number missing",
+    "copied": "Confirmation copied",
+    "copyFailed": "Could not copy — copy the text by hand"
+  },
+  "CheckpointPass": {
+    "title": "Guest booking confirmation",
+    "subtitle": "The hotel's own headed confirmation — it passes a checkpoint without looking like it was made for one.",
+    "gapsTitle": "Before printing, some details a checkpoint asks for are missing:",
+    "gap_idNumber": "The guest has no national ID or passport number on file — add it from the guests screen.",
+    "gap_hotelPhone": "The hotel has no phone number on file, so the paper prints without its contact line — add it in Settings → Hotel details.",
+    "gap_hotelAddress": "The hotel has no address on file — add it in Settings → Hotel details.",
+    "print": "Print / save PDF",
+    "copy": "Copy the text",
+    "whatsapp": "Send on WhatsApp",
+    "lang_en": "English",
+    "lang_ar": "عربي"
   }
 }

@@ -18,9 +18,10 @@ import {
   datesChange, datesForm, datesProblem, nightOptions,
 } from "../../lib/stay-dates";
 import ReservationProof from "../../components/ReservationProof";
+import CheckpointPass from "../../components/CheckpointPass";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
-import { FileCheck2, MessageCircle, Receipt } from "lucide-react";
+import { FileCheck2, MessageCircle, Receipt, ShieldCheck } from "lucide-react";
 import { fullDate, joinList } from "../../lib/format";
 
 export default function Page() {
@@ -418,10 +419,12 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
   const tk = useTranslations("Bookings");
   const td = useTranslations("Discount");
   const trp = useTranslations("ReservationProof");
+  const tp = useTranslations("Passes");
   const common = useTranslations("Common");
   const [confirmation, setConfirmation] = useState(false);
   const [bill, setBill] = useState(false);
   const [proof, setProof] = useState(false);
+  const [pass, setPass] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState(null);      // cancel | noshow | early | room
   const [reason, setReason] = useState("");
@@ -509,6 +512,14 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
           <FileCheck2 size={16} />{trp("open")}
         </button>
 
+        {/* Guests driving to Sinai are stopped on the road, and the paper
+            the desk used to write by hand is now one button. */}
+        {isOpen && (
+          <button className="btn wide" style={{ marginBottom: 12 }} onClick={() => setPass(true)}>
+            <ShieldCheck size={16} />{tp("open")}
+          </button>
+        )}
+
         {bill && (
           <GuestBill
             property={property} booking={b}
@@ -537,6 +548,14 @@ function BookingSheet({ b, role, online, onClose, onDone, onNotify, onRefresh, o
             onClose={() => setProof(false)}
             onCopied={() => onNotify(trp("copied"))}
             onCopyFailed={() => onError(trp("copyFailed"))} />
+        )}
+
+        {pass && (
+          <CheckpointPass property={property} booking={b}
+            allocations={b.room_allocations || []}
+            onClose={() => setPass(false)}
+            onCopied={() => onNotify(tp("copied"))}
+            onCopyFailed={() => onError(tp("copyFailed"))} />
         )}
 
         {b.attention_reason && (
