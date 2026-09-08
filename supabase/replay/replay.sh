@@ -75,6 +75,9 @@ if [ "$1" = "--check" ]; then
   echo
   echo "--- reset: one hotel's register emptied, its setup and neighbours left ---"
   psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/reset.sql" 2>&1 | grep "="
+  echo
+  echo "--- closing: who a plan is for, and a stay that closes itself ---"
+  psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/closing.sql" 2>&1 | grep "="
 fi
 
 echo

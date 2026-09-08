@@ -35,12 +35,30 @@ function Board() {
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState(null);
   const [stale, setStale] = useState(null);
+  const [unregistered, setUnregistered] = useState([]);
   const [toast, showToast] = useToast();
   const { online } = useOffline();
 
   const load = useCallback(async () => {
     if (!property) return;
     setLoading(true);
+
+    /**
+     * A stay whose departure date has passed closes itself before the board
+     * is read, so the board is drawn from a register that is up to date
+     * rather than one nobody finished writing.
+     *
+     * Found on production the day this was written: thirteen stays still
+     * `checked_in`, one of them fifteen days after the guest left, and no
+     * screen anywhere said so. Idempotent, cheap, and silent when there is
+     * nothing to close.
+     */
+    if (online) {
+      const { data: closed } = await supabase.rpc("close_overdue_stays", {
+        p_property: property.id,
+      });
+      if (closed?.length) showToast(t("autoClosed", { count: closed.length }));
+    }
 
     // Falls back to the last saved copy when there's no connection.
     const [board, att, arr] = await Promise.all([
@@ -59,9 +77,18 @@ function Board() {
     ));
     setAttention(att.data || []);
     setArrivals(arr.data || []);
+    // Deliberately a list and not an action: marking a guest arrived when
+    // they never came puts a stranger in a room on the board and quietly
+    // kills the no-show. It is a question for a person.
+    if (online) {
+      const { data: stale_arrivals } = await supabase.rpc("stale_arrivals", {
+        p_property: property.id,
+      });
+      setUnregistered(stale_arrivals || []);
+    }
     setStale(board.stale ? board.at : null);
     setLoading(false);
-  }, [property]);
+  }, [property, online]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
@@ -77,6 +104,24 @@ function Board() {
 
       <StuckActions />
       <ProvisionalBookings />
+
+      {/* An arrival date that has passed with nobody checked in. The room
+          is held and the guest may be standing in it — or may never have
+          come. Both are answered by a person, not by a rule. */}
+      {unregistered.length > 0 && (
+        <div className="banner warn">
+          <strong>{t("unregistered", { count: unregistered.length })}</strong>
+          <div className="stack" style={{ marginTop: 8 }}>
+            {unregistered.map((row) => (
+              <div key={row.booking_id} style={{ fontSize: 13 }}>
+                <span className="code">{row.reference}</span> {row.guest_name}
+                {" — "}{t("since", { date: dayLabel(row.check_in, locale) })}
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 12 }}>{t("unregisteredHint")}</p>
+        </div>
+      )}
 
       {attention.length > 0 && (
         <div className="banner bad">

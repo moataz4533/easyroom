@@ -6,6 +6,7 @@ import { Plus, SlidersHorizontal } from "lucide-react";
 import PinPrompt from "./PinPrompt";
 import { supabase } from "../lib/supabase";
 import { localizedName } from "../lib/locale";
+import { PARTIES, partyOf } from "../lib/booking-party";
 
 const BASES = [
   "per_booking", "per_night", "per_room", "per_guest",
@@ -15,7 +16,7 @@ const BASES = [
 const EMPTY = {
   id: null, code: "", name: "", name_en: "", description: "",
   description_en: "", is_default: false, is_active: true,
-  account_id: "", account_name: "", addons: [],
+  account_id: "", account_name: "", party: "direct", addons: [],
 };
 
 function formFor(plan, accounts, planAddons) {
@@ -29,6 +30,7 @@ function formFor(plan, accounts, planAddons) {
     description_en: plan.description_en || "",
     is_default: !!plan.is_default,
     is_active: plan.is_active !== false,
+    party: partyOf(plan),
     account_id: accounts.find((account) => account.rate_plan_id === plan.id)?.id || "",
     account_name: "",
     addons: planAddons
@@ -116,6 +118,7 @@ export default function RatePlanManager({
       p_account: form.account_id || null,
       p_account_name: form.account_name || null,
       p_addons: form.addons.map((addon, index) => ({ ...addon, sort_order: index })),
+      p_party: form.party,
       p_pin: pin,
     });
     setBusy(false);
@@ -149,6 +152,7 @@ export default function RatePlanManager({
                   <div className="row" style={{ gap: 7 }}>
                     <strong>{localizedName(plan, locale)}</strong>
                     <span className="code">{plan.code}</span>
+                    <span className="pill">{t(`party_${partyOf(plan)}`)}</span>
                     {plan.is_default && <span className="pill dark">{t("default")}</span>}
                     {!plan.is_active && <span className="pill">{t("inactive")}</span>}
                   </div>
@@ -173,6 +177,29 @@ export default function RatePlanManager({
             </button>
           </div>
 
+          {/* First question in the editor, because it decides whether the
+              company boxes below mean anything at all. */}
+          <div className="field" style={{ marginBottom: 12 }}>
+            <span>{t("party")}</span>
+            <div className="tabs" role="tablist">
+              {PARTIES.map((key) => (
+                <button key={key} type="button" className="tab" role="tab"
+                  aria-selected={form.party === key}
+                  onClick={() => setForm((current) => ({
+                    ...current,
+                    party: key,
+                    // A plan for individuals has no company; the database
+                    // refuses the pair, so the screen stops making it.
+                    account_id: key === "direct" ? "" : current.account_id,
+                    account_name: key === "direct" ? "" : current.account_name,
+                  }))}>
+                  {t(`party_${key}`)}
+                </button>
+              ))}
+            </div>
+            <p className="field-hint">{t(`partyHint_${form.party}`)}</p>
+          </div>
+
           <div className="form-grid two">
             <div className="field"><label htmlFor="plan-name">{t("name")}</label>
               <input id="plan-name" value={form.name}
@@ -183,15 +210,17 @@ export default function RatePlanManager({
             <div className="field"><label htmlFor="plan-code">{t("code")}</label>
               <input id="plan-code" className="mono" dir="ltr" value={form.code}
                 onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} /></div>
-            <div className="field"><label htmlFor="plan-account">{t("company")}</label>
-              <select id="plan-account" value={form.account_id}
-                onChange={(event) => setForm((current) => ({ ...current, account_id: event.target.value, account_name: "" }))}>
-                <option value="">{t("noCompany")}</option>
-                {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
-              </select></div>
+            {form.party === "company" && (
+              <div className="field"><label htmlFor="plan-account">{t("company")}</label>
+                <select id="plan-account" value={form.account_id}
+                  onChange={(event) => setForm((current) => ({ ...current, account_id: event.target.value, account_name: "" }))}>
+                  <option value="">{t("noCompany")}</option>
+                  {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                </select></div>
+            )}
           </div>
 
-          {!form.account_id && (
+          {form.party === "company" && !form.account_id && (
             <div className="field"><label htmlFor="new-company">{t("newCompany")}</label>
               <input id="new-company" value={form.account_name} placeholder={t("newCompanyHint")}
                 onChange={(event) => setForm((current) => ({ ...current, account_name: event.target.value }))} /></div>

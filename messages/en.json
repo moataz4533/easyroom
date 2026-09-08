@@ -487,7 +487,11 @@
     "maintenance": "Maintenance",
     "confirmBlock": "Confirm",
     "blocked": "The room is out of service",
-    "blockedWithMoves": "The room is out of service. {count, plural, one {One booking needs moving} other {# bookings need moving}} — see the notice above."
+    "blockedWithMoves": "The room is out of service. {count, plural, one {One booking needs moving} other {# bookings need moving}} — see the notice above.",
+    "autoClosed": "{count, plural, one {1 stay past its departure date was closed} other {# stays past their departure date were closed}}",
+    "unregistered": "{count, plural, one {1 booking whose arrival date has passed with nobody checked in} other {# bookings whose arrival dates have passed with nobody checked in}}",
+    "since": "since {date}",
+    "unregisteredHint": "Check the guest in if they are really staying, or mark them a no-show if they never came. The app does not check anybody in by itself — that would put a guest in a room they never reached."
   },
   "Housekeeping": {
     "title": "Housekeeping",
@@ -572,7 +576,12 @@
     "extrasTitle": "Extras on this booking",
     "addExtra": "＋ Add a line",
     "removeExtra": "Remove the line",
-    "extraFailed": "The booking was taken but “{name}” was not added — add it from the booking sheet"
+    "extraFailed": "The booking was taken but “{name}” was not added — add it from the booking sheet",
+    "party": "Booking for",
+    "party_direct": "Individual",
+    "party_company": "Company",
+    "noPlans_direct": "No individual prices are set up yet. The manager adds them in Settings → Prices → Individual.",
+    "noPlans_company": "No company prices are set up yet. The manager adds them in Settings → Prices → Company."
   },
   "RatePlans": {
     "title": "Agreements and what they include",
@@ -615,7 +624,12 @@
     "pinTitle": "Confirm the rate-plan change",
     "pinNote": "This plan affects new booking prices, so it needs the manager password.",
     "save": "Save rate plan",
-    "saved": "Rate plan, company and services saved"
+    "saved": "Rate plan, company and services saved",
+    "party": "Booking party",
+    "party_direct": "Individual",
+    "party_company": "Company",
+    "partyHint_direct": "A plan for a guest booking for themselves. It is not linked to a company.",
+    "partyHint_company": "A plan for a company or agency on an agreed price. Link it to the company below."
   },
   "BookingReview": {
     "eyebrow": "FINAL STEP",
@@ -743,7 +757,8 @@
     "reason_date_change": "Dates or room changed",
     "reason_duplicate": "Duplicate booking",
     "reason_mistake": "Entered by mistake",
-    "reason_other": "Something else…"
+    "reason_other": "Something else…",
+    "action_auto_checked_out": "Closed automatically (departure date had passed)"
   },
   "Bookings": {
     "title": "Bookings",
@@ -1077,7 +1092,19 @@
     "dialCodeHint": "It decides when two written forms are the same phone — “+2010…” and “010…”. Without it one guest can end up with two records.",
     "timezone": "Hotel timezone",
     "timezoneHint": "Today's arrivals, today's departures and every report work out the day in this zone.",
-    "ratePlanColumn": "Rate plan"
+    "ratePlanColumn": "Rate plan",
+    "party_direct": "Individual",
+    "party_company": "Company",
+    "noPartyPlans_direct": "No rate plan for individuals yet. Add one under “Companies and agreements” and set its booking party to “Individual”.",
+    "noPartyPlans_company": "No rate plan for companies yet. Add one under “Companies and agreements” and set its booking party to “Company”.",
+    "flatPlans": "One price for every head count in: {plans} — so changing the guest count on the booking screen will not change the price.",
+    "checkInTime": "Check-in time",
+    "checkOutTime": "Check-out time",
+    "hoursHint": "Printed on the booking form you hand the guest.",
+    "autoClose": "Close a stay by itself once its departure date has passed",
+    "autoCloseHint": "If nobody checks a guest out, the stay closes itself once its departure day is behind — keeping the booked departure date, so no money moves. It never closes on the departure day itself, so a guest still settling up stays a guest.",
+    "badCheckInTime": "Write the check-in time as 14:00.",
+    "badCheckOutTime": "Write the check-out time as 12:00."
   },
   "Platform": {
     "title": "Platform console",
