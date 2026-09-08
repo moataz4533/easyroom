@@ -90,6 +90,8 @@ a { color: inherit; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .grow { flex: 1; min-width: 0; }
+/* The price the head-count picker moves, on the card it moves it for. */
+.keycard-price { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--sea); text-align: center; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 /* Two fields to a line on anything wider than a phone, one on a phone. */
 .field-pairs { display: grid; grid-template-columns: 1fr; gap: 12px; }

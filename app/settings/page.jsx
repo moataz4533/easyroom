@@ -17,6 +17,10 @@ import {
 } from "../../lib/accounts";
 import { joinList } from "../../lib/format";
 import RatePlanManager from "../../components/RatePlanManager";
+import {
+  PARTIES, flatByHeadCount, openingParty, partyOf, plansForParty,
+} from "../../lib/booking-party";
+import { DEFAULT_CHECK_IN, DEFAULT_CHECK_OUT, hotelHours, hoursProblem } from "../../lib/hotel-hours";
 import { EMPTY_TYPE, typeInsert, typeProblem } from "../../lib/room-types";
 import { copiedRates, copyCount } from "../../lib/rate-copy";
 import { useNarrow } from "../../lib/use-narrow";
@@ -320,11 +324,13 @@ function CopyRates({ types, plans, locale, active, draft, setDraft, showToast })
 function Rates({ property, types, plans, accounts, planAddons, chargeItems, rates, reload, showToast, locale }) {
   const t = useTranslations("Settings");
   const [active, setActive] = useState(types[0]?.id);
+  const [party, setParty] = useState(() => openingParty(plans));
   const [draft, setDraft] = useState(rates);
   const [saving, setSaving] = useState(false);
   const [asking, setAsking] = useState(false);
 
   useEffect(() => setDraft(rates), [rates]);
+  useEffect(() => setParty((current) => openingParty(plans, current)), [plans]);
   useEffect(() => { if (!active && types[0]) setActive(types[0].id); }, [types, active]);
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(rates);
@@ -366,18 +372,47 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
 
   if (!types.length) return <div className="empty">{t("needTypeFirst")}</div>;
 
+  const shown = plansForParty(live, party);
+  // Every plan this hotel has is an agency plan, so «أفراد» starts empty and
+  // has to say so rather than showing a matrix with no columns in it.
+  const flat = shown.filter((plan) =>
+    active && flatByHeadCount(draft, active, plan.id,
+      Array.from({ length: types.find((x) => x.id === active)?.max_occupancy || 0 },
+        (unused, index) => index + 1)));
+
   return (
     <>
       <p className="section-note">{t("rateHint")}</p>
 
-      <RateMatrix types={types} plans={live} locale={locale}
-        active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+      {/* The same question the booking screen asks first, asked here first
+          too, so the two screens are read the same way round. */}
+      <div className="tabs" role="tablist" style={{ marginBottom: 12 }}>
+        {PARTIES.map((key) => (
+          <button key={key} className="tab" role="tab" aria-selected={party === key}
+            onClick={() => setParty(key)}>{t(`party_${key}`)}</button>
+        ))}
+      </div>
+
+      {shown.length === 0 ? (
+        <div className="empty">{t(`noPartyPlans_${party}`)}</div>
+      ) : (
+        <RateMatrix types={types} plans={shown} locale={locale}
+          active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+      )}
+
+      {/* Said once, here, instead of leaving reception to discover it by
+          changing the guest count on a room and watching nothing happen. */}
+      {flat.length > 0 && (
+        <p className="section-note" style={{ marginTop: 10 }}>
+          {t("flatPlans", { plans: flat.map((plan) => localizedName(plan, locale)).join("، ") })}
+        </p>
+      )}
 
       {/* Splitting one type into two does not double the typing; it adds
           eight empty boxes per new type, and every one of them has to be
           right or a booking quotes zero. */}
-      {types.length > 1 && (
-        <CopyRates types={types} plans={live} locale={locale} active={active}
+      {types.length > 1 && shown.length > 0 && (
+        <CopyRates types={types} plans={shown} locale={locale} active={active}
           draft={draft} setDraft={setDraft} showToast={showToast} />
       )}
 
@@ -1375,6 +1410,16 @@ const LOGO_BUCKET = "property-branding";
 const LOGO_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 const MAX_LOGO_SIZE = 5 * 1024 * 1024;
 
+/**
+ * The clock is read outside the component. It is only ever called from a
+ * click, but the compiler cannot see that from inside the component body,
+ * and a lint rule that has to be argued with on every edit is worse than a
+ * one-line helper.
+ */
+function newLogoPath(propertyId, extension) {
+  return `${propertyId}/logo-${Date.now()}.${extension}`;
+}
+
 function storedLogoPath(url) {
   const marker = `/storage/v1/object/public/${LOGO_BUCKET}/`;
   if (!url?.includes(marker)) return null;
@@ -1395,6 +1440,9 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     currency: property.currency || "EGP",
     timezone: property.timezone || "Africa/Cairo",
     dial_code: String(property.settings?.dial_code || "20"),
+    checkIn: hotelHours(property).checkIn,
+    checkOut: hotelHours(property).checkOut,
+    autoClose: hotelHours(property).autoClose,
   });
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
@@ -1428,14 +1476,17 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
     setRemoveLogo(false);
   }
 
+  const hoursWrong = hoursProblem(form);
+
   async function save() {
+    if (hoursWrong) return showToast(t(hoursWrong), true);
     setSaving(true);
     let uploadedPath = null;
     let nextLogoUrl = removeLogo ? null : form.logo_url || null;
 
     if (logoFile) {
       const extension = LOGO_TYPES[logoFile.type];
-      uploadedPath = `${property.id}/logo-${Date.now()}.${extension}`;
+      uploadedPath = newLogoPath(property.id, extension);
       const { error: uploadError } = await supabase.storage.from(LOGO_BUCKET).upload(uploadedPath, logoFile, {
         cacheControl: "3600",
         contentType: logoFile.type,
@@ -1463,6 +1514,9 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
         cancellation_policy: form.policy,
         cancellation_policy_en: form.policy_en,
         dial_code: String(form.dial_code || "").replace(/\D/g, "") || null,
+        check_in_time: form.checkIn,
+        check_out_time: form.checkOut,
+        auto_close_stays: form.autoClose,
       },
     }).eq("id", property.id);
     setSaving(false);
@@ -1555,7 +1609,33 @@ function PropertyInfo({ property, types, plans, reload, showToast, locale }) {
         </select>
       </div>
       <p className="field-hint">{t("timezoneHint")}</p>
-      <button className="btn primary wide" disabled={saving} onClick={save}>
+
+      {/* Printed on the guest's booking form, and the reason the app can
+          tell a stay that is over from one that is still running. */}
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor="hotel-check-in">{t("checkInTime")}</label>
+          <input id="hotel-check-in" type="time" className="mono" dir="ltr"
+            value={form.checkIn} onChange={set("checkIn")} />
+        </div>
+        <div className="field grow">
+          <label htmlFor="hotel-check-out">{t("checkOutTime")}</label>
+          <input id="hotel-check-out" type="time" className="mono" dir="ltr"
+            value={form.checkOut} onChange={set("checkOut")} />
+        </div>
+      </div>
+      <p className="field-hint">{t("hoursHint")}</p>
+
+      <label className="check-row">
+        <input type="checkbox" checked={form.autoClose}
+          onChange={(event) => setForm((current) => ({ ...current, autoClose: event.target.checked }))} />
+        <span>{t("autoClose")}</span>
+      </label>
+      <p className="field-hint">{t("autoCloseHint")}</p>
+
+      {hoursWrong && <div className="banner warn">{t(hoursWrong)}</div>}
+
+      <button className="btn primary wide" disabled={saving || Boolean(hoursWrong)} onClick={save}>
         {saving ? t("uploading") : t("save")}
       </button>
     </div>

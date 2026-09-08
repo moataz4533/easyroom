@@ -14,6 +14,9 @@ import {
   extraPayloads, extraRow, extrasProblem, extrasTotal, fillFromItem,
 } from "../../lib/booking-extras";
 import { implausibleFields } from "../../lib/guest-record";
+import {
+  PARTIES, headCounts, openingParty, planForParty, plansForParty,
+} from "../../lib/booking-party";
 import { DISCOUNT_KINDS, discountProblem, previewStay } from "../../lib/discount";
 import { fullDate, joinList } from "../../lib/format";
 import PasteMessage from "../../components/PasteMessage";
@@ -88,10 +91,17 @@ function NewBooking() {
 
   const [plans, setPlans] = useState([]);
   const [planId, setPlanId] = useState("");
+  // Who the booking is for. It comes before the plan because it decides
+  // which plans are even on the screen — the desk was being shown ten
+  // agency prices for a walk-in guest.
+  const [party, setParty] = useState("direct");
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState("");
 
   const [rooms, setRooms] = useState([]);
+  // Per-room prices for the current selection, so the head-count picker can
+  // show what it is doing instead of leaving reception to guess.
+  const [roomQuotes, setRoomQuotes] = useState({});
   // Enough saved on the device to take a booking with no connection: which
   // rooms exist, and what the last data we saw says is already taken.
   const [savedRooms, setSavedRooms] = useState([]);
@@ -116,6 +126,7 @@ function NewBooking() {
   const [discount, setDiscount] = useState({ kind: "", value: "", note: "" });
 
   const n = nights(checkIn, checkOut);
+  const partyPlans = plansForParty(plans, party);
 
   // The register is only as good as what is typed here. Said out loud and
   // never blocked: the desk still takes the booking, and a guest with no
@@ -127,8 +138,11 @@ function NewBooking() {
     if (!property) return;
     supabase.from("rate_plans").select("*").eq("property_id", property.id).eq("is_active", true)
       .order("sort_order").then(({ data }) => {
-        setPlans(data || []);
-        setPlanId((data || []).find((p) => p.is_default)?.id || data?.[0]?.id || "");
+        const list = data || [];
+        setPlans(list);
+        const opening = openingParty(list);
+        setParty(opening);
+        setPlanId(planForParty(list, opening));
       });
     supabase.from("accounts").select("*").eq("property_id", property.id)
       .eq("is_active", true).order("name").then(({ data }) => setAccounts(data || []));
@@ -174,7 +188,7 @@ function NewBooking() {
   useEffect(() => {
     if (!property) return;
     loadCached(`rooms:${property.id}`, () =>
-      supabase.from("rooms").select("id, number, room_types(name, name_en)")
+      supabase.from("rooms").select("id, number, room_types(name, name_en, max_occupancy)")
         .eq("property_id", property.id).eq("is_active", true)
     ).then(({ data }) => setSavedRooms(data || []));
 
@@ -196,10 +210,14 @@ function NewBooking() {
     ? rooms.map((r) => ({
         id: r.room_id, number: r.room_number,
         type: locale === "en" ? (r.type_name_en || r.type_name) : r.type_name,
+        max_occupancy: r.max_occupancy,
       }))
     : [...savedRooms]
         .sort((a, b) => String(a.number).localeCompare(String(b.number), "en", { numeric: true }))
-        .map((r) => ({ id: r.id, number: r.number, type: localizedName(r.room_types, locale) }));
+        .map((r) => ({
+          id: r.id, number: r.number, type: localizedName(r.room_types, locale),
+          max_occupancy: r.room_types?.max_occupancy,
+        }));
 
   // Offline the app cannot ask what is free, so it says what it last knew
   // instead of pretending to know now.
@@ -226,22 +244,29 @@ function NewBooking() {
    */
   useEffect(() => {
     const ids = Object.keys(picked);
-    if (!property || !planId || !ids.length || n < 1 || !online) return setQuote(null);
+    if (!property || !planId || !ids.length || n < 1 || !online) {
+      setRoomQuotes({});
+      return setQuote(null);
+    }
 
     let current = true;
     Promise.all(ids.map(async (rid) => {
       const room = rooms.find((r) => r.room_id === rid);
-      if (!room) return 0;
+      if (!room) return [rid, 0];
       const { data, error } = await supabase.rpc("quote_stay", {
         p_property: property.id, p_room_type: room.room_type_id,
         p_rate_plan: planId, p_occupancy: picked[rid],
         p_check_in: checkIn, p_check_out: checkOut,
       });
       if (error) throw error;
-      return Number(data) || 0;
+      return [rid, Number(data) || 0];
     }))
-      .then((v) => { if (current) setQuote(v.reduce((a, b) => a + b, 0)); })
-      .catch(() => { if (current) setQuote(UNPRICED); });
+      .then((pairs) => {
+        if (!current) return;
+        setRoomQuotes(Object.fromEntries(pairs));
+        setQuote(pairs.reduce((sum, [, value]) => sum + value, 0));
+      })
+      .catch(() => { if (current) { setRoomQuotes({}); setQuote(UNPRICED); } });
     // A slow answer for a selection reception has already changed is not an
     // answer to anything, so it is dropped rather than shown.
     return () => { current = false; };
@@ -759,7 +784,7 @@ function NewBooking() {
                     onClick={() => setPicked((p) => {
                       const next = { ...p };
                       if (next[r.id]) delete next[r.id];
-                      else next[r.id] = 2;
+                      else next[r.id] = Math.min(2, headCounts(r.max_occupancy).length);
                       return next;
                     })}
                     role="button" tabIndex={0}
@@ -774,19 +799,33 @@ function NewBooking() {
                         date, and the guest on the phone is not. */}
                     {warn && <div className="keycard-warn">{warn}</div>}
                     {on && (
-                      <select
-                        className="mono" style={{ marginTop: 6, padding: "4px 6px", fontSize: 13 }}
-                        value={on}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setPicked((p) => ({ ...p, [r.id]: Number(e.target.value) }));
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5, 6].map((o) => (
-                          <option key={o} value={o}>{tn("paxOption", { count: o })}</option>
-                        ))}
-                      </select>
+                      <>
+                        {/* Capped by the room type. The list used to run to
+                            six whatever the room held, and create_booking
+                            refused the booking at the very end. */}
+                        <select
+                          className="mono" style={{ marginTop: 6, padding: "4px 6px", fontSize: 13 }}
+                          value={on}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setPicked((p) => ({ ...p, [r.id]: Number(e.target.value) }));
+                          }}
+                        >
+                          {headCounts(r.max_occupancy).map((o) => (
+                            <option key={o} value={o}>{tn("paxOption", { count: o })}</option>
+                          ))}
+                        </select>
+                        {/* The number the head count is supposed to move.
+                            Without it, reception changed the count, watched
+                            nothing happen, and had no way to know whether
+                            the app or the price list was at fault. */}
+                        {roomQuotes[r.id] !== undefined && (
+                          <div className="keycard-price">
+                            {egp(roomQuotes[r.id], locale)} {currencyWord(locale)}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 );
@@ -798,14 +837,41 @@ function NewBooking() {
 
       <section className="section">
         <div className="card stack">
+          {/* Asked before the price, because it decides which prices exist.
+              Two buttons rather than a dropdown: there are two answers and
+              the desk should see both without opening anything. */}
           <div className="field">
-            <label htmlFor="plan">{tn("ratePlan")}</label>
-            <select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
-              {plans.map((p) => <option key={p.id} value={p.id}>{localizedName(p, locale)}</option>)}
-            </select>
+            <span>{tn("party")}</span>
+            <div className="tabs" role="tablist">
+              {PARTIES.map((key) => (
+                <button key={key} type="button" className="tab" role="tab"
+                  aria-selected={party === key}
+                  onClick={() => {
+                    setParty(key);
+                    setPlanId(planForParty(plans, key, planId));
+                    if (key === "direct") setAccountId("");
+                  }}>
+                  {tn(`party_${key}`)}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {accounts.length > 0 && (
+          {partyPlans.length === 0 ? (
+            <div className="banner warn">{tn(`noPlans_${party}`)}</div>
+          ) : (
+            <div className="field">
+              <label htmlFor="plan">{tn("ratePlan")}</label>
+              <select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
+                {partyPlans.map((p) => (
+                  <option key={p.id} value={p.id}>{localizedName(p, locale)}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* A company is only a question once the booking is a company's. */}
+          {party === "company" && accounts.length > 0 && (
             <div className="field">
               <label htmlFor="acc">{tn("company")}</label>
               <select id="acc" value={accountId}

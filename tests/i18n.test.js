@@ -207,6 +207,7 @@ describe("bilingual routing and messages", () => {
       "received", "refunded", "extended", "shortened", "room_moved", "cancelled",
       "no_show", "room_blocked", "room_unblocked", "pin_changed", "updated",
       "restored", "guests_cleaned", "data_reset", "dates_changed",
+      "auto_checked_out",
     ]) {
       expect(typeof ar.Activity[`action_${action}`], action).toBe("string");
     }
@@ -237,6 +238,27 @@ describe("bilingual routing and messages", () => {
       expect(typeof ar.BookingForm[`lang_${code}`], code).toBe("string");
       expect(typeof en.BookingForm[`lang_${code}`], code).toBe("string");
     }
+    // Both booking parties, in each of the three screens that ask.
+    for (const party of ["direct", "company"]) {
+      expect(typeof ar.NewBooking[`party_${party}`], party).toBe("string");
+      expect(typeof en.NewBooking[`party_${party}`], party).toBe("string");
+      expect(typeof ar.NewBooking[`noPlans_${party}`], party).toBe("string");
+      expect(typeof en.NewBooking[`noPlans_${party}`], party).toBe("string");
+      expect(typeof ar.Settings[`party_${party}`], party).toBe("string");
+      expect(typeof en.Settings[`party_${party}`], party).toBe("string");
+      expect(typeof ar.Settings[`noPartyPlans_${party}`], party).toBe("string");
+      expect(typeof en.Settings[`noPartyPlans_${party}`], party).toBe("string");
+      expect(typeof ar.RatePlans[`party_${party}`], party).toBe("string");
+      expect(typeof en.RatePlans[`party_${party}`], party).toBe("string");
+      expect(typeof ar.RatePlans[`partyHint_${party}`], party).toBe("string");
+      expect(typeof en.RatePlans[`partyHint_${party}`], party).toBe("string");
+    }
+    // Each way the hotel-hours boxes can be wrong.
+    for (const problem of ["badCheckInTime", "badCheckOutTime"]) {
+      expect(typeof ar.Settings[problem], problem).toBe("string");
+      expect(typeof en.Settings[problem], problem).toBe("string");
+    }
+
     // Every reason the hand-typed form refuses to print.
     for (const problem of ["needGuest", "needDates", "checkOutAfterCheckIn"]) {
       expect(typeof ar.BookingForms[`problem_${problem}`], problem).toBe("string");
