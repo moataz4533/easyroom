@@ -248,6 +248,8 @@ describe("bilingual routing and messages", () => {
       expect(typeof en.Settings[`party_${party}`], party).toBe("string");
       expect(typeof ar.Settings[`noPartyPlans_${party}`], party).toBe("string");
       expect(typeof en.Settings[`noPartyPlans_${party}`], party).toBe("string");
+      expect(typeof ar.Settings[`addPartyPlan_${party}`], party).toBe("string");
+      expect(typeof en.Settings[`addPartyPlan_${party}`], party).toBe("string");
       expect(typeof ar.RatePlans[`party_${party}`], party).toBe("string");
       expect(typeof en.RatePlans[`party_${party}`], party).toBe("string");
       expect(typeof ar.RatePlans[`partyHint_${party}`], party).toBe("string");

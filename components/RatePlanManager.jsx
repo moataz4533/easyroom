@@ -48,6 +48,7 @@ function formFor(plan, accounts, planAddons) {
 
 export default function RatePlanManager({
   property, plans, accounts, planAddons, chargeItems, locale, reload, showToast,
+  openParty = null, onOpened,
 }) {
   const t = useTranslations("RatePlans");
   const [editing, setEditing] = useState(null);
@@ -65,6 +66,19 @@ export default function RatePlanManager({
     const plan = plans.find((item) => item.id === editing);
     if (plan) setForm(formFor(plan, accounts, planAddons));
   }, [editing, plans, accounts, planAddons]);
+
+  /**
+   * Arrived here from the pricing screen, which had no prices to show for
+   * one of the two parties. It sent the party across, so the editor opens
+   * already answering the question that screen could not.
+   */
+  useEffect(() => {
+    if (!openParty) return;
+    setAsking(false);
+    setEditing("new");
+    setForm({ ...EMPTY, addons: [], party: openParty });
+    onOpened?.();
+  }, [openParty, onOpened]);
 
   function open(plan = null) {
     setAsking(false);
