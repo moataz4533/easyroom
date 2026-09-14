@@ -9,7 +9,7 @@ import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
-import { ImagePlus, Trash2, Upload } from "lucide-react";
+import { ImagePlus, Plus, Trash2, Upload } from "lucide-react";
 import { isStaffUsername, normalizeStaffUsername, staffProfileProblem } from "../../lib/auth-login";
 import {
   EMPTY_ACCOUNT, accountChanges, accountForm, accountInsert, accountProblem,
@@ -56,6 +56,8 @@ function Settings() {
   const requested = params.get("tab");
   const [tab, setTab] = useState(TAB_IDS.includes(requested) ? requested : "rates");
   const [toast, showToast] = useToast();
+  // Set when «الأسعار» sends the owner off to create a plan for a party.
+  const [newPlanParty, setNewPlanParty] = useState(null);
 
   const [types, setTypes] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -107,6 +109,18 @@ function Settings() {
     chargeItems, reload: load, showToast, locale,
   };
 
+  /**
+   * «الأسعار» can find itself with nothing to show — this hotel has ten
+   * company plans and no individual ones — and what it used to do was print
+   * a sentence telling the owner to go and look in another tab. It now
+   * sends them, with the party they were looking at, straight into a new
+   * plan. A screen that names the fix should perform it.
+   */
+  function addPlanFor(party) {
+    setNewPlanParty(party);
+    setTab("accounts");
+  }
+
   return (
     <>
       <Toast {...(toast || {})} />
@@ -120,7 +134,7 @@ function Settings() {
         ))}
       </div>
 
-      {tab === "rates" && <Rates {...shared} />}
+      {tab === "rates" && <Rates {...shared} onAddPlan={addPlanFor} />}
       {tab === "seasons" && <Seasons {...shared} />}
       {tab === "rooms" && <Rooms {...shared} />}
       {tab === "charges" && <ChargeItems {...shared} />}
@@ -133,7 +147,8 @@ function Settings() {
           <Accounts {...shared} />
           <RatePlanManager property={property} plans={plans} accounts={accounts}
             planAddons={planAddons} chargeItems={chargeItems} locale={locale}
-            reload={load} showToast={showToast} />
+            reload={load} showToast={showToast}
+            openParty={newPlanParty} onOpened={() => setNewPlanParty(null)} />
         </>
       )}
       {tab === "staff" && <Staff {...shared} />}
@@ -321,7 +336,7 @@ function CopyRates({ types, plans, locale, active, draft, setDraft, showToast })
 }
 
 /* ------------------------------------------------------------------ */
-function Rates({ property, types, plans, accounts, planAddons, chargeItems, rates, reload, showToast, locale }) {
+function Rates({ property, types, plans, rates, reload, showToast, locale, onAddPlan }) {
   const t = useTranslations("Settings");
   const [active, setActive] = useState(types[0]?.id);
   const [party, setParty] = useState(() => openingParty(plans));
@@ -394,10 +409,23 @@ function Rates({ property, types, plans, accounts, planAddons, chargeItems, rate
       </div>
 
       {shown.length === 0 ? (
-        <div className="empty">{t(`noPartyPlans_${party}`)}</div>
+        <div className="empty">
+          <p style={{ margin: "0 0 12px" }}>{t(`noPartyPlans_${party}`)}</p>
+          <button className="btn primary" onClick={() => onAddPlan?.(party)}>
+            <Plus size={16} />{t(`addPartyPlan_${party}`)}
+          </button>
+        </div>
       ) : (
-        <RateMatrix types={types} plans={shown} locale={locale}
-          active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+        <>
+          <RateMatrix types={types} plans={shown} locale={locale}
+            active={active} setActive={setActive} draft={draft} setDraft={setDraft} />
+          {/* The door stays visible even when this party has prices, because
+              adding the second plan is the same errand as adding the first. */}
+          <button className="btn sm" style={{ marginTop: 10 }}
+            onClick={() => onAddPlan?.(party)}>
+            <Plus size={15} />{t(`addPartyPlan_${party}`)}
+          </button>
+        </>
       )}
 
       {/* Said once, here, instead of leaving reception to discover it by
