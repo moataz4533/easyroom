@@ -1189,7 +1189,12 @@
     "resetting": "Resetting…",
     "resetDone": "Reset done: {bookings, number} bookings and {guests, number} guests deleted",
     "needCode": "Type the branch code",
-    "codeMismatch": "That is not this hotel's code"
+    "codeMismatch": "That is not this hotel's code",
+    "withDemo": "Open it with sample data ready to go",
+    "withDemoHint": "6 rooms across two types, a price list for individuals and one for companies, an agency, and 4 extras. Without it the hotel opens empty — nobody can take a booking in it or show it to anyone. No bookings though: that is the first thing they should do themselves.",
+    "fillDemo": "Fill it with sample data",
+    "demoFilled": "{name} now has rooms and prices — ready to show",
+    "bareHotel": "This hotel is empty: no rooms and no prices, so nobody can take a booking in it. Press “Fill it with sample data”, or leave the owner to set it up themselves."
   },
   "Discount": {
     "add": "Discount",

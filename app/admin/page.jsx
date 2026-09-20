@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import {
-  Building2, Eraser, KeyRound, Power, RefreshCw, ShieldAlert, UserPlus,
+  Building2, Eraser, KeyRound, Power, RefreshCw, ShieldAlert, Sparkles, UserPlus,
 } from "lucide-react";
 import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
@@ -170,6 +170,22 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
 
+  /**
+   * A hotel opened from here arrives with no rooms and no prices, so the
+   * first person to log in cannot take a booking or show anybody anything.
+   * The offer only appears while that is still true.
+   */
+  const bare = summary.rooms === 0 && summary.bookings === 0;
+
+  async function fillDemo() {
+    setBusy(true);
+    const { error } = await supabase.rpc("seed_demo_property", { p_property: summary.id });
+    setBusy(false);
+    if (error) return onError(error.message);
+    onSaid(t("demoFilled", { name: summary.name }));
+    onChanged();
+  }
+
   async function toggleHotel() {
     setBusy(true);
     const out = await call({ action: "set_property_active", property_id: summary.id });
@@ -230,6 +246,11 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
         </div>
         {!asking && (
           <div className="row" style={{ flex: "none" }}>
+            {bare && (
+              <button className="btn sm primary" onClick={fillDemo} disabled={busy}>
+                <Sparkles size={15} />{t("fillDemo")}
+              </button>
+            )}
             <button className="btn sm" onClick={() => setWiping((open) => !open)} disabled={busy}>
               <Eraser size={15} />{t("resetData")}
             </button>
@@ -264,6 +285,10 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
             <button className="btn" onClick={() => { setWiping(false); setTyped(""); }}>{t("cancel")}</button>
           </div>
         </div>
+      )}
+
+      {bare && summary.active && (
+        <div className="banner" style={{ margin: 0 }}>{t("bareHotel")}</div>
       )}
 
       {!summary.active && <div className="banner warn" style={{ margin: 0 }}>{t("suspendedNote")}</div>}
@@ -386,6 +411,7 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
     name: "", name_en: "", code: "", codeTouched: false,
     timezone: "Africa/Cairo",
     ownerName: "", ownerEmail: "", password: "", again: "",
+    withDemo: true,
   });
 
   const set = (field) => (event) =>
@@ -412,11 +438,18 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
       name: form.name, name_en: form.name_en, slug: form.code, timezone: form.timezone,
       owner_name: form.ownerName, owner_email: form.ownerEmail, owner_password: form.password,
     });
+    if (out.error) { setBusy(false); return onError(out.error); }
+
+    // The hotel exists either way; only its furniture is optional, so a
+    // failure here is reported without taking the hotel back out.
+    if (form.withDemo && out.property_id) {
+      const { error } = await supabase.rpc("seed_demo_property", { p_property: out.property_id });
+      if (error) onError(error.message);
+    }
     setBusy(false);
-    if (out.error) return onError(out.error);
     setForm({
       name: "", name_en: "", code: "", codeTouched: false, timezone: "Africa/Cairo",
-      ownerName: "", ownerEmail: "", password: "", again: "",
+      ownerName: "", ownerEmail: "", password: "", again: "", withDemo: true,
     });
     setOpen(false);
     onDone(form.name);
@@ -490,6 +523,16 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
             value={form.again} onChange={set("again")} />
         </div>
       </div>
+
+      {/* On by default. A hotel that opens with no rooms and no prices
+          cannot take a booking or be shown to anybody, and whoever opens it
+          has to build the whole setup before seeing the app work at all. */}
+      <label className="check-row">
+        <input type="checkbox" checked={form.withDemo}
+          onChange={(event) => setForm((current) => ({ ...current, withDemo: event.target.checked }))} />
+        <span>{t("withDemo")}</span>
+      </label>
+      <p className="field-hint">{t("withDemoHint")}</p>
 
       {problems.length > 0 && (
         <div className="banner warn" style={{ margin: 0 }}>{t(`problem_${problems[0]}`)}</div>

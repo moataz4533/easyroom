@@ -191,3 +191,87 @@ reset role;
 
 update properties set settings = coalesce(settings, '{}'::jsonb) - 'auto_close_stays'
  where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
+-- ------------------------------------------ a hotel that opens ready --
+-- Hotel B has never been touched by any suite, so it is the only honest
+-- fixture for "a hotel nobody has started using".
+select set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false);
+set role authenticated;
+
+select 'demo · seeded rooms reported (want 6)     = ' || (result ->> 'rooms')
+from seed_demo_property('bbbbbbbb-0000-0000-0000-000000000002') as result;
+
+-- Running the platform does not make you a member of the hotel. The rows
+-- below are read as the database owner for that exact reason: owner A just
+-- furnished hotel B and still cannot see a single room in it.
+select 'demo · platform cannot read B''s rooms (want 0) = ' || count(*)
+from rooms where property_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+
+reset role;
+
+select 'demo · rooms (want 6)                     = ' || count(*)
+from rooms where property_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+select 'demo · room types (want 2)                = ' || count(*)
+from room_types where property_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+select 'demo · a list each way (want company,direct) = ' ||
+  string_agg(distinct party, ',' order by party)
+from rate_plans where property_id = 'bbbbbbbb-0000-0000-0000-000000000002' and is_active;
+select 'demo · still one default plan (want 1)    = ' || count(*)
+from rate_plans where property_id = 'bbbbbbbb-0000-0000-0000-000000000002' and is_default;
+select 'demo · an agency to book on (want 1)      = ' || count(*)
+from accounts where property_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+select 'demo · extras (want 4)                    = ' || count(*)
+from charge_items where property_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+select 'demo · breakfast comes included (want 1)  = ' || count(*)
+from rate_plan_addons where property_id = 'bbbbbbbb-0000-0000-0000-000000000002' and is_included;
+
+-- The whole point of seeding these prices rather than copying the first
+-- hotel's: the head count moves the total.
+select 'demo · head count moves the price (want 400) = ' ||
+  (max(amount) - min(amount))
+from rates r
+join rate_plans p on p.id = r.rate_plan_id
+join room_types t on t.id = r.room_type_id
+where r.property_id = 'bbbbbbbb-0000-0000-0000-000000000002'
+  and p.party = 'direct' and t.code = 'DBL';
+
+insert into guests (property_id, full_name, phone)
+values ('bbbbbbbb-0000-0000-0000-000000000002', 'Demo guest', '0100000777')
+on conflict do nothing;
+
+-- And it is a working setup, not a picture of one: the hotel's own owner
+-- takes a booking through it and it prices itself. Two nights, two guests,
+-- double room, direct list — 1200 a night.
+select set_config('request.jwt.claim.sub','33333333-3333-3333-3333-333333333333',false);
+set role authenticated;
+
+select 'demo · a booking prices itself (want 2400.00) = ' || total_amount
+from create_booking(
+  'bbbbbbbb-0000-0000-0000-000000000002',
+  (select id from guests where property_id = 'bbbbbbbb-0000-0000-0000-000000000002'
+     and full_name = 'Demo guest' limit 1),
+  '2027-03-01', '2027-03-03',
+  (select jsonb_build_array(jsonb_build_object('room_id', id, 'occupancy', 2))
+     from rooms where property_id = 'bbbbbbbb-0000-0000-0000-000000000002'
+      and number = '101'));
+
+-- A hotel owner is not the platform.
+do $$
+begin
+  perform seed_demo_property('bbbbbbbb-0000-0000-0000-000000000002');
+  raise notice 'demo · owner seeding their own hotel (want denied) = allowed';
+exception when others then
+  raise notice 'demo · owner seeding their own hotel (want denied) = denied';
+end $$;
+
+-- Twice would double the furniture, so the second time is refused.
+select set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false);
+do $$
+begin
+  perform seed_demo_property('bbbbbbbb-0000-0000-0000-000000000002');
+  raise notice 'demo · seeding a used hotel (want refused) = accepted';
+exception when others then
+  raise notice 'demo · seeding a used hotel (want refused) = refused';
+end $$;
+
+reset role;
