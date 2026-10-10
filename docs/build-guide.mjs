@@ -13,11 +13,13 @@ import { chromium } from "playwright";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
-// Two guides, one pipeline: the reception one for the desk, the admin one
-// for whoever owns the hotel and sets it up.
+// Three guides, one pipeline: the reception one for the desk, the admin one
+// for whoever owns the hotel and sets it up, and the full one for somebody
+// who shows the app to customers — every feature plus a ten-minute demo.
 const GUIDES = [
   ["reception-guide.html", "easyroom-reception-guide.pdf"],
   ["admin-guide.html", "easyroom-admin-guide.pdf"],
+  ["full-guide.html", "easyroom-full-guide.pdf"],
 ];
 
 const browser = await chromium.launch({
