@@ -99,6 +99,13 @@ describe("times and links", () => {
     expect(whatsappLink("+20 100 123 4567", "hi")).toBe("https://wa.me/201001234567?text=hi");
   });
 
+  it("puts the hotel's country code on a number written the local way", () => {
+    expect(whatsappLink("01024327770", "", "20")).toBe("https://wa.me/201024327770");
+    expect(whatsappLink("0020 102 432 7770", "", "20")).toBe("https://wa.me/201024327770");
+    expect(whatsappLink("+966 50 123 4567", "", "20")).toBe("https://wa.me/966501234567");
+    expect(whatsappLink("201024327770", "", "20")).toBe("https://wa.me/201024327770");
+  });
+
   it("refuses to build a link with no number", () => {
     expect(whatsappLink("", "hi")).toBeNull();
     expect(whatsappLink(null, "hi")).toBeNull();

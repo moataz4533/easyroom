@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays, addMonths, daysBetween, extendProblem, licenseNotice, licenseState,
   licenseTone, licenseTotals, lockReason, openingCalls, openingProblem,
-  renewalBase, renewalEnd, setLicenseProblem,
+  renewalBase, renewalEnd, reminderKey, setLicenseProblem,
 } from "../lib/licenses";
 
 describe("licence dates", () => {
@@ -139,5 +139,15 @@ describe("opening a hotel on a licence", () => {
     expect(openingProblem({ mode: "paid", months: "12", amount: "-1" })).toBe("negativeAmount");
     expect(openingProblem({ mode: "unlimited" })).toBeNull();
     expect(openingProblem({ mode: "?" })).toBe("kind");
+  });
+});
+
+describe("reminding a hotel", () => {
+  it("has something to say only when the licence is ending or over", () => {
+    expect(reminderKey("expiring")).toBe("remind_expiring");
+    expect(reminderKey("grace")).toBe("remind_grace");
+    expect(reminderKey("expired")).toBe("remind_expired");
+    expect(reminderKey("active")).toBeNull();
+    expect(reminderKey("unlimited")).toBeNull();
   });
 });

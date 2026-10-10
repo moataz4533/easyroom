@@ -339,6 +339,9 @@ describe("bilingual routing and messages", () => {
       for (const method of ["cash", "instapay", "vodafone_cash", "transfer", "other"]) {
         expect(typeof lang.Platform[`licMethod_${method}`], method).toBe("string");
       }
+      for (const state of ["expiring", "grace", "expired"]) {
+        expect(typeof lang.Platform[`remind_${state}`], state).toBe("string");
+      }
       for (const event of ["opened", "set", "extended"]) {
         expect(typeof lang.Platform[`licEvent_${event}`], event).toBe("string");
       }
