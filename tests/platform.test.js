@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CODE_PATTERN, codeProblem, isDormant, membersOf, neverSignedIn, newHotelProblems,
   normaliseCode, platformTotals, resetProblem, staffAddressExample, suggestCode,
-  summariseProperty,
+  summariseProperty, newMemberProblems,
 } from "../lib/platform";
 
 const members = [
@@ -176,5 +176,38 @@ describe("confirming a reset", () => {
   it("accepts the hotel's own code, however it was typed", () => {
     expect(resetProblem("greek-club-dahab", "greek-club-dahab")).toBeNull();
     expect(resetProblem("  Greek Club Dahab ", "greek-club-dahab")).toBeNull();
+  });
+});
+
+describe("adding an account to a hotel", () => {
+  const base = {
+    fullName: "منى", role: "manager", login: "username", username: "mona",
+    password: "12345678", again: "12345678",
+  };
+
+  it("accepts a manager with a username", () => {
+    expect(newMemberProblems(base)).toEqual([]);
+  });
+
+  it("wants a name, a known role and a usable username", () => {
+    expect(newMemberProblems({ ...base, fullName: " " })).toContain("memberName");
+    expect(newMemberProblems({ ...base, role: "admin" })).toContain("memberRole");
+    expect(newMemberProblems({ ...base, username: "a" })).toContain("memberUsername");
+    expect(newMemberProblems({ ...base, username: "Mona Ali" })).toContain("memberUsername");
+    expect(newMemberProblems({ ...base, login: "sms" })).toContain("memberLogin");
+  });
+
+  it("takes a real email, but not a staff address through the email door", () => {
+    expect(newMemberProblems({ ...base, login: "email", email: "mona@hotel.com" })).toEqual([]);
+    expect(newMemberProblems({ ...base, login: "email", email: "mona" })).toContain("memberEmail");
+    expect(newMemberProblems({ ...base, login: "email", email: "dalia.dalia@staff.easyroom.app" }))
+      .toContain("memberStaffEmail");
+  });
+
+  it("asks for a password only when the account is new", () => {
+    expect(newMemberProblems({ ...base, password: "short", again: "short" })).toContain("password");
+    expect(newMemberProblems({ ...base, again: "different" })).toContain("mismatch");
+    expect(newMemberProblems({ ...base, login: "email", email: "o@x.com", password: "" }, { linking: true }))
+      .toEqual([]);
   });
 });

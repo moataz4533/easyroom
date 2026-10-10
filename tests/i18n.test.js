@@ -316,6 +316,16 @@ describe("bilingual routing and messages", () => {
     ]) {
       expect(typeof ar.Platform[`problem_${problem}`], problem).toBe("string");
     }
+    // Every problem newMemberProblems can report, and both ways in.
+    for (const lang of [ar, en]) {
+      for (const problem of ["memberName", "memberRole", "memberUsername", "memberEmail",
+        "memberStaffEmail", "memberLogin", "password", "mismatch"]) {
+        expect(typeof lang.Platform[`problem_${problem}`], problem).toBe("string");
+      }
+      for (const login of ["username", "email"]) {
+        expect(typeof lang.Platform[`memberLogin_${login}`], login).toBe("string");
+      }
+    }
     // Every licence word the panel and the hotel build from a variable.
     for (const lang of [ar, en]) {
       for (const kind of ["trial", "paid", "unlimited"]) {
