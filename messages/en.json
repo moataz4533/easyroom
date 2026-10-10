@@ -497,7 +497,12 @@
     "autoClosed": "{count, plural, one {1 stay past its departure date was closed} other {# stays past their departure date were closed}}",
     "unregistered": "{count, plural, one {1 booking whose arrival date has passed with nobody checked in} other {# bookings whose arrival dates have passed with nobody checked in}}",
     "since": "since {date}",
-    "unregisteredHint": "Check the guest in if they are really staying, or mark them a no-show if they never came. The app does not check anybody in by itself — that would put a guest in a room they never reached."
+    "unregisteredHint": "Check the guest in if they are really staying, or mark them a no-show if they never came. The app does not check anybody in by itself — that would put a guest in a room they never reached.",
+    "idPromptTitle": "ID before check-in",
+    "idPromptBody": "{name} ({reference}) has no national ID or passport on record. Type it now while the card is in your hand — it goes on the booking form and the guest register.",
+    "idSaveAndCheckIn": "Save and check in",
+    "idCheckInWithout": "Check in without it",
+    "checkedInWithId": "Checked in, with the ID recorded"
   },
   "Housekeeping": {
     "title": "Housekeeping",
@@ -1294,7 +1299,13 @@
     "problem_memberUsername": "Username: lowercase letters and numbers, 3 to 32 characters",
     "problem_memberEmail": "The email is not valid",
     "problem_memberStaffEmail": "That is a staff address — choose “Username” instead",
-    "problem_memberLogin": "Choose how they sign in"
+    "problem_memberLogin": "Choose how they sign in",
+    "remind": "WhatsApp reminder",
+    "remindTo": "Opens a ready message to the owner's number {phone}",
+    "remindNoPhone": "No number for the owner — WhatsApp opens with the message ready; pick the chat yourself",
+    "remind_expiring": "Hello {owner},\nThe EasyRoom subscription for “{hotel}” ends on {date}.\nTo keep everything running without a break, message us and we will renew it.\nThank you — the EasyRoom team",
+    "remind_grace": "Hello {owner},\nThe EasyRoom subscription for “{hotel}” ended on {date}. The app keeps working on grace until {until}; after that, sign-in pauses until it is renewed.\nAll your data is kept. Message us and we will renew it today.\nThank you — the EasyRoom team",
+    "remind_expired": "Hello {owner},\nThe EasyRoom subscription for “{hotel}” ended on {date}, and sign-in is paused.\nAll your data is kept exactly as it was and returns as soon as it is renewed. Message us and we will bring it back straight away.\nThank you — the EasyRoom team"
   },
   "Discount": {
     "add": "Discount",

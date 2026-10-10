@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import {
-  BadgeCheck, Building2, CalendarClock, Eraser, History, KeyRound, Power, RefreshCw,
-  ShieldAlert, Sparkles, UserPlus,
+  BadgeCheck, Building2, CalendarClock, Eraser, History, KeyRound, MessageCircle, Power,
+  RefreshCw, ShieldAlert, Sparkles, UserPlus,
 } from "lucide-react";
 import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
@@ -19,8 +19,9 @@ import {
 import {
   DEFAULT_GRACE, DEFAULT_TRIAL_DAYS, EXTEND_MONTHS, LICENSE_KINDS, OPENING_CHOICES, PAY_METHODS,
   addDays, addMonths, extendProblem, licenseTone, licenseTotals, openingCalls, openingProblem,
-  renewalEnd, setLicenseProblem,
+  reminderKey, renewalEnd, setLicenseProblem,
 } from "../../lib/licenses";
+import { whatsappLink } from "../../lib/confirmation";
 
 const FUNCTION_URL = "https://huvbguyvgptmplqbcbdp.supabase.co/functions/v1/platform-admin";
 
@@ -258,8 +259,8 @@ function HotelCard({ summary, license, members, locale, call, onChanged, onError
 
   return (
     <div className="card stack" data-suspended={!summary.active}>
-      <div className="spread">
-        <div className="grow">
+      <div className="spread" style={{ flexWrap: "wrap" }}>
+        <div className="grow" style={{ minWidth: 220 }}>
           <div className="row" style={{ gap: 8 }}>
             <Building2 size={18} />
             <strong style={{ fontSize: 16 }}>{summary.name}</strong>
@@ -279,7 +280,7 @@ function HotelCard({ summary, license, members, locale, call, onChanged, onError
           </div>
         </div>
         {!asking && (
-          <div className="row" style={{ flex: "none" }}>
+          <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
             {bare && (
               <button className="btn sm primary" onClick={fillDemo} disabled={busy}>
                 <Sparkles size={15} />{t("fillDemo")}
@@ -461,6 +462,20 @@ function LicensePanel({ license, hotel, locale, onChanged, onError, onSaid }) {
     onChanged();
   }
 
+  // The owner's own number when the panel has one; otherwise WhatsApp opens
+  // with the message ready and asks who to send it to.
+  const remind = reminderKey(state);
+  const ownerPhone = hotel.owner?.phone || "";
+  const remindText = remind ? t(remind, {
+    owner: hotel.owner?.full_name || "",
+    hotel: hotel.name,
+    date: licDay(license.ends_on, locale),
+    until: licDay(graceUntil, locale),
+  }) : "";
+  const remindHref = remind
+    ? whatsappLink(ownerPhone, remindText) || `https://wa.me/?text=${encodeURIComponent(remindText)}`
+    : null;
+
   const when = !license.ends_on
     ? t("licNoEnd")
     : state === "expired"
@@ -471,7 +486,7 @@ function LicensePanel({ license, hotel, locale, onChanged, onError, onSaid }) {
 
   return (
     <div className="license-box" data-tone={licenseTone(state)}>
-      <div className="spread">
+      <div className="stack" style={{ gap: 8 }}>
         <div className="grow">
           <div className="row" style={{ gap: 6 }}>
             <BadgeCheck size={16} />
@@ -494,7 +509,13 @@ function LicensePanel({ license, hotel, locale, onChanged, onError, onSaid }) {
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{license.notes}</div>
           )}
         </div>
-        <div className="row" style={{ flex: "none" }}>
+        <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
+          {remindHref && (
+            <a className="btn sm" href={remindHref} target="_blank" rel="noreferrer"
+              title={ownerPhone ? t("remindTo", { phone: ownerPhone }) : t("remindNoPhone")}>
+              <MessageCircle size={14} />{t("remind")}
+            </a>
+          )}
           <button className={`btn sm ${mode === "extend" ? "primary" : ""}`} onClick={() => toggle("extend")} disabled={busy}>
             <CalendarClock size={14} />{t("licRenew")}
           </button>

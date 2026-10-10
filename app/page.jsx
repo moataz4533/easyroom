@@ -6,6 +6,8 @@ import Shell, { useProperty, Toast, useToast } from "../components/Shell";
 import SetupChecklist from "../components/SetupChecklist";
 import ProvisionalBookings from "../components/ProvisionalBookings";
 import StuckActions from "../components/StuckActions";
+import CheckInId from "../components/CheckInId";
+import { needsIdAtCheckIn } from "../lib/guest-record";
 import { supabase, egp, today, addDays, dayLabel } from "../lib/supabase";
 import { formatNumber, joinList } from "../lib/format";
 import { earlyDepartureAmounts, isLeavingEarly } from "../lib/checkout";
@@ -32,6 +34,7 @@ function Board() {
   const [rows, setRows] = useState([]);
   const [attention, setAttention] = useState([]);
   const [arrivals, setArrivals] = useState([]);
+  const [askingId, setAskingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState(null);
   const [stale, setStale] = useState(null);
@@ -68,7 +71,7 @@ function Board() {
         supabase.from("attention_queue").select("*").eq("property_id", property.id)),
       loadCached(`arrivals:${property.id}:${today()}`, () =>
         supabase.from("bookings")
-          .select("id, reference, source, check_in, check_out, adults, total_amount, notes, guests(full_name, phone), room_allocations(rooms(number))")
+          .select("id, reference, source, check_in, check_out, adults, total_amount, notes, guests(id, full_name, phone, nationality, id_number), room_allocations(rooms(number))")
           .eq("property_id", property.id).eq("status", "confirmed").eq("check_in", today())),
     ]);
 
@@ -89,6 +92,28 @@ function Board() {
     setStale(board.stale ? board.at : null);
     setLoading(false);
   }, [property, online]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Checking a guest in, with the document written first when it was given.
+   * The record is saved before the stay changes so a failure leaves nothing
+   * half done: the prompt stays open with the number still typed in it.
+   */
+  async function checkIn(booking, patch = null) {
+    if (!navigator.onLine) {
+      queueAdd({ kind: "rpc", fn: "check_in_booking", property_id: property.id, args: { p_booking: booking.id } });
+      showToast(t("queued"));
+      return true;
+    }
+    if (patch && Object.keys(patch).length && booking.guests?.id) {
+      const { error } = await supabase.from("guests").update(patch).eq("id", booking.guests.id);
+      if (error) { showToast(error.message, true); return false; }
+    }
+    const { error } = await supabase.rpc("check_in_booking", { p_booking: booking.id });
+    if (error) { showToast(error.message, true); return false; }
+    showToast(patch ? t("checkedInWithId") : t("checkedIn"));
+    load();
+    return true;
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -196,15 +221,11 @@ function Board() {
                 <span className="arrival-notes" data-empty={!b.notes}>{b.notes || "—"}</span>
                 <button
                   className="btn primary sm arrival-action"
-                  onClick={async () => {
-                    if (!navigator.onLine) {
-                      queueAdd({ kind: "rpc", fn: "check_in_booking", property_id: property.id, args: { p_booking: b.id } });
-                      showToast(t("queued"));
-                      return;
-                    }
-                    const { error } = await supabase.rpc("check_in_booking", { p_booking: b.id });
-                    if (error) showToast(error.message, true);
-                    else { showToast(t("checkedIn")); load(); }
+                  onClick={() => {
+                    // Offline the guest record cannot be written, so the
+                    // question would only collect an answer to lose.
+                    if (navigator.onLine && needsIdAtCheckIn(b.guests)) setAskingId(b);
+                    else checkIn(b);
                   }}
                 >
                   <LogIn size={16} />{t("checkIn")}
@@ -237,6 +258,17 @@ function Board() {
           </>
         )}
       </section>
+
+      {askingId && (
+        <CheckInId
+          booking={askingId}
+          onClose={() => setAskingId(null)}
+          onConfirm={async (patch) => {
+            const done = await checkIn(askingId, patch);
+            if (done) setAskingId(null);
+          }}
+        />
+      )}
 
       {sheet && (
         <RoomSheet

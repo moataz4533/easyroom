@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  needsIdAtCheckIn, checkInIdPatch,
   ageOn, buildGuestCsv, csvFilename, describeGuest, implausibleFields, isComplete,
   liveRoomNumbers, missingFields, needsAttention, recordIssueCount,
 } from "../lib/guest-record";
@@ -182,5 +183,20 @@ describe("a field that is filled in and still wrong", () => {
     expect(recordIssueCount(complete)).toBe(0);
     expect(needsAttention(complete)).toBe(false);
     expect(needsAttention({ ...complete, phone: "123" })).toBe(true);
+  });
+});
+
+describe("asking for the document at check-in", () => {
+  it("asks only when there is no document on record", () => {
+    expect(needsIdAtCheckIn({ id_number: null })).toBe(true);
+    expect(needsIdAtCheckIn({ id_number: "   " })).toBe(true);
+    expect(needsIdAtCheckIn({ id_number: "29001011234567" })).toBe(false);
+    expect(needsIdAtCheckIn(null)).toBe(false);
+  });
+
+  it("writes back only what was typed, so an empty box never wipes anything", () => {
+    expect(checkInIdPatch({ id_number: " A1234567 ", nationality: "" })).toEqual({ id_number: "A1234567" });
+    expect(checkInIdPatch({ id_number: "", nationality: "مصري" })).toEqual({ nationality: "مصري" });
+    expect(checkInIdPatch({})).toEqual({});
   });
 });
