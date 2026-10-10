@@ -396,6 +396,7 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .license-box { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
 .license-box[data-tone="warn"] { border-color: #edc774; background: var(--sand-soft); }
 .license-box[data-tone="bad"] { border-color: #e8aaa3; background: var(--danger-soft); }
+.role-select { width: auto; min-height: 26px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .license-event { padding: 8px 10px; border-radius: 10px; background: var(--surface); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
 .license-event strong { font-size: 13px; }
 .license-event .muted { color: var(--muted); }

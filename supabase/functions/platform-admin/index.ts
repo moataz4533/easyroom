@@ -30,6 +30,9 @@ const json = (body: unknown, status = 200) =>
 // so it has to survive being written into an email local part.
 const slugPattern = /^[a-z0-9][a-z0-9-]{2,39}$/;
 const emailPattern = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
+// The same shape the staff function and the database constraint accept.
+const usernamePattern = /^[a-z0-9][a-z0-9._-]{2,31}$/;
+const roles = ["owner", "manager", "reception", "housekeeping"];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -258,5 +261,180 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true });
   }
 
+  /* -------------------------------------- an account added to a hotel */
+  /**
+   * A manager, an owner, or anybody else, added to a hotel that already
+   * exists — which used to mean asking that hotel's owner to do it from
+   * their settings, and was impossible when the owner was the one missing.
+   *
+   * Two ways in, the same two the login screen has:
+   *   - a username, which becomes `{code}.{username}@staff.easyroom.app`
+   *     and signs in from "staff login" with the hotel code;
+   *   - an email, for somebody who already has (or should have) a real
+   *     address. If that address is already an account — the owner of
+   *     another hotel, say — it is not created twice: the caller is told
+   *     whose it is and has to say so again to add it, because its
+   *     password stays the one its owner already has, and a password typed
+   *     here would be silently ignored otherwise.
+   */
+  if (action === "add_member") {
+    const propertyId = String(body.property_id || "");
+    const role = String(body.role || "");
+    const fullName = String(body.full_name || "").trim();
+    const phone = String(body.phone || "").trim() || null;
+    const login = String(body.login || "username");
+    const password = String(body.password || "");
+
+    if (!propertyId) return json({ error: "الفندق مش محدد" }, 400);
+    if (!roles.includes(role)) return json({ error: "اختار دور صحيح" }, 400);
+    if (!fullName) return json({ error: "اكتب الاسم" }, 400);
+
+    const { data: property } = await admin
+      .from("properties").select("id, slug").eq("id", propertyId).maybeSingle();
+    if (!property) return json({ error: "الفندق مش موجود" }, 404);
+
+    let email = "";
+    let username: string | null = null;
+    if (login === "username") {
+      username = String(body.username || "").trim().toLowerCase();
+      if (!usernamePattern.test(username)) {
+        return json({ error: "اسم المستخدم: حروف إنجليزية صغيرة وأرقام، من 3 لـ 32 حرف" }, 400);
+      }
+      email = `${property.slug}.${username}@staff.easyroom.app`;
+    } else if (login === "email") {
+      email = String(body.email || "").trim().toLowerCase();
+      if (!emailPattern.test(email)) return json({ error: "البريد غير صحيح" }, 400);
+      // A staff address belongs to one hotel's login screen; reaching it
+      // through the email door would make an account nobody can explain.
+      if (email.endsWith("@staff.easyroom.app")) {
+        return json({ error: "ده عنوان موظف — استخدم «اسم مستخدم» بدل البريد" }, 400);
+      }
+    } else {
+      return json({ error: "طريقة الدخول غير معروفة" }, 400);
+    }
+
+    const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = (authList?.users || []).find((u) => (u.email || "").toLowerCase() === email);
+
+    if (existing) {
+      const { data: already } = await admin.from("property_members")
+        .select("id, is_active").eq("property_id", propertyId).eq("user_id", existing.id).maybeSingle();
+      if (already) {
+        return json({
+          error: already.is_active
+            ? "الحساب ده موجود في الفندق ده قبل كده"
+            : "الحساب ده موجود في الفندق بس موقوف — فعّله من قايمة الحسابات",
+        }, 400);
+      }
+      if (login === "username") return json({ error: "اسم المستخدم ده مستخدم في الفندق" }, 400);
+
+      const { data: profile } = await admin.from("profiles")
+        .select("full_name").eq("id", existing.id).maybeSingle();
+      if (body.link_existing !== true) {
+        return json({
+          error: "البريد ده لحساب موجود",
+          code: "exists",
+          name: profile?.full_name || existing.user_metadata?.full_name || email,
+        }, 409);
+      }
+
+      if (!profile) {
+        const { error: profileErr } = await admin.from("profiles")
+          .insert({ id: existing.id, full_name: fullName, phone });
+        if (profileErr) return json({ error: profileErr.message }, 400);
+      }
+      const { error: memberErr } = await admin.from("property_members").insert({
+        property_id: propertyId, user_id: existing.id, role, is_active: true,
+      });
+      if (memberErr) return json({ error: memberErr.message }, 400);
+
+      await logAdded(propertyId, existing.id, { role, email, linked: true });
+      return json({ ok: true, user_id: existing.id, linked: true });
+    }
+
+    if (password.length < 8) return json({ error: "الباسورد لازم 8 حروف على الأقل" }, 400);
+
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, phone },
+    });
+    const userId = created?.user?.id;
+    if (createErr || !userId) return json({ error: createErr?.message || "الحساب متعملش" }, 400);
+
+    // Anything failing past here takes the account back out: a sign-in
+    // that leads to "no hotel" is worse than no account.
+    const { error: profileErr } = await admin.from("profiles")
+      .upsert({ id: userId, full_name: fullName, phone });
+    if (profileErr) {
+      await admin.auth.admin.deleteUser(userId);
+      return json({ error: profileErr.message }, 400);
+    }
+
+    const { error: memberErr } = await admin.from("property_members").insert({
+      property_id: propertyId, user_id: userId, role, is_active: true,
+      login_username: username,
+    });
+    if (memberErr) {
+      await admin.auth.admin.deleteUser(userId);
+      return json({
+        error: memberErr.code === "23505" ? "اسم المستخدم ده مستخدم في الفندق" : memberErr.message,
+      }, 400);
+    }
+
+    await logAdded(propertyId, userId, { role, username, email: username ? null : email });
+    return json({ ok: true, user_id: userId, linked: false, login_email: email });
+  }
+
+  /* ------------------------------------------------- one account's role */
+  if (action === "set_member_role") {
+    const memberId = String(body.member_id || "");
+    const role = String(body.role || "");
+    if (!memberId) return json({ error: "الحساب مش محدد" }, 400);
+    if (!roles.includes(role)) return json({ error: "اختار دور صحيح" }, 400);
+
+    const { data: member } = await admin.from("property_members")
+      .select("property_id, user_id, role, is_active").eq("id", memberId).maybeSingle();
+    if (!member) return json({ error: "الحساب مش موجود" }, 404);
+    if (member.user_id === user.id) return json({ error: "مينفعش تغيّر دورك بنفسك" }, 400);
+    if (member.role === role) return json({ ok: true, role });
+
+    // A hotel with no active owner has nobody who can renew it, add staff
+    // or set the manager password — so the last one cannot be demoted.
+    if (member.role === "owner" && member.is_active) {
+      const { count } = await admin.from("property_members")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", member.property_id).eq("role", "owner").eq("is_active", true);
+      if ((count || 0) <= 1) {
+        return json({ error: "ده آخر مالك في الفندق — ضيف مالك تاني الأول" }, 400);
+      }
+    }
+
+    const { error } = await admin.from("property_members").update({ role }).eq("id", memberId);
+    if (error) return json({ error: error.message }, 400);
+
+    await admin.from("activity_log").insert({
+      property_id: member.property_id,
+      actor_id: user.id,
+      entity_type: "staff",
+      entity_id: member.user_id,
+      action: "updated",
+      payload: { role, previous_role: member.role, by: "platform" },
+    });
+    return json({ ok: true, role });
+  }
+
   return json({ error: "إجراء غير معروف" }, 400);
+
+  async function logAdded(propertyId: string, userId: string, payload: Record<string, unknown>) {
+    await admin.from("activity_log").insert({
+      property_id: propertyId,
+      actor_id: user!.id,
+      entity_type: "staff",
+      entity_id: userId,
+      action: "created",
+      payload: { ...payload, by: "platform" },
+    });
+  }
 });

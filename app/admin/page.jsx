@@ -12,7 +12,8 @@ import { localePath } from "../../lib/locale";
 import { formatNumber } from "../../lib/format";
 import { Toast, useToast } from "../../components/Shell";
 import {
-  membersOf, isDormant, neverSignedIn, newHotelProblems, normaliseCode,
+  MEMBER_LOGINS, PLATFORM_ROLES, membersOf, isDormant, neverSignedIn, newHotelProblems,
+  newMemberProblems, normaliseCode,
   platformTotals, resetProblem, staffAddressExample, suggestCode, summariseProperty,
 } from "../../lib/platform";
 import {
@@ -199,6 +200,7 @@ function HotelCard({ summary, license, members, locale, call, onChanged, onError
   const t = useTranslations("Platform");
   const [asking, setAsking] = useState(false);
   const [wiping, setWiping] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -346,9 +348,19 @@ function HotelCard({ summary, license, members, locale, call, onChanged, onError
 
       <div>
         <div className="spread" style={{ marginBottom: 6 }}>
-          <strong style={{ fontSize: 13 }}>{t("accounts")}</strong>
-          <span className="pill">{formatNumber(summary.activeMembers, locale)}/{formatNumber(summary.members, locale)}</span>
+          <div className="row" style={{ gap: 8 }}>
+            <strong style={{ fontSize: 13 }}>{t("accounts")}</strong>
+            <span className="pill">{formatNumber(summary.activeMembers, locale)}/{formatNumber(summary.members, locale)}</span>
+          </div>
+          <button className={`btn sm ${adding ? "primary" : ""}`} onClick={() => setAdding((open) => !open)}>
+            <UserPlus size={14} />{t("addMember")}
+          </button>
         </div>
+        {adding && (
+          <AddMember hotel={summary} call={call}
+            onDone={(message) => { setAdding(false); onSaid(message); onChanged(); }}
+            onCancel={() => setAdding(false)} onError={onError} />
+        )}
         {members.length === 0 ? (
           <div className="empty compact-empty">{t("noAccounts")}</div>
         ) : (
@@ -658,6 +670,15 @@ function AccountRow({ member, locale, call, onChanged, onError, onSaid }) {
     onChanged();
   }
 
+  async function changeRole(role) {
+    setBusy(true);
+    const out = await call({ action: "set_member_role", member_id: member.id, role });
+    setBusy(false);
+    if (out.error) return onError(out.error);
+    onSaid(t("roleChanged", { name: member.full_name || "—", role: roles(role) }));
+    onChanged();
+  }
+
   async function reset() {
     setBusy(true);
     const out = await call({ action: "reset_password", member_id: member.id, password });
@@ -674,7 +695,10 @@ function AccountRow({ member, locale, call, onChanged, onError, onSaid }) {
         <div className="grow">
           <div className="row" style={{ gap: 6 }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>{member.full_name || "—"}</span>
-            <span className="pill">{roles(member.role)}</span>
+            <select className="role-select" value={member.role} disabled={busy}
+              aria-label={t("memberRole")} onChange={(event) => changeRole(event.target.value)}>
+              {PLATFORM_ROLES.map((role) => <option key={role} value={role}>{roles(role)}</option>)}
+            </select>
             {!member.is_active && <span className="pill bad">{t("suspended")}</span>}
             {neverSignedIn(member) && <span className="pill warn">{t("neverSignedIn")}</span>}
             {isDormant(member, today) && <span className="pill warn">{t("dormant")}</span>}
@@ -711,6 +735,146 @@ function AccountRow({ member, locale, call, onChanged, onError, onSaid }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------- somebody added to a hotel */
+
+const EMPTY_MEMBER = {
+  fullName: "", phone: "", role: "manager", login: "username",
+  username: "", email: "", password: "", again: "",
+};
+
+/**
+ * Adding a manager (or an owner, or anyone) to a hotel that exists. A
+ * username is the default because it is how everybody at a hotel already
+ * signs in; an email is for an account somebody has, or should have,
+ * outside it — and if that address is already an account, the form says
+ * whose and asks again rather than quietly ignoring the password typed.
+ */
+function AddMember({ hotel, call, onDone, onCancel, onError }) {
+  const t = useTranslations("Platform");
+  const roles = useTranslations("Roles");
+  const [form, setForm] = useState(EMPTY_MEMBER);
+  const [existing, setExisting] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const set = (field) => (event) => {
+    const value = event.target.value;
+    setForm((current) => ({ ...current, [field]: value }));
+    if (field === "email" || field === "login") setExisting(null);
+  };
+
+  const problems = newMemberProblems(form, { linking: Boolean(existing) });
+  const address = form.login === "username" && form.username
+    ? staffAddressExample(hotel.slug, form.username.trim().toLowerCase())
+    : "";
+
+  async function submit() {
+    if (problems.length) return onError(t(`problem_${problems[0]}`));
+    setBusy(true);
+    const out = await call({
+      action: "add_member",
+      property_id: hotel.id,
+      role: form.role,
+      full_name: form.fullName,
+      phone: form.phone,
+      login: form.login,
+      username: form.username,
+      email: form.email,
+      password: existing ? "" : form.password,
+      link_existing: Boolean(existing),
+    });
+    setBusy(false);
+    if (out.code === "exists") { setExisting(out.name || form.email); return; }
+    if (out.error) return onError(out.error);
+    onDone(out.linked
+      ? t("memberLinked", { name: form.fullName, hotel: hotel.name })
+      : t("memberAdded", { name: form.fullName, hotel: hotel.name }));
+  }
+
+  return (
+    <div className="card stack" style={{ background: "var(--paper)", marginBottom: 8 }}>
+      <strong style={{ fontSize: 14 }}>{t("addMemberTitle", { name: hotel.name })}</strong>
+
+      <div className="row">
+        <div className="field grow">
+          <label htmlFor={`mn-${hotel.id}`}>{t("memberName")}</label>
+          <input id={`mn-${hotel.id}`} value={form.fullName} onChange={set("fullName")} autoFocus />
+        </div>
+        <div className="field grow">
+          <label htmlFor={`mp-${hotel.id}`}>{t("memberPhone")}</label>
+          <input id={`mp-${hotel.id}`} dir="ltr" inputMode="tel" value={form.phone} onChange={set("phone")} />
+        </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor={`mr-${hotel.id}`}>{t("memberRole")}</label>
+        <select id={`mr-${hotel.id}`} value={form.role} onChange={set("role")}>
+          {PLATFORM_ROLES.map((role) => <option key={role} value={role}>{roles(role)}</option>)}
+        </select>
+      </div>
+
+      <div className="field">
+        <span>{t("memberLogin")}</span>
+        <div className="tabs" role="tablist">
+          {MEMBER_LOGINS.map((login) => (
+            <button key={login} type="button" className="tab" role="tab"
+              aria-selected={form.login === login}
+              onClick={() => { setForm((current) => ({ ...current, login })); setExisting(null); }}>
+              {t(`memberLogin_${login}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {form.login === "username" ? (
+        <div className="field">
+          <label htmlFor={`mu-${hotel.id}`}>{t("memberUsername")}</label>
+          <input id={`mu-${hotel.id}`} className="mono" dir="ltr" style={{ textAlign: "left" }}
+            autoComplete="off" value={form.username} onChange={set("username")} />
+          <p className="field-hint">{t("memberUsernameHint", { code: hotel.slug })}</p>
+          {address && (
+            <p className="field-hint mono" dir="ltr" style={{ textAlign: "start" }}>{address}</p>
+          )}
+        </div>
+      ) : (
+        <div className="field">
+          <label htmlFor={`me-${hotel.id}`}>{t("memberEmail")}</label>
+          <input id={`me-${hotel.id}`} type="email" dir="ltr" style={{ textAlign: "left" }}
+            value={form.email} onChange={set("email")} />
+          <p className="field-hint">{t("memberEmailHint")}</p>
+        </div>
+      )}
+
+      {existing ? (
+        <div className="banner warn" style={{ margin: 0 }}>{t("memberExists", { name: existing })}</div>
+      ) : (
+        <div className="row">
+          <div className="field grow">
+            <label htmlFor={`mw-${hotel.id}`}>{t("memberPassword")}</label>
+            <input id={`mw-${hotel.id}`} type="password" dir="ltr" autoComplete="new-password"
+              value={form.password} placeholder={t("passwordPlaceholder")} onChange={set("password")} />
+          </div>
+          <div className="field grow">
+            <label htmlFor={`mw2-${hotel.id}`}>{t("ownerPasswordAgain")}</label>
+            <input id={`mw2-${hotel.id}`} type="password" dir="ltr" autoComplete="new-password"
+              value={form.again} onChange={set("again")} />
+          </div>
+        </div>
+      )}
+
+      {problems.length > 0 && (
+        <div className="banner warn" style={{ margin: 0 }}>{t(`problem_${problems[0]}`)}</div>
+      )}
+
+      <div className="row">
+        <button className="btn primary grow" onClick={submit} disabled={busy || problems.length > 0}>
+          {busy ? t("creating") : existing ? t("memberLinkConfirm") : t("addMemberConfirm")}
+        </button>
+        <button className="btn" onClick={onCancel}>{t("cancel")}</button>
+      </div>
     </div>
   );
 }
