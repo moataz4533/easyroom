@@ -316,6 +316,26 @@ describe("bilingual routing and messages", () => {
     ]) {
       expect(typeof ar.Platform[`problem_${problem}`], problem).toBe("string");
     }
+    // Every licence word the panel and the hotel build from a variable.
+    for (const lang of [ar, en]) {
+      for (const kind of ["trial", "paid", "unlimited"]) {
+        expect(typeof lang.Platform[`licKind_${kind}`], kind).toBe("string");
+        expect(typeof lang.Platform[`licOpening_${kind}`], kind).toBe("string");
+        expect(typeof lang.Platform[`licOpeningHint_${kind}`], kind).toBe("string");
+      }
+      for (const state of ["active", "expiring", "grace", "expired", "unlimited"]) {
+        expect(typeof lang.Platform[`licState_${state}`], state).toBe("string");
+      }
+      for (const method of ["cash", "instapay", "vodafone_cash", "transfer", "other"]) {
+        expect(typeof lang.Platform[`licMethod_${method}`], method).toBe("string");
+      }
+      for (const event of ["opened", "set", "extended"]) {
+        expect(typeof lang.Platform[`licEvent_${event}`], event).toBe("string");
+      }
+      for (const problem of ["months", "amount", "negativeAmount", "kind", "endsOn", "grace", "trialDays"]) {
+        expect(typeof lang.Platform[`licProblem_${problem}`], problem).toBe("string");
+      }
+    }
     // Every shape of discount, the label for its value, and every problem
     // discountProblem can report.
     for (const kind of ["percent", "amount", "rate"]) {

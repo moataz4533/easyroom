@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "../../lib/locale";
 import {
-  Building2, Eraser, KeyRound, Power, RefreshCw, ShieldAlert, Sparkles, UserPlus,
+  BadgeCheck, Building2, CalendarClock, Eraser, History, KeyRound, Power, RefreshCw,
+  ShieldAlert, Sparkles, UserPlus,
 } from "lucide-react";
 import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
@@ -14,6 +15,11 @@ import {
   membersOf, isDormant, neverSignedIn, newHotelProblems, normaliseCode,
   platformTotals, resetProblem, staffAddressExample, suggestCode, summariseProperty,
 } from "../../lib/platform";
+import {
+  DEFAULT_GRACE, DEFAULT_TRIAL_DAYS, EXTEND_MONTHS, LICENSE_KINDS, OPENING_CHOICES, PAY_METHODS,
+  addDays, addMonths, extendProblem, licenseTone, licenseTotals, openingCalls, openingProblem,
+  renewalEnd, setLicenseProblem,
+} from "../../lib/licenses";
 
 const FUNCTION_URL = "https://huvbguyvgptmplqbcbdp.supabase.co/functions/v1/platform-admin";
 
@@ -64,6 +70,7 @@ function Console() {
   const t = useTranslations("Platform");
   const [toast, showToast] = useToast();
   const [data, setData] = useState(null);
+  const [licenses, setLicenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const call = useCallback(async (payload) => {
@@ -81,10 +88,18 @@ function Console() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const out = await call({ action: "overview" });
+    // Licences come from the database rather than the edge function: they
+    // are a table the edge function never knew about, and the same
+    // is_platform_admin() check guards them there.
+    const [out, licenceResult] = await Promise.all([
+      call({ action: "overview" }),
+      supabase.rpc("platform_licenses"),
+    ]);
     setLoading(false);
     if (out.error) return showToast(out.error, true);
+    if (licenceResult.error) showToast(licenceResult.error.message, true);
     setData(out);
+    setLicenses(licenceResult.data || []);
   }, [call]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
@@ -92,6 +107,11 @@ function Console() {
   const totals = useMemo(
     () => platformTotals(data?.properties || [], data?.members || []),
     [data]
+  );
+  const licenceTotals = useMemo(() => licenseTotals(licenses), [licenses]);
+  const licenceOf = useMemo(
+    () => Object.fromEntries(licenses.map((row) => [row.property_id, row])),
+    [licenses]
   );
 
   return (
@@ -116,6 +136,17 @@ function Console() {
         <Total label={t("totalBookings")} value={totals.bookings} />
       </div>
 
+      <div className="platform-totals">
+        <Total label={t("licExpiringTotal")} value={licenceTotals.expiring + licenceTotals.grace}
+          sub={licenceTotals.grace > 0 ? t("licInGrace", { count: licenceTotals.grace }) : null}
+          tone={licenceTotals.expiring + licenceTotals.grace > 0 ? "warn" : null} />
+        <Total label={t("licExpiredTotal")} value={licenceTotals.expired}
+          tone={licenceTotals.expired > 0 ? "bad" : null} />
+        <Total label={t("licTrialsTotal")} value={licenceTotals.trials} />
+        <Total label={t("licPaidThisYear")} value={licenceTotals.paidThisYear}
+          sub={t("licPaidTotal", { amount: formatNumber(licenceTotals.paidTotal, locale) })} />
+      </div>
+
       <NewHotel
         taken={(data?.properties || []).map((property) => property.slug)}
         onCreate={call}
@@ -135,6 +166,7 @@ function Console() {
               <HotelCard
                 key={property.id}
                 summary={summariseProperty(property, data.members)}
+                license={licenceOf[property.id]}
                 members={membersOf(data.members, property.id)}
                 locale={locale}
                 call={call}
@@ -163,7 +195,7 @@ function Total({ label, value, sub, tone }) {
 
 /* ------------------------------------------------------------ one hotel */
 
-function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid }) {
+function HotelCard({ summary, license, members, locale, call, onChanged, onError, onSaid }) {
   const t = useTranslations("Platform");
   const [asking, setAsking] = useState(false);
   const [wiping, setWiping] = useState(false);
@@ -293,6 +325,12 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
 
       {!summary.active && <div className="banner warn" style={{ margin: 0 }}>{t("suspendedNote")}</div>}
 
+      {license && (
+        <LicensePanel key={`${license.kind}|${license.ends_on}|${license.grace_days}`}
+          license={license} hotel={summary} locale={locale}
+          onChanged={onChanged} onError={onError} onSaid={onSaid} />
+      )}
+
       {asking && (
         <div className="card stack" style={{ background: "var(--paper)" }}>
           <strong style={{ fontSize: 14 }}>{t("confirmSuspendTitle", { name: summary.name })}</strong>
@@ -322,6 +360,282 @@ function HotelCard({ summary, members, locale, call, onChanged, onError, onSaid 
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------- its licence */
+
+/**
+ * A licence date always carries its year. "Runs until 20 October" after a
+ * twelve-month renewal reads as if nothing happened.
+ */
+const licDay = (iso, locale) => dayLabel(iso, locale, { day: "numeric", month: "short", year: "numeric" });
+
+/**
+ * How long a hotel may use the app, and what it has paid for that.
+ *
+ * Renewing is the everyday action and comes first; "set" is for the rest —
+ * a longer trial, a specific date, an open-ended licence, a different grace
+ * period. Every change goes through a database function that writes it
+ * down, so the history below is the record, not a log somebody may forget.
+ */
+function LicensePanel({ license, hotel, locale, onChanged, onError, onSaid }) {
+  const t = useTranslations("Platform");
+  const [mode, setMode] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState(null);
+  const [extend, setExtend] = useState({ months: 12, amount: "", currency: "EGP", method: "cash", note: "" });
+  const [setting, setSetting] = useState(() => ({
+    kind: license.kind,
+    endsOn: license.ends_on || addMonths(license.today, 12),
+    grace: String(license.grace_days ?? DEFAULT_GRACE),
+    note: "",
+  }));
+
+  const state = license.state;
+  const left = Number(license.days_left);
+  const graceUntil = license.ends_on ? addDays(license.ends_on, license.grace_days) : null;
+  const preview = renewalEnd(license, extend.months);
+  const extendIssue = extendProblem(extend);
+  const setIssue = setLicenseProblem(setting);
+
+  function toggle(next) {
+    setMode((current) => (current === next ? null : next));
+    if (next === "history" && history === null) loadHistory();
+  }
+
+  async function loadHistory() {
+    const { data, error } = await supabase.rpc("platform_license_history", { p_property: hotel.id });
+    if (error) return onError(error.message);
+    setHistory(data || []);
+  }
+
+  async function renew() {
+    if (extendIssue) return onError(t(`licProblem_${extendIssue}`));
+    setBusy(true);
+    const { data, error } = await supabase.rpc("platform_extend_license", {
+      p_property: hotel.id,
+      p_months: Number(extend.months),
+      p_amount: extend.amount === "" ? null : Number(extend.amount),
+      p_currency: extend.currency || "EGP",
+      p_method: extend.method || null,
+      p_note: extend.note || null,
+    });
+    setBusy(false);
+    if (error) return onError(error.message);
+    onSaid(t("licRenewed", { name: hotel.name, date: licDay(data?.ends_on || preview, locale) }));
+    setMode(null);
+    setHistory(null);
+    setExtend((current) => ({ ...current, amount: "", note: "" }));
+    onChanged();
+  }
+
+  async function save() {
+    if (setIssue) return onError(t(`licProblem_${setIssue}`));
+    setBusy(true);
+    const { error } = await supabase.rpc("platform_set_license", {
+      p_property: hotel.id,
+      p_kind: setting.kind,
+      p_ends_on: setting.kind === "unlimited" ? null : setting.endsOn,
+      p_grace_days: setting.grace === "" ? null : Number(setting.grace),
+      p_note: setting.note || null,
+    });
+    setBusy(false);
+    if (error) return onError(error.message);
+    onSaid(t("licSaved", { name: hotel.name }));
+    setMode(null);
+    setHistory(null);
+    onChanged();
+  }
+
+  const when = !license.ends_on
+    ? t("licNoEnd")
+    : state === "expired"
+      ? t("licLockedSince", { date: licDay(addDays(graceUntil, 1), locale) })
+      : state === "grace"
+        ? t("licGraceLine", { date: licDay(license.ends_on, locale), until: licDay(graceUntil, locale) })
+        : t("licEndsLine", { date: licDay(license.ends_on, locale), days: left });
+
+  return (
+    <div className="license-box" data-tone={licenseTone(state)}>
+      <div className="spread">
+        <div className="grow">
+          <div className="row" style={{ gap: 6 }}>
+            <BadgeCheck size={16} />
+            <strong style={{ fontSize: 13 }}>{t("license")}</strong>
+            <span className="pill">{t(`licKind_${license.kind}`)}</span>
+            <span className={`pill ${licenseTone(state)}`}>{t(`licState_${state}`)}</span>
+            {!license.explicit && <span className="pill warn">{t("licImplicit")}</span>}
+          </div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>{when}</div>
+          {Number(license.paid_total) > 0 && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+              {t("licPaidLine", {
+                total: formatNumber(Number(license.paid_total), locale),
+                year: formatNumber(Number(license.paid_this_year), locale),
+              })}
+              {license.last_paid_on && ` · ${t("licLastPaid", { date: licDay(license.last_paid_on, locale) })}`}
+            </div>
+          )}
+          {license.notes && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{license.notes}</div>
+          )}
+        </div>
+        <div className="row" style={{ flex: "none" }}>
+          <button className={`btn sm ${mode === "extend" ? "primary" : ""}`} onClick={() => toggle("extend")} disabled={busy}>
+            <CalendarClock size={14} />{t("licRenew")}
+          </button>
+          <button className={`btn sm ${mode === "set" ? "primary" : ""}`} onClick={() => toggle("set")} disabled={busy}>
+            {t("licEdit")}
+          </button>
+          <button className={`btn sm ${mode === "history" ? "primary" : ""}`} onClick={() => toggle("history")} disabled={busy}>
+            <History size={14} />{t("licHistory")}
+          </button>
+        </div>
+      </div>
+
+      {mode === "extend" && (
+        <div className="stack" style={{ marginTop: 10 }}>
+          <div className="field">
+            <span>{t("licMonths")}</span>
+            <div className="tabs" role="tablist">
+              {EXTEND_MONTHS.map((months) => (
+                <button key={months} type="button" className="tab" role="tab"
+                  aria-selected={Number(extend.months) === months}
+                  onClick={() => setExtend((current) => ({ ...current, months }))}>
+                  {t("licMonthsN", { count: months })}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="row">
+            <div className="field grow">
+              <label htmlFor={`lic-m-${hotel.id}`}>{t("licCustomMonths")}</label>
+              <input id={`lic-m-${hotel.id}`} type="number" min="1" max="60" inputMode="numeric"
+                value={extend.months}
+                onChange={(event) => setExtend((current) => ({ ...current, months: event.target.value }))} />
+            </div>
+            <div className="field grow">
+              <label htmlFor={`lic-a-${hotel.id}`}>{t("licAmount")}</label>
+              <input id={`lic-a-${hotel.id}`} type="number" min="0" inputMode="decimal"
+                value={extend.amount} placeholder="0"
+                onChange={(event) => setExtend((current) => ({ ...current, amount: event.target.value }))} />
+            </div>
+            <div className="field" style={{ width: 90 }}>
+              <label htmlFor={`lic-c-${hotel.id}`}>{t("licCurrency")}</label>
+              <input id={`lic-c-${hotel.id}`} dir="ltr" value={extend.currency}
+                onChange={(event) => setExtend((current) => ({ ...current, currency: event.target.value.toUpperCase() }))} />
+            </div>
+          </div>
+          <div className="row">
+            <div className="field grow">
+              <label htmlFor={`lic-p-${hotel.id}`}>{t("licMethod")}</label>
+              <select id={`lic-p-${hotel.id}`} value={extend.method}
+                onChange={(event) => setExtend((current) => ({ ...current, method: event.target.value }))}>
+                {PAY_METHODS.map((method) => (
+                  <option key={method} value={method}>{t(`licMethod_${method}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field grow">
+              <label htmlFor={`lic-n-${hotel.id}`}>{t("licNote")}</label>
+              <input id={`lic-n-${hotel.id}`} value={extend.note}
+                onChange={(event) => setExtend((current) => ({ ...current, note: event.target.value }))} />
+            </div>
+          </div>
+          {extendIssue ? (
+            <div className="banner warn" style={{ margin: 0 }}>{t(`licProblem_${extendIssue}`)}</div>
+          ) : (
+            <div className="banner" style={{ margin: 0 }}>
+              {t("licPreview", { date: licDay(preview, locale) })}
+              {" "}{state === "expired" || !license.ends_on ? t("licFromToday") : t("licFromEnd")}
+            </div>
+          )}
+          <div className="row">
+            <button className="btn primary grow" onClick={renew} disabled={busy || extendIssue !== null}>
+              {busy ? t("licSaving") : t("licRenewConfirm")}
+            </button>
+            <button className="btn" onClick={() => setMode(null)}>{t("cancel")}</button>
+          </div>
+        </div>
+      )}
+
+      {mode === "set" && (
+        <div className="stack" style={{ marginTop: 10 }}>
+          <div className="field">
+            <span>{t("licKind")}</span>
+            <div className="tabs" role="tablist">
+              {LICENSE_KINDS.map((kind) => (
+                <button key={kind} type="button" className="tab" role="tab"
+                  aria-selected={setting.kind === kind}
+                  onClick={() => setSetting((current) => ({ ...current, kind }))}>
+                  {t(`licKind_${kind}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="row">
+            {setting.kind !== "unlimited" && (
+              <div className="field grow">
+                <label htmlFor={`lic-e-${hotel.id}`}>{t("licEndsOn")}</label>
+                <input id={`lic-e-${hotel.id}`} type="date" dir="ltr" value={setting.endsOn || ""}
+                  onChange={(event) => setSetting((current) => ({ ...current, endsOn: event.target.value }))} />
+              </div>
+            )}
+            <div className="field grow">
+              <label htmlFor={`lic-g-${hotel.id}`}>{t("licGrace")}</label>
+              <input id={`lic-g-${hotel.id}`} type="number" min="0" max="60" inputMode="numeric"
+                value={setting.grace}
+                onChange={(event) => setSetting((current) => ({ ...current, grace: event.target.value }))} />
+            </div>
+          </div>
+          <p className="field-hint" style={{ margin: 0 }}>{t("licGraceHint")}</p>
+          <div className="field">
+            <label htmlFor={`lic-sn-${hotel.id}`}>{t("licNote")}</label>
+            <input id={`lic-sn-${hotel.id}`} value={setting.note}
+              onChange={(event) => setSetting((current) => ({ ...current, note: event.target.value }))} />
+          </div>
+          {setIssue && <div className="banner warn" style={{ margin: 0 }}>{t(`licProblem_${setIssue}`)}</div>}
+          <div className="row">
+            <button className="btn primary grow" onClick={save} disabled={busy || setIssue !== null}>
+              {busy ? t("licSaving") : t("licSave")}
+            </button>
+            <button className="btn" onClick={() => setMode(null)}>{t("cancel")}</button>
+          </div>
+        </div>
+      )}
+
+      {mode === "history" && (
+        <div className="stack" style={{ marginTop: 10, gap: 6 }}>
+          {history === null ? (
+            <div className="empty compact-empty">{t("loading")}</div>
+          ) : history.length === 0 ? (
+            <div className="empty compact-empty">{t("licNoHistory")}</div>
+          ) : history.map((event) => (
+            <div key={event.id} className="license-event">
+              <div className="spread">
+                <strong>
+                  {event.kind === "extended"
+                    ? t("licEvent_extended", { count: event.months || 0 })
+                    : t(`licEvent_${event.kind}`, { kind: t(`licKind_${event.new_kind || "trial"}`) })}
+                </strong>
+                <span>{licDay(String(event.created_at).slice(0, 10), locale)}</span>
+              </div>
+              <div>
+                {event.new_end
+                  ? t("licEventEnd", { date: licDay(event.new_end, locale) })
+                  : t("licNoEnd")}
+                {Number(event.amount) > 0 &&
+                  ` · ${formatNumber(Number(event.amount), locale)} ${event.currency || ""}`}
+                {event.method && ` · ${PAY_METHODS.includes(event.method) ? t(`licMethod_${event.method}`) : event.method}`}
+                {event.actor_name && ` · ${event.actor_name}`}
+              </div>
+              {event.note && <div className="muted">{event.note}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -403,6 +717,21 @@ function AccountRow({ member, locale, call, onChanged, onError, onSaid }) {
 
 /* -------------------------------------------------------- a new hotel */
 
+/** What a new hotel opens on unless the operator says otherwise. */
+const OPENING_LICENSE = {
+  licMode: "trial", trialDays: String(DEFAULT_TRIAL_DAYS), months: "12",
+  amount: "", method: "cash",
+};
+
+/** Today on the hotel's own calendar, which is the one its licence counts in. */
+function todayIn(timezone) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
 function NewHotel({ taken, onCreate, onDone, onError }) {
   const t = useTranslations("Platform");
   const [open, setOpen] = useState(false);
@@ -412,6 +741,7 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
     timezone: "Africa/Cairo",
     ownerName: "", ownerEmail: "", password: "", again: "",
     withDemo: true,
+    ...OPENING_LICENSE,
   });
 
   const set = (field) => (event) =>
@@ -428,10 +758,21 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
     ...current, code: normaliseCode(event.target.value), codeTouched: true,
   }));
 
-  const problems = newHotelProblems(form, taken);
+  const licenceChoice = {
+    mode: form.licMode, trialDays: form.trialDays, months: form.months,
+    amount: form.amount, method: form.method,
+  };
+  const licenceIssue = openingProblem(licenceChoice);
+  const problems = [
+    ...newHotelProblems(form, taken),
+    ...(licenceIssue ? [`lic:${licenceIssue}`] : []),
+  ];
+  const problemText = (problem) => (problem.startsWith("lic:")
+    ? t(`licProblem_${problem.slice(4)}`)
+    : t(`problem_${problem}`));
 
   async function create() {
-    if (problems.length) return onError(t(`problem_${problems[0]}`));
+    if (problems.length) return onError(problemText(problems[0]));
     setBusy(true);
     const out = await onCreate({
       action: "create_property",
@@ -446,10 +787,20 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
       const { error } = await supabase.rpc("seed_demo_property", { p_property: out.property_id });
       if (error) onError(error.message);
     }
+
+    // Likewise the licence: if it fails the hotel is on the implicit
+    // fourteen-day trial, which is safe, and can be set from its card.
+    if (out.property_id) {
+      for (const step of openingCalls(licenceChoice, todayIn(form.timezone))) {
+        const { error } = await supabase.rpc(step.fn, { p_property: out.property_id, ...step.args });
+        if (error) { onError(error.message); break; }
+      }
+    }
     setBusy(false);
     setForm({
       name: "", name_en: "", code: "", codeTouched: false, timezone: "Africa/Cairo",
       ownerName: "", ownerEmail: "", password: "", again: "", withDemo: true,
+      ...OPENING_LICENSE,
     });
     setOpen(false);
     onDone(form.name);
@@ -534,8 +885,53 @@ function NewHotel({ taken, onCreate, onDone, onError }) {
       </label>
       <p className="field-hint">{t("withDemoHint")}</p>
 
+      <div className="field">
+        <span>{t("licOpening")}</span>
+        <div className="tabs" role="tablist">
+          {OPENING_CHOICES.map((mode) => (
+            <button key={mode} type="button" className="tab" role="tab"
+              aria-selected={form.licMode === mode}
+              onClick={() => setForm((current) => ({ ...current, licMode: mode }))}>
+              {t(`licOpening_${mode}`)}
+            </button>
+          ))}
+        </div>
+        <p className="field-hint">{t(`licOpeningHint_${form.licMode}`)}</p>
+      </div>
+
+      {form.licMode === "trial" && (
+        <div className="field">
+          <label htmlFor="lic-trial">{t("licTrialDays")}</label>
+          <input id="lic-trial" type="number" min="1" max="90" inputMode="numeric"
+            value={form.trialDays} onChange={set("trialDays")} />
+        </div>
+      )}
+
+      {form.licMode === "paid" && (
+        <div className="row">
+          <div className="field grow">
+            <label htmlFor="lic-months">{t("licCustomMonths")}</label>
+            <input id="lic-months" type="number" min="1" max="60" inputMode="numeric"
+              value={form.months} onChange={set("months")} />
+          </div>
+          <div className="field grow">
+            <label htmlFor="lic-amount">{t("licAmount")}</label>
+            <input id="lic-amount" type="number" min="0" inputMode="decimal" placeholder="0"
+              value={form.amount} onChange={set("amount")} />
+          </div>
+          <div className="field grow">
+            <label htmlFor="lic-method">{t("licMethod")}</label>
+            <select id="lic-method" value={form.method} onChange={set("method")}>
+              {PAY_METHODS.map((method) => (
+                <option key={method} value={method}>{t(`licMethod_${method}`)}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {problems.length > 0 && (
-        <div className="banner warn" style={{ margin: 0 }}>{t(`problem_${problems[0]}`)}</div>
+        <div className="banner warn" style={{ margin: 0 }}>{problemText(problems[0])}</div>
       )}
 
       <div className="row">

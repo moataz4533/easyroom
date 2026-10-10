@@ -11,7 +11,8 @@ import {
   Hotel, IdCard, Languages, LayoutDashboard, ListChecks, LogOut,
   FileText, MoreHorizontal, RefreshCw, Settings,
 } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { dayLabel, supabase } from "../lib/supabase";
+import { addDays, licenseNotice, lockReason } from "../lib/licenses";
 import { setHotelSettings } from "../lib/hotel-settings";
 import { barePath, localePath, localizedName, useAppLocale } from "../lib/locale";
 import { useOffline } from "../lib/offline";
@@ -90,10 +91,13 @@ export default function Shell({ children }) {
       // Every hotel this account belongs to, and nothing else: the select
       // policy on properties is is_member(id), so the list the database
       // returns is already exactly theirs.
-      const [propertyResult, memberResult, profileResult] = await Promise.all([
+      // The licence list is the one door a locked hotel leaves open: every
+      // other query comes back empty for it, and this says why.
+      const [propertyResult, memberResult, profileResult, licenceResult] = await Promise.all([
         supabase.from("properties").select("*"),
         supabase.from("property_members").select("role, property_id, is_active").eq("user_id", session.user.id).eq("is_active", true),
         supabase.from("profiles").select("full_name, preferred_locale").eq("id", session.user.id).maybeSingle(),
+        supabase.rpc("my_hotel_licenses"),
       ]);
       if (!alive) return;
 
@@ -107,10 +111,13 @@ export default function Shell({ children }) {
       // which is right for nobody in particular.
       setHotelSettings(property);
 
+      const licenses = licenceResult.data || [];
       setState({
         loading: false, session, property, properties, memberships,
         profile: profileResult.data,
         role, denied: !property || !role,
+        licenses,
+        license: licenses.find((row) => row.property_id === property?.id) || null,
         error: propertyResult.error?.message,
       });
     }
@@ -126,6 +133,10 @@ export default function Shell({ children }) {
   async function logout() {
     await supabase.auth.signOut();
     router.replace(localePath("/login", locale));
+  }
+
+  if (state.denied && lockReason(state.licenses)) {
+    return <LockedScreen licenses={state.licenses} onLogout={logout} />;
   }
 
   if (state.denied) {
@@ -156,11 +167,69 @@ export default function Shell({ children }) {
         <div className="app-workspace">
           <Topbar state={state} onLogout={logout} />
           <StatusStrip />
+          <LicenseStrip license={state.license} role={state.role} />
           <main className="wrap">{content}</main>
           <MobileNav path={currentPath} allowed={allowed} />
         </div>
       </div>
     </Ctx.Provider>
+  );
+}
+
+const YEAR = { day: "numeric", month: "long", year: "numeric" };
+
+/**
+ * A locked hotel, said as what it is. Without this its staff would read
+ * "your account is not linked to a hotel" — untrue, and it sends them to
+ * the manager instead of the owner, who is the one who can renew.
+ */
+function LockedScreen({ licenses, onLogout }) {
+  const locale = useLocale();
+  const t = useTranslations("Shell");
+  const common = useTranslations("Common");
+  const reason = lockReason(licenses);
+  const row = reason === "expired"
+    ? licenses.find((item) => item.hotel_active && item.state === "expired")
+    : licenses.find((item) => !item.hotel_active);
+  const name = localizedName(row, locale) || row?.name || "";
+  const date = dayLabel(row?.ends_on, locale, YEAR);
+  return (
+    <div className="center-page auth-surface">
+      <div className="card access-card">
+        <div className="empty-icon"><Hotel size={24} /></div>
+        {reason === "expired" ? (
+          <>
+            <h2>{t("licLocked")}</h2>
+            <p>{t("licLockedBody", { name, date })}</p>
+          </>
+        ) : (
+          <>
+            <h2>{t("suspended")}</h2>
+            <p>{t("suspendedBody", { name })}</p>
+          </>
+        )}
+        <button className="btn primary wide" onClick={onLogout}><LogOut size={18} />{common("logout")}</button>
+      </div>
+    </div>
+  );
+}
+
+/** The licence warning, to whoever it is for (see licenseNotice). */
+function LicenseStrip({ license, role }) {
+  const locale = useLocale();
+  const t = useTranslations("Shell");
+  const notice = licenseNotice(license, role);
+  if (!notice) return null;
+  const date = dayLabel(license.ends_on, locale, YEAR);
+  const until = dayLabel(license.grace_until || addDays(license.ends_on, 7), locale, YEAR);
+  return (
+    <div className={`strip ${notice === "grace" ? "off" : "warn"}`} role="status">
+      <span>
+        {notice === "grace"
+          ? t("licGrace", { date, until })
+          : t("licExpiring", { date })}
+      </span>
+    </div>
   );
 }
 

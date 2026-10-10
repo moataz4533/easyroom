@@ -392,6 +392,13 @@ html[lang="en"] .dashboard-stat strong small { font-family: var(--font-latin), s
 .platform-total > strong { font-size: 26px; line-height: 1.1; }
 .platform-total > small { color: var(--muted); font-size: 11px; }
 .platform-total[data-tone="warn"] > strong { color: #8a5c00; }
+.platform-total[data-tone="bad"] > strong { color: var(--danger); }
+.license-box { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.license-box[data-tone="warn"] { border-color: #edc774; background: var(--sand-soft); }
+.license-box[data-tone="bad"] { border-color: #e8aaa3; background: var(--danger-soft); }
+.license-event { padding: 8px 10px; border-radius: 10px; background: var(--surface); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+.license-event strong { font-size: 13px; }
+.license-event .muted { color: var(--muted); }
 .card[data-suspended="true"] { border-inline-start: 4px solid var(--danger); }
 .provisional-reason { margin: 9px 0 0; color: var(--danger); font-size: 12px; line-height: 1.6; }
 .provisional-actions:not(:empty) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
