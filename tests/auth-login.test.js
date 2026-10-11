@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isHotelSlug, isStaffUsername, normalizeHotelSlug, normalizeStaffUsername,
-  staffLoginEmail, staffProfileProblem,
+  staffLoginEmail, staffProfileProblem, hotelLoginPath, hotelLoginUrl, openingHotel,
 } from "../lib/auth-login.js";
 
 describe("staff login identity", () => {
@@ -65,5 +65,22 @@ describe("editing a staff member's details", () => {
   it("counts the digits, not the punctuation", () => {
     expect(staffProfileProblem({ full_name: "أحمد", phone: "+20 100 123 4567" })).toBeNull();
     expect(staffProfileProblem({ full_name: "أحمد", phone: "+20-10" })).toBe("phoneTooShort");
+  });
+});
+
+describe("each hotel's own sign-in link", () => {
+  it("builds the link from the code", () => {
+    expect(hotelLoginPath("dalia")).toBe("/h/dalia");
+    expect(hotelLoginPath(" Greek-Club-Dahab ")).toBe("/h/greek-club-dahab");
+    expect(hotelLoginPath("")).toBe("/login");
+    expect(hotelLoginUrl("dalia")).toBe("https://easyroom.app/h/dalia");
+    expect(hotelLoginUrl("dalia", "http://localhost:3000/")).toBe("http://localhost:3000/h/dalia");
+  });
+
+  it("opens on the linked hotel, then the remembered one, then none", () => {
+    expect(openingHotel("dalia", "greek-club-dahab")).toBe("dalia");
+    expect(openingHotel(null, "greek-club-dahab")).toBe("greek-club-dahab");
+    expect(openingHotel("", "")).toBe("");
+    expect(openingHotel("!!", null)).toBe("");
   });
 });

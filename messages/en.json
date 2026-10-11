@@ -44,12 +44,15 @@
     "invalidStaff": "The username or password is incorrect. Check the details provided by the owner.",
     "unconfirmed": "This account still needs email confirmation.",
     "hotelCode": "Hotel code",
-    "hotelCodeHint": "Your manager gives you this. It is saved on this device, so you will not need to type it again.",
+    "hotelCodeHint": "It is in the sign-in link your manager sent, or ask them for it. This device remembers it, so you will not type it again.",
     "hotelInvalid": "A hotel code is lowercase letters, numbers and hyphens only.",
-    "otherHotel": "I work at a different hotel",
     "forgot": "Forgotten your password?",
     "resetNeedsEmail": "Enter your email address first, then choose “Forgotten your password”.",
-    "resetSent": "If that address has an account, a link to set a new password has been sent to it. The link lasts an hour, and may land in the spam folder."
+    "resetSent": "If that address has an account, a link to set a new password has been sent to it. The link lasts an hour, and may land in the spam folder.",
+    "hotelRequired": "Enter the code of the hotel you work at.",
+    "hotelNotFound": "No hotel has this code. Check it with your manager.",
+    "changeHotel": "Change",
+    "hotelSignedInto": "Staff sign-in"
   },
   "Shell": {
     "loading": "One moment…",
@@ -1284,7 +1287,7 @@
     "memberLogin_username": "Username",
     "memberLogin_email": "Email",
     "memberUsername": "Username",
-    "memberUsernameHint": "Signs in from “Staff login” with hotel code {code} and this username. Lowercase letters and numbers; it cannot change later.",
+    "memberUsernameHint": "Signs in from the hotel's link easyroom.app/h/{code} with this username — the link is under the hotel's name here. Lowercase letters and numbers; it cannot change later.",
     "memberEmail": "Email",
     "memberEmailHint": "Signs in from the normal login with the email. If this email is already an account (another hotel's owner, say), it is added to this hotel with its current password.",
     "memberPassword": "Password",
@@ -1436,5 +1439,16 @@
     "print": "Print / save PDF",
     "copy": "Copy the text",
     "whatsapp": "Send on WhatsApp"
+  },
+  "HotelLink": {
+    "title": "Staff sign-in link",
+    "note": "Send it to each member of staff once, or print the QR code for the desk. It opens the sign-in screen with the hotel already named, so staff type only their username and password.",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "copyFailed": "Could not copy — select the link and copy it by hand",
+    "share": "Send on WhatsApp",
+    "downloadQr": "Download QR",
+    "shareText": "Staff sign-in link for {hotel} on EasyRoom:\n{url}",
+    "qrAlt": "QR code for {hotel} staff sign-in"
   }
 }
