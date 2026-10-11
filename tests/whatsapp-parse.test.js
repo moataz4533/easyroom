@@ -155,6 +155,31 @@ describe("who is asking", () => {
     expect(value(findName("my name is Sarah Whitfield"))).toBe("Sarah Whitfield");
   });
 
+  it("stops the name where the rest of the message starts", () => {
+    // The phone straight after the name, on the same line, used to be
+    // filed as part of the name: "أحمد سامي 01012345678".
+    expect(value(findName("الاسم أحمد سامي 01012345678"))).toBe("أحمد سامي");
+    expect(value(findName("الاسم: أحمد سامي - 01012345678"))).toBe("أحمد سامي");
+    expect(value(findName("الاسم أحمد سامي ٠١٠١٢٣٤٥٦٧٨"))).toBe("أحمد سامي");
+    expect(value(findName("my name is John Smith +44 7700 900123"))).toBe("John Smith");
+    // …and the same for whatever else shares the line.
+    expect(value(findName("اسمي محمد علي ورقمي 01112223334"))).toBe("محمد علي");
+    expect(value(findName("الاسم أحمد سامي رقم التليفون 01012345678"))).toBe("أحمد سامي");
+    expect(value(findName("الحجز باسم شركة النيل 3 أفراد"))).toBe("شركة النيل");
+    expect(value(findName("الاسم أحمد سامي من 20 أكتوبر لـ 23"))).toBe("أحمد سامي");
+    expect(value(findName("الاسم أحمد سامي يوم الخميس"))).toBe("أحمد سامي");
+    expect(value(findName("my name is Sarah Whitfield, phone 0044 20 7946 0958"))).toBe("Sarah Whitfield");
+    expect(value(findName("name: Anna Kowalska from 3 to 6 October"))).toBe("Anna Kowalska");
+  });
+
+  it("keeps a name that only looks like it might stop early", () => {
+    // A hyphen inside a name is part of it; only a dash with spaces round it
+    // separates two things.
+    expect(value(findName("my name is Jean-Pierre Martin"))).toBe("Jean-Pierre Martin");
+    expect(value(findName("الاسم عبد الرحمن محمود"))).toBe("عبد الرحمن محمود");
+    expect(value(findName("الاسم منى عبد الله"))).toBe("منى عبد الله");
+  });
+
   it("leaves the name empty rather than guessing one", () => {
     // A greeting is not a name, and a booking filed under "السلام عليكم"
     // is worse than an empty box reception fills in.
