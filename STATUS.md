@@ -810,15 +810,15 @@ supabase/replay/replay.sh --check    # يعيد كل الهجرات على بو�
       ليها يبقى من الملف ده، وبعده اسحب المنشور وقارنه.**
 - [ ] ترقية Supabase لـ Pro — نسخ احتياطي يومي قبل التشغيل الحقيقي
 - [ ] تفعيل Leaked Password Protection — Supabase ← Authentication ← Policies
-- [ ] 🟡 **دومين `easyroom.app`** (المالك اشتراه من Spaceship ١١ أكتوبر). اتضاف
-      لمشروع Vercel (`easyroom.app` أساسي، و`www` بيحوّل عليه 308). **ناقص من
-      المالك:** في Spaceship ← DNS: يشيل الـA records القديمة (صفحة الركن:
-      `34.216.117.25` و`54.149.79.189`) ويحط `A @ 216.198.79.1` و`A @ 64.29.17.1`
-      و`CNAME www c7226abfd0bc8cd2.vercel-dns-017.com`. وفي Supabase ← Authentication
-      ← URL Configuration: Site URL = `https://easyroom.app` ويضيف
-      `https://easyroom.app/**` للـRedirect URLs — لينك «نسيت الباسورد» بيتبني من
-      `window.location.origin`. **ملحوظة:** عناوين دخول الموظفين
-      `…@staff.easyroom.app` داخلية ومفيش إيميل بيتبعت عليها، فالدومين مش بيأثر عليها.
+- [x] **دومين `easyroom.app` شغّال** (١١ أكتوبر). DNS في Spaceship (`A @` على
+      `216.198.79.1` و`64.29.17.1`، و`CNAME www`)، وVercel عامل الشهادة (Let's
+      Encrypt، بتتجدد لوحدها). `www` ← 308 على `easyroom.app`، و`/ar/login`
+      و`/ar/admin` بيرجّعوا 200. الرابط القديم `easyroom-gray.vercel.app` لسه شغّال.
+- [ ] **Supabase ← Authentication ← URL Configuration:** Site URL =
+      `https://easyroom.app` + `https://easyroom.app/**` في Redirect URLs. من غيرها
+      لينك «نسيت الباسورد» بيرجع على الرابط القديم (شغّال، بس مش الدومين).
+      مفيش أداة MCP لإعدادات الـauth — المالك يعملها من اللوحة.
+      عناوين `…@staff.easyroom.app` داخلية ومش بتتأثر.
 - [ ] تجربة لينك «نسيت الباسورد» عملياً للتأكد إن الـredirect متسجّل
 
 ---
