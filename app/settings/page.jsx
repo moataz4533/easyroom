@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Shell, { useProperty, Toast, useToast } from "../../components/Shell";
 import PinPrompt from "../../components/PinPrompt";
 import BackupCard from "../../components/BackupCard";
+import HotelLoginLink from "../../components/HotelLoginLink";
 import { supabase, egp, dayLabel } from "../../lib/supabase";
 import { Dialog } from "../../components/ui";
 import { localizedName } from "../../lib/locale";
@@ -1114,6 +1115,7 @@ function Accounts({ property, accounts, plans, reload, showToast, locale }) {
 /* ------------------------------------------------------------------ */
 function Staff({ property, staff, reload, showToast }) {
   const t = useTranslations("Settings");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resetMember, setResetMember] = useState(null);
@@ -1221,6 +1223,9 @@ function Staff({ property, staff, reload, showToast }) {
 
   return (
     <>
+      <HotelLoginLink slug={property.slug} hotelName={localizedName(property, locale)}
+        onCopied={(message) => showToast(message)} onCopyFailed={(message) => showToast(message, true)} />
+
       <p className="section-note">
         {t("staffNote")}
       </p>

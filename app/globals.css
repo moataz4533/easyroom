@@ -623,6 +623,22 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 440px; }
 .brand-room-lines span { height: 70px; border: 3px solid #fff; border-radius: 14px; }
 .login-card { align-self: center; width: min(390px, calc(100% - 48px)); margin: 40px auto; }
 .login-heading h2 { margin: 7px 0 6px; font-size: 27px; }
+.hotel-link { display: flex; gap: 16px; align-items: center; }
+.hotel-link.card { margin-bottom: 14px; }
+.hotel-link-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.hotel-link-url { overflow-wrap: anywhere; font-size: 14px; font-weight: 600; color: var(--sea); text-align: left; }
+.hotel-link-qr { flex: none; width: 128px; height: 128px; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+.hotel-link.compact .hotel-link-url { font-size: 12px; }
+@media (max-width: 560px) { .hotel-link { flex-direction: column-reverse; align-items: stretch; } .hotel-link-qr { align-self: center; width: 160px; height: 160px; } }
+.login-hotel { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.login-hotel-mark { flex: none; width: 44px; height: 44px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--deep); }
+.login-hotel-mark img { width: 100%; height: 100%; object-fit: contain; }
+.login-hotel-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.login-hotel-name strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.login-hotel-name span { color: var(--muted); font-size: 12px; }
+.login-hotel .link-button { align-self: center; }
+.login-hotel-found { display: inline-flex; align-items: center; gap: 5px; color: var(--ok); font-weight: 600; }
+.login-hotel-missing { color: var(--danger); }
 .login-heading p, .login-help { color: var(--muted); font-size: 13px; line-height: 1.65; }
 .form-stack { gap: 14px; margin-top: 25px; }
 .login-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }

@@ -11,6 +11,7 @@ import { supabase, dayLabel } from "../../lib/supabase";
 import { localePath } from "../../lib/locale";
 import { formatNumber } from "../../lib/format";
 import { Toast, useToast } from "../../components/Shell";
+import HotelLoginLink from "../../components/HotelLoginLink";
 import {
   MEMBER_LOGINS, PLATFORM_ROLES, membersOf, isDormant, neverSignedIn, newHotelProblems,
   newMemberProblems, normaliseCode,
@@ -321,6 +322,9 @@ function HotelCard({ summary, license, members, locale, call, onChanged, onError
           </div>
         </div>
       )}
+
+      <HotelLoginLink slug={summary.slug} hotelName={summary.name} compact
+        onCopied={onSaid} onCopyFailed={onError} />
 
       {bare && summary.active && (
         <div className="banner" style={{ margin: 0 }}>{t("bareHotel")}</div>

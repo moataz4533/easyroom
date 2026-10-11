@@ -81,6 +81,9 @@ if [ "$1" = "--check" ]; then
   echo
   echo "--- licences: a hotel runs until a date, then grace, then locks ---"
   psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/licenses.sql" 2>&1 | grep "="
+  echo
+  echo "--- sign-in: a hotel's name from its code, and nothing more ---"
+  psql -h "$PGDIR" -p "$PORT" -U postgres -f "$HERE/login.sql" 2>&1 | grep "="
 fi
 
 echo
