@@ -14,8 +14,8 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
 // Three guides, one pipeline: the reception one for the desk, the admin one
-// for whoever owns the hotel and sets it up, and the full one for somebody
-// who shows the app to customers — every feature plus a ten-minute demo.
+// for whoever owns the hotel and sets it up, and the full one for anybody at
+// any hotel — every screen, step by step, with screenshots from docs/shots.
 const GUIDES = [
   ["reception-guide.html", "easyroom-reception-guide.pdf"],
   ["admin-guide.html", "easyroom-admin-guide.pdf"],
